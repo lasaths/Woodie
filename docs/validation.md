@@ -2,7 +2,7 @@
 
 ## 0.1.1 development — .NET 8
 
-Target: Rhino 8.20+ running .NET 8. This candidate is not yet published or installed into the interactive Rhino session.
+Target: Rhino 8.20+ running .NET 8. This candidate is installed locally for testing and has not been published. The published PackageManager release remains 0.1.0.
 
 | Check | Result |
 | --- | --- |
@@ -13,8 +13,10 @@ Target: Rhino 8.20+ running .NET 8. This candidate is not yet published or insta
 | Yak layout and source/content checks | PASS; net8.0 GHA, Rhino 8.20/any distribution, one example |
 | Extracted source build | PASS; both projects built independently and 27 native checks passed |
 | Hosted workflow for this update | PASS; [Windows/Linux builds and Windows managed checks](https://github.com/lasaths/Woodie/actions/runs/39667884704) |
-| Fresh installed viewport check | Not run; installed 0.1.0 is unchanged |
+| Fresh installed viewport check | PASS; local Yak 0.1.1 loaded on Rhino 8.35 / .NET 8.0.31, with clean flat and guide-bowed ThreeS/Clean-Pale previews |
 | Mac native display and interaction | Not run |
+
+The local Yak GHA SHA-256 is `02c94fbab1716e5e516afb2bf89dd99d7dab74547e68fdc867368769ab116213`. No previous Woodie installation or loaded assembly was present; the local candidate was installed through Yak and registered into the running Grasshopper session. Fresh-start automatic discovery remains to be checked. A separate example copy was scaled from millimetres into the current metre document; both parts solved without errors or warnings, and the bowed output contained 2,516 triangles. Rhino document units and source example geometry were preserved.
 
 The RhinoCommon/Grasshopper API reference remains the 8.0 SDK. The host runtime requirement is stricter: Rhino 8.20 supplies .NET 8 by default. Packaging marks the distribution rh8_20 to enforce that baseline.
 
