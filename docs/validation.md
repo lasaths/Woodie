@@ -20,8 +20,8 @@ Raw local outputs belong under ignored `artifacts/`, rather than in the public s
 | Dependency advisory query | PASS | NuGet reported no known vulnerable packages for the plugin and its transitive dependencies at audit time; Rhino supplies runtime SDK assemblies |
 | Yak CLI and archive inspection | PASS | Rhino 8 / any tag, matching version/GHA, one example, credits and licences; no host binaries or development outputs |
 | Checksums | PASS | SHA-256 file generated for the Yak and source ZIP |
-| GitHub hosted workflow | PENDING | Previous uniform-colour Windows/Linux checks passed; rerun for the subsequent light-seam correction |
-| Fresh live final viewport acceptance | PENDING | Earlier uniform-colour build passed broad-polygon checks, but the user identified dark seam streaks in both example boards. A dedicated regression now passes. Cassis confirmed the corrected colour on both boards through an explicit glue-colour override; default-build installation acceptance remains pending |
+| GitHub hosted workflow | PASS | [Light-seam Windows/Linux build and public-content checks](https://github.com/lasaths/Woodie/actions/runs/39659155148); Windows managed checks passed |
+| Fresh live final viewport acceptance | PASS | Cassis verified the installed GHA hash and clean flat/bowed ThreeS/Clean-Pale display using the shipped material settings, with no glue-colour override |
 | Mac native load/display/UI | NOT RUN | Native acceptance remains pending |
 
 Release GHA SHA-256:
@@ -32,7 +32,7 @@ Release GHA SHA-256:
 
 Independent source validation is recorded in the table above. Binary identity across checkouts is not asserted; compiler/debug metadata can differ. Archive checksums are distributed beside the artifacts, rather than embedded in this report.
 
-An earlier 0.1.0 build was uploaded only to the Yak test server. That immutable test upload is not the corrected release candidate. The corrected build was uploaded under the temporary test-server name `woodie-releasecheck-20261021` at version `0.1.0`. Its downloaded archive matched the upload SHA-256, and every non-manifest entry matched the canonical candidate. This retains `woodie` / `0.1.0` for production. Fresh installed Windows viewport acceptance passed afterward for the exterior-glue build. The later uniform-colour build passed 28 native checks, independent source validation and fresh installed viewport acceptance. The user then reported residual seam streaks, so production remains held pending the light-seam build’s installation, live acceptance and final test-server round trip. Validation does not restart an interactive Rhino session. Raw build/native outputs, former examples and development screenshots remain local under ignored `artifacts/`.
+Before production publication, the final archive must pass a Yak test-server upload/download with SHA-256 equality and byte comparisons of every entry except the temporary manifest name. Test uploads use unique temporary package names because versions are immutable; production retains `woodie` / `0.1.0`. Validation does not restart an interactive Rhino session. Raw build/native outputs, former examples and development screenshots remain local under ignored `artifacts/`.
 
 ## Uniform-colour appearance
 
