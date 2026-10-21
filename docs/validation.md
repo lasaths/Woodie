@@ -12,7 +12,7 @@ Target: Rhino 8.20+ running .NET 8. This candidate is not yet published or insta
 | Appearance fixtures | PASS; no changes to grain, colours or seams from 0.1.0 |
 | Yak layout and source/content checks | PASS; net8.0 GHA, Rhino 8.20/any distribution, one example |
 | Extracted source build | PASS; both projects built independently and 27 native checks passed |
-| Hosted workflow for this update | Pending |
+| Hosted workflow for this update | PASS; [Windows/Linux builds and Windows managed checks](https://github.com/lasaths/Woodie/actions/runs/39667884704) |
 | Fresh installed viewport check | Not run; installed 0.1.0 is unchanged |
 | Mac native display and interaction | Not run |
 
