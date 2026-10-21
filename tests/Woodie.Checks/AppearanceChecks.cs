@@ -88,6 +88,11 @@ internal static class AppearanceChecks
         var actual = LongitudinalStatistics();
         Assert(baseline.Count == actual.Count, "Longitudinal baseline coverage changed");
         double maxMedian = 0, maxTail = 0;
+        foreach (var pair in actual)
+        {
+            for (int channel = 0; channel < 3; channel++)
+                Assert(pair.Value[channel * 3 + 2] - pair.Value[channel * 3] <= 32, $"Excessive knot-free face colour contrast: {pair.Key}, channel {channel}");
+        }
         foreach (var pair in actual) for (int k = 0; k < 9; k++)
         {
             double difference = Math.Abs(pair.Value[k] - baseline[pair.Key][k]);

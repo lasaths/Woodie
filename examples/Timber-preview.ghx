@@ -22,7 +22,7 @@
       <chunks count="5">
         <chunk name="DocumentHeader">
           <items count="5">
-            <item name="DocumentID" type_name="gh_guid" type_code="9">1a8f25f7-f5d4-41b1-b550-1a15d83fe848</item>
+            <item name="DocumentID" type_name="gh_guid" type_code="9">7883926a-b3b0-462c-9f4d-0111096ad8fe</item>
             <item name="Preview" type_name="gh_string" type_code="10">Shaded</item>
             <item name="PreviewMeshType" type_name="gh_int32" type_code="3">1</item>
             <item name="PreviewNormal" type_name="gh_drawing_color" type_code="36">
@@ -35,7 +35,7 @@
         </chunk>
         <chunk name="DefinitionProperties">
           <items count="4">
-            <item name="Date" type_name="gh_date" type_code="8">639281994871399103</item>
+            <item name="Date" type_name="gh_date" type_code="8">639282109188272201</item>
             <item name="Description" type_name="gh_string" type_code="10"></item>
             <item name="KeepOpen" type_name="gh_bool" type_code="1">false</item>
             <item name="Name" type_name="gh_string" type_code="10"></item>
@@ -106,7 +106,7 @@
                 <chunk name="Container">
                   <items count="8">
                     <item name="Description" type_name="gh_string" type_code="10">A panel for custom notes and text values</item>
-                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">200f7b85-94ec-4c44-a0ec-47f9727c68ad</item>
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">dd0e3560-5438-40c1-828c-41c4a1cdc039</item>
                     <item name="Name" type_name="gh_string" type_code="10">Panel</item>
                     <item name="NickName" type_name="gh_string" type_code="10">Woodie · Timber preview</item>
                     <item name="Optional" type_name="gh_bool" type_code="1">false</item>
@@ -171,7 +171,7 @@ change geometry or specify a manufactured layup.</item>
                   <items count="9">
                     <item name="Advanced" type_name="gh_bool" type_code="1">false</item>
                     <item name="Description" type_name="gh_string" type_code="10">Click the arrow beneath the icon to show or hide material controls. Choose a product and appearance; expand Advanced inputs for overrides. Resolution is in mm/pixel. Appearance inspired by Larsson et al. (2022), Procedural Texturing of Solid Wood with Knots. ACM Transactions on Graphics 41(4), Article 45 (SIGGRAPH 2022). https://doi.org/10.1145/3528223.3530081. Cut-aware procedural detail informed by Larsson et al. (2024), https://doi.org/10.1111/cgf.15074, and Mokume (2025), https://doi.org/10.1145/3730874; independent adaptation.</item>
-                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">6e1deac1-f94f-4fca-be85-eca1dd9b6253</item>
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">7dd95297-516c-4d47-bc64-282808714b6c</item>
                     <item name="Name" type_name="gh_string" type_code="10">Timber Material</item>
                     <item name="NickName" type_name="gh_string" type_code="10">TimberMaterial</item>
                     <item name="PanelExpanded" type_name="gh_bool" type_code="1">true</item>
@@ -197,7 +197,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_input" index="0">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Optional product override (text or product list); controls the Product dropdown when supplied</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">7067936b-01f0-41b0-ba7f-1199bcf7ba50</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">b5715274-93a5-40d0-b199-748e15fa7f22</item>
                         <item name="Name" type_name="gh_string" type_code="10">Product</item>
                         <item name="NickName" type_name="gh_string" type_code="10">P</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">true</item>
@@ -219,7 +219,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_input" index="1">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Random seed</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">828c1431-21eb-4fde-9c4a-456b6f138805</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">be6bac34-e6d0-4451-8038-725cdeaa9e7f</item>
                         <item name="Name" type_name="gh_string" type_code="10">Seed</item>
                         <item name="NickName" type_name="gh_string" type_code="10">S</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">true</item>
@@ -261,7 +261,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_input" index="2">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Large-face resolution in mm/pixel (smaller = finer)</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">e8023460-c2d2-47d2-bf5a-55058890194a</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">6cbfb9df-2f4f-4aff-bbbe-0d98f71b0e44</item>
                         <item name="Name" type_name="gh_string" type_code="10">Resolution</item>
                         <item name="NickName" type_name="gh_string" type_code="10">R</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">true</item>
@@ -303,7 +303,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_output" index="0">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Woodie timber material settings</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">7ff4e64f-d0a9-45e8-99fb-a3e0ecd70392</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">a899e4d1-939e-4064-b6cd-a86ee35fc18d</item>
                         <item name="Name" type_name="gh_string" type_code="10">Settings</item>
                         <item name="NickName" type_name="gh_string" type_code="10">TDS</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">false</item>
@@ -325,7 +325,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_output" index="1">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Canonical product identifier</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">3a9ba4f4-b9cd-4935-a6c0-37628d91af11</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">51aee14b-b1c1-4202-90cd-c3033959c204</item>
                         <item name="Name" type_name="gh_string" type_code="10">Product</item>
                         <item name="NickName" type_name="gh_string" type_code="10">P</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">false</item>
@@ -358,7 +358,7 @@ change geometry or specify a manufactured layup.</item>
                   <items count="7">
                     <item name="Description" type_name="gh_string" type_code="10">Contains a collection of generic geometry</item>
                     <item name="Hidden" type_name="gh_bool" type_code="1">true</item>
-                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">7fa50487-86b6-4dbf-a71e-2800e3b105c4</item>
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">faad7e82-4a98-4601-958d-6a0beba6bc28</item>
                     <item name="Name" type_name="gh_string" type_code="10">Flat board (mm)</item>
                     <item name="NickName" type_name="gh_string" type_code="10">Flat</item>
                     <item name="Optional" type_name="gh_bool" type_code="1">false</item>
@@ -418,7 +418,7 @@ change geometry or specify a manufactured layup.</item>
                 <chunk name="Container">
                   <items count="4">
                     <item name="Description" type_name="gh_string" type_code="10">Preview Rhino geometry as straight or bent timber. Appearance inspired by Larsson et al. (2022), Procedural Texturing of Solid Wood with Knots. ACM Transactions on Graphics 41(4), Article 45 (SIGGRAPH 2022). https://doi.org/10.1145/3528223.3530081. Cut-aware procedural detail informed by Larsson et al. (2024), https://doi.org/10.1111/cgf.15074, and Mokume (2025), https://doi.org/10.1145/3730874; independent adaptation.</item>
-                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">89c89286-5d5e-48b0-8cdf-28b7d0fa05ad</item>
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">bcc343b3-1d0f-4dd1-9ef7-63fd384b9ad0</item>
                     <item name="Name" type_name="gh_string" type_code="10">Timber Preview</item>
                     <item name="NickName" type_name="gh_string" type_code="10">Flat timber</item>
                   </items>
@@ -440,11 +440,11 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_input" index="0">
                       <items count="7">
                         <item name="Description" type_name="gh_string" type_code="10">Mesh, Brep, Surface or Extrusion; input geometry is unchanged</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">522a3118-cefb-4349-9f41-65c974db39ed</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">4bed9740-9e29-473f-9c1c-1d9dc9f31ce8</item>
                         <item name="Name" type_name="gh_string" type_code="10">Geometry</item>
                         <item name="NickName" type_name="gh_string" type_code="10">G</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">false</item>
-                        <item name="Source" index="0" type_name="gh_guid" type_code="9">7fa50487-86b6-4dbf-a71e-2800e3b105c4</item>
+                        <item name="Source" index="0" type_name="gh_guid" type_code="9">faad7e82-4a98-4601-958d-6a0beba6bc28</item>
                         <item name="SourceCount" type_name="gh_int32" type_code="3">1</item>
                       </items>
                       <chunks count="1">
@@ -463,11 +463,11 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_input" index="1">
                       <items count="7">
                         <item name="Description" type_name="gh_string" type_code="10">Optional timber settings; default CLT</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">e0b47fab-5330-4a7d-b542-aaf2c11971c8</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">431a777f-c831-4a35-96e4-724346a9ad43</item>
                         <item name="Name" type_name="gh_string" type_code="10">Settings</item>
                         <item name="NickName" type_name="gh_string" type_code="10">TDS</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">true</item>
-                        <item name="Source" index="0" type_name="gh_guid" type_code="9">7ff4e64f-d0a9-45e8-99fb-a3e0ecd70392</item>
+                        <item name="Source" index="0" type_name="gh_guid" type_code="9">a899e4d1-939e-4064-b6cd-a86ee35fc18d</item>
                         <item name="SourceCount" type_name="gh_int32" type_code="3">1</item>
                       </items>
                       <chunks count="1">
@@ -486,7 +486,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_input" index="2">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Fibre direction projected into the inferred or supplied base plane</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">39614a2b-c8bd-4008-abe5-eb57effcd24c</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">e0068f0a-e434-4fca-bf93-9229c278b6c6</item>
                         <item name="Name" type_name="gh_string" type_code="10">Fibre</item>
                         <item name="NickName" type_name="gh_string" type_code="10">F</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">true</item>
@@ -508,7 +508,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_input" index="3">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Optional base plane: X is fibre, Z is thickness</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">f49af06c-9f55-4b1d-a048-cf4ed0b33539</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">8fdf981d-fb82-4202-a2c7-e8163f67c71f</item>
                         <item name="Name" type_name="gh_string" type_code="10">Base Plane</item>
                         <item name="NickName" type_name="gh_string" type_code="10">P</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">true</item>
@@ -560,7 +560,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_input" index="4">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Optional smooth open centreline for bent timber; curve direction sets grain X</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">f8fe8d43-b33f-4fc3-8004-3a28ee5442ec</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">e67c0b62-cdfa-4c4c-83c2-61c53e587ff5</item>
                         <item name="Name" type_name="gh_string" type_code="10">Guide Curve</item>
                         <item name="NickName" type_name="gh_string" type_code="10">C</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">true</item>
@@ -582,7 +582,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_input" index="5">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Enable preview and texture generation</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">30ea418e-3a1f-4896-bfd5-42932daada12</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">870a10dc-e0e9-4896-8e48-32ee03e80a7a</item>
                         <item name="Name" type_name="gh_string" type_code="10">Show</item>
                         <item name="NickName" type_name="gh_string" type_code="10">S</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">false</item>
@@ -625,7 +625,7 @@ change geometry or specify a manufactured layup.</item>
                       <items count="7">
                         <item name="Access" type_name="gh_int32" type_code="3">1</item>
                         <item name="Description" type_name="gh_string" type_code="10">UV-mapped meshes; Woodie supplies viewport textures</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">9abb8d1b-4c92-4dc1-92df-97ca944a1c97</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">fd0cd167-c6df-48fb-9ac1-513d9bf5be1e</item>
                         <item name="Name" type_name="gh_string" type_code="10">Meshes</item>
                         <item name="NickName" type_name="gh_string" type_code="10">M</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">false</item>
@@ -648,7 +648,7 @@ change geometry or specify a manufactured layup.</item>
                       <items count="7">
                         <item name="Access" type_name="gh_int32" type_code="3">1</item>
                         <item name="Description" type_name="gh_string" type_code="10">Timber product per mesh</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">401ba047-d844-4194-a611-28dd6d0afba3</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">84b633df-2ebf-45a7-9bb1-854009e8ac26</item>
                         <item name="Name" type_name="gh_string" type_code="10">Products</item>
                         <item name="NickName" type_name="gh_string" type_code="10">P</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">false</item>
@@ -670,7 +670,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_output" index="2">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Full geometry bounds in the fibre-aligned frame</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">ae41193a-3840-4177-8b55-802e7356d4b1</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">63d74a5a-37ed-4cde-858b-48b0c7036d72</item>
                         <item name="Name" type_name="gh_string" type_code="10">Aligned Box</item>
                         <item name="NickName" type_name="gh_string" type_code="10">B</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">false</item>
@@ -692,7 +692,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_output" index="3">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Fibre-aligned frame anchored at box minimum</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">05b14338-0141-40dc-974f-e90b60fbc1f9</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">bb1b1ec0-0338-4e91-9eec-a01e4b450da9</item>
                         <item name="Name" type_name="gh_string" type_code="10">Frame</item>
                         <item name="NickName" type_name="gh_string" type_code="10">F</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">false</item>
@@ -725,7 +725,7 @@ change geometry or specify a manufactured layup.</item>
                   <items count="7">
                     <item name="Description" type_name="gh_string" type_code="10">Contains a collection of generic geometry</item>
                     <item name="Hidden" type_name="gh_bool" type_code="1">true</item>
-                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a8303222-2f8d-4229-bf67-01d51f3b5749</item>
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">7fe526f1-bb16-4c0a-a536-906c37d49d0e</item>
                     <item name="Name" type_name="gh_string" type_code="10">Upward-bowed board (mm)</item>
                     <item name="NickName" type_name="gh_string" type_code="10">Bowed</item>
                     <item name="Optional" type_name="gh_bool" type_code="1">false</item>
@@ -785,7 +785,7 @@ change geometry or specify a manufactured layup.</item>
                 <chunk name="Container">
                   <items count="4">
                     <item name="Description" type_name="gh_string" type_code="10">Preview Rhino geometry as straight or bent timber. Appearance inspired by Larsson et al. (2022), Procedural Texturing of Solid Wood with Knots. ACM Transactions on Graphics 41(4), Article 45 (SIGGRAPH 2022). https://doi.org/10.1145/3528223.3530081. Cut-aware procedural detail informed by Larsson et al. (2024), https://doi.org/10.1111/cgf.15074, and Mokume (2025), https://doi.org/10.1145/3730874; independent adaptation.</item>
-                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">6edb1c41-63d9-4082-bfc9-0c5791ef6a42</item>
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">fdad4631-ac43-4d34-a43c-9e02fe5cd629</item>
                     <item name="Name" type_name="gh_string" type_code="10">Timber Preview</item>
                     <item name="NickName" type_name="gh_string" type_code="10">Bowed timber</item>
                   </items>
@@ -807,11 +807,11 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_input" index="0">
                       <items count="7">
                         <item name="Description" type_name="gh_string" type_code="10">Mesh, Brep, Surface or Extrusion; input geometry is unchanged</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">14759b30-f1a2-40ce-8f63-0d666da7d3e0</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">312f4a16-9fa3-43c2-ab1e-4fd66d29a675</item>
                         <item name="Name" type_name="gh_string" type_code="10">Geometry</item>
                         <item name="NickName" type_name="gh_string" type_code="10">G</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">false</item>
-                        <item name="Source" index="0" type_name="gh_guid" type_code="9">a8303222-2f8d-4229-bf67-01d51f3b5749</item>
+                        <item name="Source" index="0" type_name="gh_guid" type_code="9">7fe526f1-bb16-4c0a-a536-906c37d49d0e</item>
                         <item name="SourceCount" type_name="gh_int32" type_code="3">1</item>
                       </items>
                       <chunks count="1">
@@ -830,11 +830,11 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_input" index="1">
                       <items count="7">
                         <item name="Description" type_name="gh_string" type_code="10">Optional timber settings; default CLT</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">5e82ce85-1cff-497e-b0ae-cd30ba6463cf</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">546edbdb-574a-4693-8826-dc45ac614ad6</item>
                         <item name="Name" type_name="gh_string" type_code="10">Settings</item>
                         <item name="NickName" type_name="gh_string" type_code="10">TDS</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">true</item>
-                        <item name="Source" index="0" type_name="gh_guid" type_code="9">7ff4e64f-d0a9-45e8-99fb-a3e0ecd70392</item>
+                        <item name="Source" index="0" type_name="gh_guid" type_code="9">a899e4d1-939e-4064-b6cd-a86ee35fc18d</item>
                         <item name="SourceCount" type_name="gh_int32" type_code="3">1</item>
                       </items>
                       <chunks count="1">
@@ -853,7 +853,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_input" index="2">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Fibre direction projected into the inferred or supplied base plane</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">c32d5563-5e08-4c58-9f6a-1bd0f7928ac3</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">43692a06-432c-484f-b2d6-c0cf8c6669a0</item>
                         <item name="Name" type_name="gh_string" type_code="10">Fibre</item>
                         <item name="NickName" type_name="gh_string" type_code="10">F</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">true</item>
@@ -875,7 +875,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_input" index="3">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Optional base plane: X is fibre, Z is thickness</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">a659fb15-8e06-48bf-812b-205628dc4bfd</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">030b25c9-27a1-48c5-a1e8-b3fdc16c20c9</item>
                         <item name="Name" type_name="gh_string" type_code="10">Base Plane</item>
                         <item name="NickName" type_name="gh_string" type_code="10">P</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">true</item>
@@ -927,11 +927,11 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_input" index="4">
                       <items count="7">
                         <item name="Description" type_name="gh_string" type_code="10">Optional smooth open centreline for bent timber; curve direction sets grain X</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">7773b612-fd75-4dfa-b54a-60c681d7c856</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">ec7e9100-d004-4968-a0d5-1847db60327a</item>
                         <item name="Name" type_name="gh_string" type_code="10">Guide Curve</item>
                         <item name="NickName" type_name="gh_string" type_code="10">C</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">true</item>
-                        <item name="Source" index="0" type_name="gh_guid" type_code="9">1a46f288-bbba-45d8-a092-ff8802165d05</item>
+                        <item name="Source" index="0" type_name="gh_guid" type_code="9">d00af108-91ac-4b23-a0be-30819e7f1ce7</item>
                         <item name="SourceCount" type_name="gh_int32" type_code="3">1</item>
                       </items>
                       <chunks count="1">
@@ -950,7 +950,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_input" index="5">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Enable preview and texture generation</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">acab54d5-dd89-45ae-8ac2-f7fc79f99e5c</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">1ba15c7f-a348-4672-a9ac-9dd13db1fdab</item>
                         <item name="Name" type_name="gh_string" type_code="10">Show</item>
                         <item name="NickName" type_name="gh_string" type_code="10">S</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">false</item>
@@ -993,7 +993,7 @@ change geometry or specify a manufactured layup.</item>
                       <items count="7">
                         <item name="Access" type_name="gh_int32" type_code="3">1</item>
                         <item name="Description" type_name="gh_string" type_code="10">UV-mapped meshes; Woodie supplies viewport textures</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">8a88f030-cecf-467f-a203-e52d86bab9e2</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">cb76cf56-e574-484b-8982-d53e29cec95e</item>
                         <item name="Name" type_name="gh_string" type_code="10">Meshes</item>
                         <item name="NickName" type_name="gh_string" type_code="10">M</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">false</item>
@@ -1016,7 +1016,7 @@ change geometry or specify a manufactured layup.</item>
                       <items count="7">
                         <item name="Access" type_name="gh_int32" type_code="3">1</item>
                         <item name="Description" type_name="gh_string" type_code="10">Timber product per mesh</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">fe0df6a4-3ab5-4657-8b0b-9f498a449288</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">cf753b16-85df-4033-b9b1-c84efb4025b1</item>
                         <item name="Name" type_name="gh_string" type_code="10">Products</item>
                         <item name="NickName" type_name="gh_string" type_code="10">P</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">false</item>
@@ -1038,7 +1038,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_output" index="2">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Full geometry bounds in the fibre-aligned frame</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">93d70e42-4c82-4fde-bc3f-ecaf2e9358d1</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">ef609c9d-d5ef-4908-bf7e-51c3978839dd</item>
                         <item name="Name" type_name="gh_string" type_code="10">Aligned Box</item>
                         <item name="NickName" type_name="gh_string" type_code="10">B</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">false</item>
@@ -1060,7 +1060,7 @@ change geometry or specify a manufactured layup.</item>
                     <chunk name="param_output" index="3">
                       <items count="6">
                         <item name="Description" type_name="gh_string" type_code="10">Fibre-aligned frame anchored at box minimum</item>
-                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">4c159108-6099-46fb-bd05-a45a85b2a8a4</item>
+                        <item name="InstanceGuid" type_name="gh_guid" type_code="9">01a677ce-8467-4049-ae0b-cd6d21369050</item>
                         <item name="Name" type_name="gh_string" type_code="10">Frame</item>
                         <item name="NickName" type_name="gh_string" type_code="10">F</item>
                         <item name="Optional" type_name="gh_bool" type_code="1">false</item>
@@ -1093,7 +1093,7 @@ change geometry or specify a manufactured layup.</item>
                   <items count="7">
                     <item name="Description" type_name="gh_string" type_code="10">Contains a collection of generic curves</item>
                     <item name="Hidden" type_name="gh_bool" type_code="1">true</item>
-                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">1a46f288-bbba-45d8-a092-ff8802165d05</item>
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">d00af108-91ac-4b23-a0be-30819e7f1ce7</item>
                     <item name="Name" type_name="gh_string" type_code="10">Longitudinal bend guide</item>
                     <item name="NickName" type_name="gh_string" type_code="10">Guide</item>
                     <item name="Optional" type_name="gh_bool" type_code="1">false</item>

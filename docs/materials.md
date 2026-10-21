@@ -25,7 +25,7 @@ The procedural grain and knot appearance is inspired by Maria Larsson et al., [P
 
 ## Appearance and overrides
 
-Natural retains the original softwood-oriented visual defaults. Clean/Pale sets earlywood colours (223,213,181) and (234,224,198), latewood (194,181,151), knot colour (130,110,80), and density 0.25 knots/metre. It does not change layer construction or lamella width. Explicit inputs override either look. Resolution is always measured in mm/pixel regardless of Rhino document units.
+Natural uses softwood-oriented colours. Both looks use reduced board tint and warm shadow amplification for a more uniform appearance. Clean/Pale sets earlywood colours (223,213,181) and (234,224,198), latewood (194,181,151), knot colour (130,110,80), and density 0.25 knots/metre. It does not change layer construction or lamella width. Explicit inputs override either look. Resolution is always measured in mm/pixel regardless of Rhino document units.
 
 See [validation](validation.md) for the current pass/fail report. Numerical tests and actual viewport inspection are recorded separately; Mac acceptance remains pending.
 

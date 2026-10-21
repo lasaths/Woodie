@@ -1,6 +1,6 @@
 # Cut-aware procedural appearance
 
-Woodie retains its calibrated C# volumetric grain model and pale palettes. This release adds cut-aware colour/detail and small seeded changes to earlywood/latewood transition widths. It is an independent procedural adaptation informed by [Larsson et al. (2024)](https://doi.org/10.1111/cgf.15074) and [Mokume (2025)](https://doi.org/10.1145/3730874), not a reproduction of their inference pipelines or a fitted species model.
+Woodie uses a C# volumetric grain model and softwood-oriented palettes. The initial 0.1.0 release reduces board-to-board tint and warm shadow amplification in both looks following visual review. This release adds cut-aware colour/detail and small seeded changes to earlywood/latewood transition widths. It is an independent procedural adaptation informed by [Larsson et al. (2024)](https://doi.org/10.1111/cgf.15074) and [Mokume (2025)](https://doi.org/10.1145/3730874), not a reproduction of their inference pipelines or a fitted species model.
 
 ## Material sampling
 
@@ -8,7 +8,7 @@ Each atlas triangle supplies the cross product of its edges in mapped material c
 
 Growth/ring sampling is independent of cut orientation. Colour synthesis uses that same phase, blending longitudinal and end-grain contrast, darkening and colour adjustments. A separate integer hash of each existing segment seed varies transition widths without consuming the board/knot random sequence. Longitudinal fine fibres blend into volumetric cross-section stipple as the cut approaches perpendicular. Pith position, ring spacing, knot placement, veneer peeling, glue and layups retain their existing construction.
 
-The six-coordinate/normal-component `TimberPanel.Col(x, y, z, nx, ny, nz)` overload accepts non-unit normals. Zero or non-finite normals fall back to the original position-based orientation choice. The three-coordinate overload retains that choice while sharing the improved appearance. Grasshopper settings and serialization are unchanged. The current cache namespace is `woodie-6`, which invalidates the exterior glue-shading defect fixed in 0.1.0. The initial cut-aware appearance used `woodie-5`.
+The six-coordinate/normal-component `TimberPanel.Col(x, y, z, nx, ny, nz)` overload accepts non-unit normals. Zero or non-finite normals fall back to the original position-based orientation choice. The three-coordinate overload retains that choice while sharing the improved appearance. Grasshopper settings and serialization are unchanged. The current cache namespace is `woodie-7`, which invalidates earlier colour textures; `woodie-6` fixed the exterior glue-shading defect. The initial cut-aware appearance used `woodie-5`.
 
 ## Visual references and provenance
 
@@ -27,7 +27,7 @@ The source dataset is [Mokume on Zenodo](https://zenodo.org/records/15588748); [
 
 Before modification, fixed-seed sections were captured for all eight products in Natural and Clean/Pale. Each swatch contains longitudinal, interior perpendicular and 45-degree cuts, with identical material coordinates and unlit colour sampling before/after. In the Natural and Clean/Pale comparison sheets, baseline is on the left and the upgrade on the right. Rows are SolidTimber, KVH, GL, CLT, ThreeS, Plywood, ParallelLVL and KertoQ. Baseline source snapshots, images and reference provenance are under `artifacts/checks/appearance-upgrade/`.
 
-The checked-in longitudinal fixture covers eight products × two looks × seeds 0, 17 and 41. Knots and glue/joint darkening are disabled for this colour comparison. RGB medians must stay within 5 levels and tenth/ninetieth percentiles within 8 of baseline. Observed maximum drift is **1 level** for both medians and tails. The Release GHA build succeeded with zero warnings/errors. Native Rhino integration finished with **23 passed, 0 failed**; the separate all-product gallery passed **88 cases** (eight products × eleven geometry/mapping fixtures). Native checks required access to installed Rhino licence services outside the sandbox.
+The checked-in longitudinal fixture covers eight products × two looks × seeds 0, 17 and 41. Knots and glue/joint darkening are disabled for this colour comparison. RGB medians must stay within 5 levels and tenth/ninetieth percentiles within 8 of the reviewed uniform-colour baseline. The sampled p90–p10 range must also stay at or below 32 levels in each channel, preventing the previous excessive colour contrast from returning. Across the reviewed 48 combinations, the maximum ranges are 14 (red), 25 (green) and 28 (blue). For ThreeS/Natural at seed 17, the blue range changed from 67 to 18 levels. Grain, knots, seeded placement, layups, glue and joint construction are unchanged. Original appearance fixtures remain available in Git history; the uniform-colour fixtures intentionally supersede them.
 
 Independent orientation tests cover winding, normal magnitude, fallback, interior/oblique cuts, cross layers, veneer and shared material points; atlas checks cover full triangles and padded borders on multiple cut planes.
 
