@@ -20,8 +20,8 @@ Raw local outputs belong under ignored `artifacts/`, rather than in the public s
 | Dependency advisory query | PASS | NuGet reported no known vulnerable packages for the plugin and its transitive dependencies at audit time; Rhino supplies runtime SDK assemblies |
 | Yak CLI and archive inspection | PASS | Rhino 8 / any tag, matching version/GHA, one example, credits and licences; no host binaries or development outputs |
 | Checksums | PASS | SHA-256 file generated for the Yak and source ZIP |
-| GitHub hosted workflow | PENDING | Previous Windows/Linux run passed; the uniform-colour commit requires a fresh hosted run |
-| Fresh live uniform-colour viewport acceptance | NOT RUN | Earlier installed 0.1.0 passed the exterior-glue viewport check; the final calmer palette still requires installation and Cassis acceptance |
+| GitHub hosted workflow | PASS | [Uniform-colour Windows/Linux build and public-content checks](https://github.com/lasaths/Woodie/actions/runs/39652836057); Windows managed checks passed |
+| Fresh live uniform-colour viewport acceptance | PASS | Cassis verified the installed GHA hash and clean, uniform ThreeS/Natural display on flat/bowed boards and the captured affected panel; face grain and edge layers remain visible |
 | Mac native load/display/UI | NOT RUN | Native acceptance remains pending |
 
 Release GHA SHA-256:
@@ -32,7 +32,7 @@ Release GHA SHA-256:
 
 Independent source validation is recorded in the table above. Binary identity across checkouts is not asserted; compiler/debug metadata can differ. Archive checksums are distributed beside the artifacts, rather than embedded in this report.
 
-An earlier 0.1.0 build was uploaded only to the Yak test server. That immutable test upload is not the corrected release candidate. The corrected build was uploaded under the temporary test-server name `woodie-releasecheck-20261021` at version `0.1.0`. Its downloaded archive matched the upload SHA-256, and every non-manifest entry matched the canonical candidate. This retains `woodie` / `0.1.0` for production. Fresh installed Windows viewport acceptance passed afterward for the exterior-glue build. The later uniform-colour build has passed 28 native checks, but requires a new install, viewport check and test-server round trip before publication. Validation does not restart an interactive Rhino session. Raw build/native outputs, former examples and development screenshots remain local under ignored `artifacts/`.
+An earlier 0.1.0 build was uploaded only to the Yak test server. That immutable test upload is not the corrected release candidate. The corrected build was uploaded under the temporary test-server name `woodie-releasecheck-20261021` at version `0.1.0`. Its downloaded archive matched the upload SHA-256, and every non-manifest entry matched the canonical candidate. This retains `woodie` / `0.1.0` for production. Fresh installed Windows viewport acceptance passed afterward for the exterior-glue build. The later uniform-colour build passed 28 native checks, independent source validation and fresh installed viewport acceptance. Its final release payload must also pass a test-server upload/download before production publication. Validation does not restart an interactive Rhino session. Raw build/native outputs, former examples and development screenshots remain local under ignored `artifacts/`.
 
 ## Uniform-colour appearance
 
