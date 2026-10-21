@@ -16,7 +16,7 @@ public class TimberPalette {
       case TimberProduct.CLT:                                                       // offset 0 (reference); calmer board-to-board tint (photo spread), warm gain keeps mean b* ~12
         c.TintSpread = 0.02; c.DarkTail = 0.005; c.TG = 1.0; c.TB = 1.05; c.GG = 0.99; c.GB = 0.94; break;
       case TimberProduct.ThreeS:                                                         // colour: 0 (measured already ~+4 lighter: graded face has fewer dark features); structure: butt-jointed core, light melamine glue
-        c.TintSpread = 0.035; c.GlueW = 0.3; break;
+        c.TintSpread = 0.035; c.GlueW = 0.3; c.Glue = new double[] { 215, 205, 185 }; break;
       case TimberProduct.GL:                                                             // colour: 0; lower board variation (sorted visible grade); light glue (~3 % dip)
         c.TintSpread = 0.025; c.DarkTail = 0.01; c.RS = 2.8; c.KsMin = 0.3; c.KdK = 0.5; c.NoiseK = 0.3;
         c.GlueW = 0.2; c.GlueK = 0.15; c.JointK = 0.18; break;

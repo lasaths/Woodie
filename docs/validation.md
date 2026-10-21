@@ -9,38 +9,42 @@ Raw local outputs belong under ignored `artifacts/`, rather than in the public s
 | Release gate | Result | Scope |
 | --- | --- | --- |
 | Release GHA and checks-runner builds | PASS | Zero warnings and errors on this Windows host |
-| Managed checks | PASS | 9 checks, zero failures |
+| Managed checks | PASS | 10 checks, zero failures |
 | Full isolated Rhino suite | PASS | 28 checks, zero failures; includes 88 product/geometry cases |
 | Focused material UI check | PASS | Dropdowns, precedence, undo, collapse, compatibility and archives |
 | Shipped example | PASS | Reopened from disk and solved before regeneration; valid embedded geometry, guide, meshes and UVs |
 | Source ZIP independent build | PASS | 0.1.0 source archive extracted and both projects built independently |
-| Extracted source native suite | PASS | Uniform-colour source archive independently built; 26 checks, zero failures |
+| Extracted source native suite | PASS | Light-seam source archive independently built; 27 checks, zero failures |
 | Public-source scan | PASS | One definition; no detected private paths, common credential patterns, internal project names or broken local Markdown links |
 | Binary path scan | PASS | No detected private user-directory paths in ASCII or UTF-16 strings in the release GHA |
 | Dependency advisory query | PASS | NuGet reported no known vulnerable packages for the plugin and its transitive dependencies at audit time; Rhino supplies runtime SDK assemblies |
 | Yak CLI and archive inspection | PASS | Rhino 8 / any tag, matching version/GHA, one example, credits and licences; no host binaries or development outputs |
 | Checksums | PASS | SHA-256 file generated for the Yak and source ZIP |
-| GitHub hosted workflow | PASS | [Uniform-colour Windows/Linux build and public-content checks](https://github.com/lasaths/Woodie/actions/runs/39652836057); Windows managed checks passed |
-| Fresh live uniform-colour viewport acceptance | PASS | Cassis verified the installed GHA hash and clean, uniform ThreeS/Natural display on flat/bowed boards and the captured affected panel; face grain and edge layers remain visible |
+| GitHub hosted workflow | PENDING | Previous uniform-colour Windows/Linux checks passed; rerun for the subsequent light-seam correction |
+| Fresh live final viewport acceptance | PENDING | Earlier uniform-colour build passed broad-polygon checks, but the user identified dark seam streaks in both example boards. A dedicated regression now passes. Cassis confirmed the corrected colour on both boards through an explicit glue-colour override; default-build installation acceptance remains pending |
 | Mac native load/display/UI | NOT RUN | Native acceptance remains pending |
 
 Release GHA SHA-256:
 
 ```text
-8c4f699683daeb699bf1c4d9b40f9b6c7258ea6c91e33ca89efb35bc0e4bd40c
+642787455fe53092c1ed646e9d32ce40f69eed3442ecf2639835f46adc681a71
 ```
 
 Independent source validation is recorded in the table above. Binary identity across checkouts is not asserted; compiler/debug metadata can differ. Archive checksums are distributed beside the artifacts, rather than embedded in this report.
 
-An earlier 0.1.0 build was uploaded only to the Yak test server. That immutable test upload is not the corrected release candidate. The corrected build was uploaded under the temporary test-server name `woodie-releasecheck-20261021` at version `0.1.0`. Its downloaded archive matched the upload SHA-256, and every non-manifest entry matched the canonical candidate. This retains `woodie` / `0.1.0` for production. Fresh installed Windows viewport acceptance passed afterward for the exterior-glue build. The later uniform-colour build passed 28 native checks, independent source validation and fresh installed viewport acceptance. Its final release payload must also pass a test-server upload/download before production publication. Validation does not restart an interactive Rhino session. Raw build/native outputs, former examples and development screenshots remain local under ignored `artifacts/`.
+An earlier 0.1.0 build was uploaded only to the Yak test server. That immutable test upload is not the corrected release candidate. The corrected build was uploaded under the temporary test-server name `woodie-releasecheck-20261021` at version `0.1.0`. Its downloaded archive matched the upload SHA-256, and every non-manifest entry matched the canonical candidate. This retains `woodie` / `0.1.0` for production. Fresh installed Windows viewport acceptance passed afterward for the exterior-glue build. The later uniform-colour build passed 28 native checks, independent source validation and fresh installed viewport acceptance. The user then reported residual seam streaks, so production remains held pending the light-seam build’s installation, live acceptance and final test-server round trip. Validation does not restart an interactive Rhino session. Raw build/native outputs, former examples and development screenshots remain local under ignored `artifacts/`.
 
 ## Uniform-colour appearance
 
 Both looks now reduce board tint, the dark tint tail and warm shadow amplification. Reviewed face/end/oblique swatches cover all eight products. The knot-free face p90–p10 range across 48 product/look/seed combinations is at most 14/25/28 RGB levels; the ThreeS/Natural seed-17 blue range fell from 67 to 18. Updated fixtures and a 32-level per-channel contrast limit cover this intentional change. Layups, grain, knots and joints are unchanged.
 
+## Light Three-layer seams
+
+The user identified residual dark longitudinal streaks on both example boards after the broad-polygon and colour fixes. A sampler-only reproduction found 7,334 dark samples, concentrated at the 120 mm board boundaries. Disabling glue shading removed 7,305 of these samples; disabling knots or segment joints did not remove the boundary streaks. The ThreeS preset described light melamine glue but used black. Its default adhesive colour is now light cream (215/205/185), retaining the seam construction without dark tracks. The same probe has 29 dark samples from small knots; disabling knots leaves zero. Veneer adhesive colours are unchanged, and explicit glue overrides remain supported. The new seam regression failed before this fix and passes for both looks and three seeds afterward.
+
 ## Exterior glue regression
 
-A nearly planar face could switch from RGB 213/188/168 to 170/150/134 after a 0.00001 mm inward displacement. Glue shading incorrectly included the outside layer boundary; float mesh precision therefore drew large polygon patches. Version 0.1.0 measures only internal layer and board joints and uses cache namespace `woodie-7`. The minimal probe failed before the change and passed after it.
+A nearly planar face could switch from RGB 213/188/168 to 170/150/134 after a 0.00001 mm inward displacement. Glue shading incorrectly included the outside layer boundary; float mesh precision therefore drew large polygon patches. Version 0.1.0 measures only internal layer and board joints and uses cache namespace `woodie-8`. The minimal probe failed before the change and passed after it.
 
 Permanent checks cover all eight products, both looks, two seeds, exterior depth offsets, retained internal bond lines and a rotated metre-scale atlas with four-micrometre vertex perturbations. The native atlas check exercises 96 broad-face triangles, including 85 samples below the nominal outside plane. Captured user geometry and diagnostic scripts remain private local artifacts and are not included in the repository or packages.
 

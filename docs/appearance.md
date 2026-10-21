@@ -8,7 +8,7 @@ Each atlas triangle supplies the cross product of its edges in mapped material c
 
 Growth/ring sampling is independent of cut orientation. Colour synthesis uses that same phase, blending longitudinal and end-grain contrast, darkening and colour adjustments. A separate integer hash of each existing segment seed varies transition widths without consuming the board/knot random sequence. Longitudinal fine fibres blend into volumetric cross-section stipple as the cut approaches perpendicular. Pith position, ring spacing, knot placement, veneer peeling, glue and layups retain their existing construction.
 
-The six-coordinate/normal-component `TimberPanel.Col(x, y, z, nx, ny, nz)` overload accepts non-unit normals. Zero or non-finite normals fall back to the original position-based orientation choice. The three-coordinate overload retains that choice while sharing the improved appearance. Grasshopper settings and serialization are unchanged. The current cache namespace is `woodie-7`, which invalidates earlier colour textures; `woodie-6` fixed the exterior glue-shading defect. The initial cut-aware appearance used `woodie-5`.
+The six-coordinate/normal-component `TimberPanel.Col(x, y, z, nx, ny, nz)` overload accepts non-unit normals. Zero or non-finite normals fall back to the original position-based orientation choice. The three-coordinate overload retains that choice while sharing the improved appearance. Grasshopper settings and serialization are unchanged. The current cache namespace is `woodie-8`, which invalidates earlier colour and dark ThreeS seam textures; `woodie-6` fixed the exterior glue-shading defect. The initial cut-aware appearance used `woodie-5`.
 
 ## Visual references and provenance
 
@@ -48,3 +48,5 @@ dotnet run --no-build --project tests/Woodie.Checks -c Release -- --capture-appe
 Build the checks runner before the GHA: their project-reference build uses a DLL target and can remove the GHA output. Then use `--no-build` for native integration.
 
 The baseline fixture and appearance hashes were captured/reviewed separately; ordinary checks never regenerate them. The complete neural/photo-fitting workflows, BRDF/lighting changes, and a structural wood model are outside this implementation. Mac native validation remains separate from the Windows checks.
+
+Three-layer panel seams use a light cream adhesive colour instead of black, preventing long dark tracks and aliased dotted seams on the pale face. This changes only the ThreeS default; veneer adhesive palettes and explicit user colours are retained.

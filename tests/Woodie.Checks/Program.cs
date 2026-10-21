@@ -39,6 +39,7 @@ internal static class Program
         Check("Cut orientation, cross layers, veneer and shared material samples", AppearanceChecks.Orientation);
         Check("Pale longitudinal colour retained", AppearanceChecks.PalePalette);
         Check("Exterior glue continuity and retained internal joints", ExteriorGlueChecks.Sampling);
+        Check("Three-layer face seams remain subtle", ExteriorGlueChecks.LightBoardSeams);
         Check("Refinement suppresses stale queued callbacks", StaleCallback);
         Check("Refinement cancellation and failures", Cancellation);
         if (args.Contains("--rhino"))

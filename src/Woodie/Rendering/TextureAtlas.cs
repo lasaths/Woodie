@@ -28,7 +28,7 @@ internal sealed class TriangleTile
 
 public static class TextureAtlas
 {
-    public const string EngineVersion = "woodie-7";
+    public const string EngineVersion = "woodie-8";
     internal const int Side = 2048, Gutter = 3, MaxPages = 16;
     public static string CacheDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Woodie", "Textures", EngineVersion);
 

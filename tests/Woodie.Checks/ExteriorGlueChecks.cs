@@ -35,7 +35,8 @@ internal static class ExteriorGlueChecks
             Assert(Difference(outer, inset) <= 12, $"False perimeter glue: {product}/{look}");
         }
 
-        var palette = TimberPalette.For(TimberProduct.ThreeS);
+        // Use an explicit dark glue override to verify actual internal boundaries remain.
+        var palette = TimberPalette.For(TimberProduct.ThreeS); palette.Glue = new double[] { 0, 0, 0 };
         var noGlue = TimberPalette.For(TimberProduct.ThreeS); noGlue.GlueK = 0;
         var joined = new TimberPanel(TimberProduct.ThreeS, 2400, 600, 27, 0, 0, palette);
         var clear = new TimberPanel(TimberProduct.ThreeS, 2400, 600, 27, 0, 0, noGlue);
@@ -43,6 +44,24 @@ internal static class ExteriorGlueChecks
             "Internal layer bond line was removed");
         Assert(Difference(Color.FromArgb(joined.Col(500, 120, 27, 0, 0, 1)), Color.FromArgb(clear.Col(500, 120, 27, 0, 0, 1))) > 20,
             "Internal board joint was removed");
+    }
+
+    public static void LightBoardSeams()
+    {
+        foreach (var look in Enum.GetValues<TimberLook>())
+        foreach (int seed in new[] { 0, 17, 41 })
+        {
+            var settings = new TimberSettings { Product = TimberProduct.ThreeS, Look = look, Seed = seed };
+            var palette = settings.Palette();
+            var control = settings.Palette(); control.GlueK = 0;
+            var panel = new TimberPanel(settings.Product, 1870, 500, 27, seed, 0, palette);
+            var clear = new TimberPanel(settings.Product, 1870, 500, 27, seed, 0, control);
+            foreach (double y in new[] { 120d, 240d, 360d, 480d })
+            for (double x = 50; x < 1870; x += 37)
+                Assert(Difference(Color.FromArgb(panel.Col(x, y, 27, 0, 0, 1)),
+                    Color.FromArgb(clear.Col(x, y, 27, 0, 0, 1))) <= 8,
+                    $"Dark streak on light-glued ThreeS face: {look}, seed {seed}, ({x}, {y})");
+        }
     }
 
     static int Difference(Color first, Color second) => Math.Max(Math.Abs(first.R - second.R),
