@@ -20,7 +20,7 @@ Raw local outputs belong under ignored `artifacts/`, rather than in the public s
 | Dependency advisory query | PASS | NuGet reported no known vulnerable packages for the plugin and its transitive dependencies at audit time; Rhino supplies runtime SDK assemblies |
 | Yak CLI and archive inspection | PASS | Rhino 8 / any tag, matching version/GHA, one example, credits and licences; no host binaries or development outputs |
 | Checksums | PASS | SHA-256 file generated for the Yak and source ZIP |
-| GitHub hosted workflow | NOT RUN | Build-only Windows/Linux workflow prepared; no remote publication or hosted CI run |
+| GitHub hosted workflow | PASS | [Windows/Linux build and public-content checks](https://github.com/lasaths/Woodie/actions/runs/39650417621); Windows managed checks also passed |
 | Fresh live 0.1.0 viewport acceptance | PASS | Cassis confirmed the installed 0.1.0 assembly and clean textured display of the captured affected panel with ThreeS/Natural, correct face plane and physical scale; no broad false glue polygons |
 | Mac native load/display/UI | NOT RUN | Native acceptance remains pending |
 
