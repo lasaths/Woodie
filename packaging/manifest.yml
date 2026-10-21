@@ -1,0 +1,25 @@
+name: woodie
+version: $version
+authors:
+  - Lasath Siriwardena
+description: >
+  Procedural timber preview for native Rhino geometry in Grasshopper.
+  Preview meshes, Breps, surfaces and extrusions as CLT, three-layer panels,
+  glulam, Kerto-Q, KVH, solid timber, plywood or parallel LVL. Includes combined material
+  settings with product and appearance dropdowns, fibre-aligned bounds, bent surface grain,
+  guide-curve bending and adjustable appearance settings.
+  Requires Rhino 8 using modern .NET on Windows or Mac.
+  Mac native verification is pending.
+  Visual presets do not specify manufactured or structural products.
+  Appearance inspired by Larsson et al. (2022), Procedural Texturing of Solid
+  Wood with Knots, ACM Transactions on Graphics 41(4), Article 45 (SIGGRAPH 2022),
+  https://doi.org/10.1145/3528223.3530081.
+url: https://github.com/lasaths/Woodie
+icon: icon.png
+keywords:
+  - timber
+  - wood
+  - clt
+  - grasshopper
+  - preview
+  - guid:8b9e1ab6-d335-4c07-a976-3fe7d685170b

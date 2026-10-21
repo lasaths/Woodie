@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <TargetExt>.gha</TargetExt>
+    <AssemblyName>Woodie</AssemblyName>
+    <RootNamespace>Woodie</RootNamespace>
+    <Version>0.1.0</Version>
+    <Authors>Lasath Siriwardena</Authors>
+    <Description>Standalone timber preview for Rhino geometry in Grasshopper. Appearance inspired by Larsson et al. (2022), Procedural Texturing of Solid Wood with Knots. ACM Transactions on Graphics 41(4), Article 45 (SIGGRAPH 2022). https://doi.org/10.1145/3528223.3530081. Cut-aware procedural detail informed by Larsson et al. (2024), https://doi.org/10.1111/cgf.15074, and Mokume (2025), https://doi.org/10.1145/3730874; independent adaptation.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Deterministic>true</Deterministic>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <PathMap>$(MSBuildProjectDirectory)=/_/Woodie/src/Woodie</PathMap>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <NoWarn>$(NoWarn);NU1701;NETSDK1138;CA1416</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="RhinoCommon" Version="8.0.23304.9001" ExcludeAssets="runtime" />
+    <PackageReference Include="Grasshopper" Version="8.0.23304.9001" ExcludeAssets="runtime" />
+    <!-- GH's icon signatures reference Bitmap; runtime implementation is supplied by Rhino, never used for texture encoding. -->
+    <PackageReference Include="System.Drawing.Common" Version="7.0.0" ExcludeAssets="runtime" />
+    <InternalsVisibleTo Include="Woodie.Checks" />
+    <EmbeddedResource Include="Resources/*.png" />
+  </ItemGroup>
+</Project>

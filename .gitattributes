@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.cs text eol=lf
+*.md text eol=lf
+*.ps1 text eol=lf
+*.yml text eol=lf
+*.ghx text eol=lf
+*.png binary
+*.gha binary
+*.yak binary

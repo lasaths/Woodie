@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <NoWarn>$(NoWarn);NU1701;NETSDK1138;CA1416</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="appearance-golden.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="appearance-longitudinal.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- CoreCLR's standalone app host rejects .gha entries in its trusted platform assembly list. -->
+    <ProjectReference Include="../../src/Woodie/Woodie.csproj" AdditionalProperties="TargetExt=.dll" />
+    <PackageReference Include="RhinoCommon" Version="8.0.23304.9001" />
+    <PackageReference Include="Grasshopper" Version="8.0.23304.9001" />
+    <PackageReference Include="Rhino.Inside" Version="8.0.6-beta" />
+  </ItemGroup>
+</Project>

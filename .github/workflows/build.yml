@@ -1,0 +1,35 @@
+name: Build and checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Build checks runner
+        if: runner.os == 'Windows'
+        run: dotnet build tests/Woodie.Checks -c Release
+      - name: Build Grasshopper plugin
+        run: dotnet build src/Woodie/Woodie.csproj -c Release
+      - name: Managed checks
+        if: runner.os == 'Windows'
+        run: dotnet tests/Woodie.Checks/bin/Release/net8.0-windows/Woodie.Checks.dll
+      - name: Public content checks
+        shell: pwsh
+        run: ./tools/verify-release.ps1
+
+# Licensed native Rhino and Mac viewport checks are performed separately.
+# This workflow does not publish packages or modify repository contents.
