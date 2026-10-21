@@ -30,7 +30,7 @@ Release GHA SHA-256:
 642787455fe53092c1ed646e9d32ce40f69eed3442ecf2639835f46adc681a71
 ```
 
-Independent source validation is recorded in the table above. Binary identity across checkouts is not asserted; compiler/debug metadata can differ. Archive checksums are distributed beside the artifacts, rather than embedded in this report.
+Independent source validation is recorded in the table above. Binary identity across checkouts is not asserted; compiler/debug metadata can differ. The distributed GHA is promoted by its recorded SHA-256 from the exact artifact tested in Rhino; documentation-only packaging does not replace it with a rebuild. A comparison against the final source build found all 358 method bodies/signatures, custom attributes and embedded resources identical, with different module/debug identities. Archive checksums are distributed beside the artifacts, rather than embedded in this report.
 
 Before production publication, the final archive must pass a Yak test-server upload/download with SHA-256 equality and byte comparisons of every entry except the temporary manifest name. Test uploads use unique temporary package names because versions are immutable; production retains `woodie` / `0.1.0`. Validation does not restart an interactive Rhino session. Raw build/native outputs, former examples and development screenshots remain local under ignored `artifacts/`.
 

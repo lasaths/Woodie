@@ -34,3 +34,13 @@ Review the generated archives, checksum file, [changelog](../CHANGELOG.md), [mat
 For GitHub, push the curated repository to the chosen remote and create a release using the version tag and changelog. Attach the Yak, source ZIP and checksums from `artifacts/release/`. Add the confirmed public repository URL to the Yak manifest before publishing it if available.
 
 For Yak, authenticate with the intended account and follow McNeel's explicit push workflow. The scripts do not log in, create repositories, install components, push commits or publish packages.
+
+## Promote a verified binary
+
+When a specific GHA has passed installed viewport checks, package that exact artifact rather than rebuilding it after documentation commits:
+
+```powershell
+pwsh ./tools/package.ps1 -VerifiedGhaPath /path/to/tested/Woodie.gha -ExpectedGhaSha256 <64-character-SHA256>
+```
+
+Both arguments are required together. The hash is checked before staging, and the archived GHA is compared with the selected artifact. Without these arguments the command builds normally. Verify that the tested binary corresponds to the release source before promotion; compiler module/debug metadata may change across builds even when runtime code is identical.
