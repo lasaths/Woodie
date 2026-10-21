@@ -30,18 +30,18 @@ $release = Join-Path $repo 'artifacts/release'
 $stage = Join-Path $repo ('artifacts/staging/' + [Guid]::NewGuid().ToString('N'))
 $yakStage = Join-Path $stage 'yak'
 $sourceStage = Join-Path $stage 'source'
-New-Item -ItemType Directory -Path $release, (Join-Path $yakStage 'net7.0'), $sourceStage -Force | Out-Null
+New-Item -ItemType Directory -Path $release, (Join-Path $yakStage 'net8.0'), $sourceStage -Force | Out-Null
 
 foreach ($name in @('manifest.yml', 'icon.png')) {
     Copy-Item -LiteralPath (Join-Path $repo "packaging/$name") -Destination $yakStage
 }
-$gha = if ($VerifiedGhaPath) { (Resolve-Path -LiteralPath $VerifiedGhaPath).Path } else { Join-Path $repo 'src/Woodie/bin/Release/net7.0/Woodie.gha' }
+$gha = if ($VerifiedGhaPath) { (Resolve-Path -LiteralPath $VerifiedGhaPath).Path } else { Join-Path $repo 'src/Woodie/bin/Release/net8.0/Woodie.gha' }
 if ($VerifiedGhaPath -and (Get-FileHash -LiteralPath $gha -Algorithm SHA256).Hash -ne $ExpectedGhaSha256) {
     throw 'Verified GHA does not match its expected SHA-256.'
 }
 $binary = [IO.File]::ReadAllBytes($gha)
 if ([Text.Encoding]::ASCII.GetString($binary) -match $privatePath -or [Text.Encoding]::Unicode.GetString($binary) -match $privatePath) { throw 'Private machine path embedded in the GHA.' }
-Copy-Item -LiteralPath $gha -Destination (Join-Path $yakStage 'net7.0')
+Copy-Item -LiteralPath $gha -Destination (Join-Path $yakStage 'net8.0')
 foreach ($name in @('README.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'docs', 'examples')) {
     Copy-Item -LiteralPath (Join-Path $repo $name) -Destination $yakStage -Recurse
     Copy-Item -LiteralPath (Join-Path $repo $name) -Destination $sourceStage -Recurse
@@ -68,15 +68,23 @@ try {
     if ($packages.Count -ne 1 -or $packages[0].Name -notmatch '^woodie-.+-rh8(?:_\d+)?-any\.yak$') {
         throw 'Expected exactly one Rhino 8 cross-platform package.'
     }
-    $package = $packages[0]
+    # Runtime compatibility is stricter than the RhinoCommon 8.0 API reference:
+    # Rhino 8.20 supplies .NET 8 by default. Yak encodes this minimum in the filename.
+    $minimumRhino = [string]$project.Project.PropertyGroup.MinimumRhinoVersion
+    if ($minimumRhino -ne '8.20') { throw 'Expected the .NET 8 runtime minimum Rhino 8.20.' }
+    $taggedName = $packages[0].Name -replace '-rh8(?:_\d+)?-any\.yak$', '-rh8_20-any.yak'
+    if ($taggedName -ne $packages[0].Name) {
+        Rename-Item -LiteralPath $packages[0].FullName -NewName $taggedName
+    }
+    $package = Get-Item -LiteralPath (Join-Path $yakStage $taggedName)
     $archive = [IO.Compression.ZipFile]::OpenRead($package.FullName)
     try {
         $names = @($archive.Entries | ForEach-Object { $_.FullName.Replace('\', '/') })
-        foreach ($required in @('manifest.yml', 'icon.png', 'net7.0/Woodie.gha', 'README.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'examples/Timber-preview.ghx')) {
+        foreach ($required in @('manifest.yml', 'icon.png', 'net8.0/Woodie.gha', 'README.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'examples/Timber-preview.ghx')) {
             if ($required -notin $names) { throw "Missing package content: $required" }
         }
         $binaries = @($names | Where-Object { $_ -match '(?i)\.(dll|gha|rhp|exe|pdb)$' })
-        if ($binaries.Count -ne 1 -or $binaries[0] -ne 'net7.0/Woodie.gha') { throw 'Package may contain only the Woodie GHA binary.' }
+        if ($binaries.Count -ne 1 -or $binaries[0] -ne 'net8.0/Woodie.gha') { throw 'Package may contain only the Woodie GHA binary.' }
         if (@($names | Where-Object { $_ -match '(?i)\.ghx?$' }).Count -ne 1) { throw 'Exactly one Grasshopper example is required.' }
         if (@($names | Where-Object { $_ -match '(?i)(^|/)(bin|obj|artifacts|\.git)/|\.(log|tmp|cs|csproj|ps1|mjs)$' }).Count) { throw 'Development files leaked into Yak.' }
         foreach ($credited in @('manifest.yml', 'README.md')) {
@@ -85,7 +93,7 @@ try {
             if (-not $text.Contains('10.1145/3528223.3530081')) { throw "Original research credit missing from $credited" }
             if ($credited -eq 'manifest.yml' -and $text -notmatch ('(?m)^version:\s*' + [regex]::Escape($version) + '\s*$')) { throw 'Yak version does not match source.' }
         }
-        $stream = $archive.GetEntry('net7.0/Woodie.gha').Open()
+        $stream = $archive.GetEntry('net8.0/Woodie.gha').Open()
         try { $sha = [Security.Cryptography.SHA256]::Create(); $packedHash = [Convert]::ToHexString($sha.ComputeHash($stream)); $sha.Dispose() } finally { $stream.Dispose() }
         if ($packedHash -ne (Get-FileHash -LiteralPath $gha -Algorithm SHA256).Hash) { throw 'Packaged GHA differs from the selected release artifact.' }
     } finally { $archive.Dispose() }

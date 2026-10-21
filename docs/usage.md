@@ -44,13 +44,13 @@ Thin surfaces and planar open meshes remain thin. They use virtual appearance de
 | LVL — parallel | ParallelLVL | Continuous longitudinal veneers, nominal 3 mm |
 | Kerto-Q | KertoQ | Representative cross-banded LVL with scarf joints |
 
-**Natural** retains the original palettes and product character, with improved cut-aware grain detail. **Clean/Pale** uses a restrained palette and 0.25 knots/metre; it preserves layup and lamella width. Generic plywood and parallel LVL fit their veneer count to total physical depth. Veneer Thickness overrides the nominal thickness for those two products only. Plywood always has at least three layers and an odd layer count. These are generic visual constructions, not manufacturer-certified specifications. See [material coverage](materials.md) for references and verification.
+**Natural** uses softwood-oriented colours with restrained board tint and cut-aware grain detail. **Clean/Pale** uses a restrained palette and 0.25 knots/metre; it preserves layup and lamella width. Generic plywood and parallel LVL fit their veneer count to total physical depth. Veneer Thickness overrides the nominal thickness for those two products only. Plywood always has at least three layers and an odd layer count. These are generic visual constructions, not manufacturer-certified specifications. See [material coverage](materials.md) for references and verification.
 
 Species, coatings, OSB/MDF and NLT/DLT are outside this release.
 
 Resolution values are in **mm/pixel**, independent of document units. Smaller values add detail. Atlas pages are capped at 2048 pixels per side and 16 pages per object; density is reduced when needed. Each object is limited to 200,000 triangles; there is no maximum physical extent.
 
-The renderer pads unused triangle-tile space with edge colours to prevent filtered texture seams. Curved surfaces use finer angular tessellation for a smoother silhouette. The first display uses quick textures and refines in the background. Input changes, hiding, disabling Show, clearing, and removal invalidate old work. Textures are cached in the user's local application-data directory under `Woodie/Textures/woodie-6`. Cache files can be deleted while Rhino is closed; they are recreated as needed. On meshes, curved coordinates are evaluated at vertices and interpolated across triangles; refine coarse input meshes for smooth bending.
+The renderer pads unused triangle-tile space with edge colours to prevent filtered texture seams. Curved surfaces use finer angular tessellation for a smoother silhouette. The first display uses quick textures and refines in the background. Input changes, hiding, disabling Show, clearing, and removal invalidate old work. Textures are cached in the user's local application-data directory under `Woodie/Textures/woodie-8`. Cache files can be deleted while Rhino is closed; they are recreated as needed. On meshes, curved coordinates are evaluated at vertices and interpolated across triangles; refine coarse input meshes for smooth bending.
 
 
 

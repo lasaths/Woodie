@@ -262,7 +262,7 @@ internal static class RhinoChecks
     static void SolveAndReopen()
     {
         // Register only Woodie with the normal component server so GUID-based archive restore can find it.
-        string gha = Path.GetFullPath(Path.Combine(Output, "../../src/Woodie/bin/Release/net7.0/Woodie.gha"));
+        string gha = Path.GetFullPath(Path.Combine(Output, "../../src/Woodie/bin/Release/net8.0/Woodie.gha"));
         IsolatedHost.LoadWoodie(gha);
         using var doc = new GH_Document();
         GH_Document.EnableSolutions = true;

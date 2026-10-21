@@ -1,5 +1,26 @@
 # Release validation
 
+## 0.1.1 development — .NET 8
+
+Target: Rhino 8.20+ running .NET 8. This candidate is not yet published or installed into the interactive Rhino session.
+
+| Check | Result |
+| --- | --- |
+| Plugin and runner Release builds | PASS; zero warnings/errors |
+| Managed checks | PASS; 10 checks |
+| Full Windows native suite | PASS; 28 checks, including 88 material/geometry cases |
+| Appearance fixtures | PASS; no changes to grain, colours or seams from 0.1.0 |
+| Yak layout and source/content checks | PASS; net8.0 GHA, Rhino 8.20/any distribution, one example |
+| Extracted source build | PASS; both projects built independently and 27 native checks passed |
+| Hosted workflow for this update | Pending |
+| Fresh installed viewport check | Not run; installed 0.1.0 is unchanged |
+| Mac native display and interaction | Not run |
+
+The RhinoCommon/Grasshopper API reference remains the 8.0 SDK. The host runtime requirement is stricter: Rhino 8.20 supplies .NET 8 by default. Packaging marks the distribution rh8_20 to enforce that baseline.
+
+## 0.1.0 published release
+
+
 Target: **0.1.0**, Rhino 8 modern .NET. Windows is the native test platform; Mac native display and interaction remain unverified.
 
 Raw local outputs belong under ignored `artifacts/`, rather than in the public source tree.

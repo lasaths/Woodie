@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 — Unreleased
+
+- Target .NET 8 and require Rhino 8.20+; Yak distributions use the Rhino 8.20 compatibility tag.
+- Recommend installation through Rhino PackageManager.
+- Explain procedural mapping and cite Larsson et al. in the README introduction.
+- Document both components, their inputs, outputs, dropdowns and advanced settings.
+
 ## 0.1.0 — 2026-10-21
 
 Initial release.

@@ -8,7 +8,7 @@ description: >
   glulam, Kerto-Q, KVH, solid timber, plywood or parallel LVL. Includes combined material
   settings with product and appearance dropdowns, fibre-aligned bounds, bent surface grain,
   guide-curve bending and adjustable appearance settings.
-  Requires Rhino 8 using modern .NET on Windows or Mac.
+  Requires Rhino 8.20 or later running .NET 8 on Windows or Mac.
   Mac native verification is pending.
   Visual presets do not specify manufactured or structural products.
   Appearance inspired by Larsson et al. (2022), Procedural Texturing of Solid

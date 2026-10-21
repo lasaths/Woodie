@@ -15,7 +15,7 @@ pwsh ./tools/package.ps1 -YakPath '/Applications/Rhino 8.app/Contents/Resources/
 
 The script builds Release, stages an explicit set of distributable files and invokes `yak build --platform any`. It validates the archive before copying it to `artifacts/release/`. Each invocation uses a fresh staging directory; old packages are not used as input.
 
-The package contains `net7.0/Woodie.gha`, manifest, icon, public documentation, licences and exactly one definition: `examples/Timber-preview.ghx`. Host SDKs, runtime dependencies supplied by Rhino, source, debug symbols, logs, caches and development galleries are excluded.
+The .NET 8 package requires Rhino 8.20+ and uses the `rh8_20-any` distribution tag. The API reference still targets RhinoCommon 8.0; the packaging tool raises the distribution minimum to match the host runtime requirement. The package contains `net8.0/Woodie.gha`, manifest, icon, public documentation, licences and exactly one definition: `examples/Timber-preview.ghx`. Host SDKs, runtime dependencies supplied by Rhino, source, debug symbols, logs, caches and development galleries are excluded.
 
 A separate `woodie-<version>-source.zip` contains the curated GitHub source tree, tests and that same example, without local artifacts or Git metadata. SHA-256 checksums accompany both archives. The version comes from `src/Woodie/Woodie.csproj`; the Yak manifest's `$version` placeholder is resolved by Yak.
 

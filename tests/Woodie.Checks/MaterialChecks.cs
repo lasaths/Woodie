@@ -82,7 +82,7 @@ internal static class MaterialChecks
     static SettingsGoo Result(SettingsComponent c) => c.Params.Output[0].VolatileData.AllData(true).OfType<SettingsGoo>().Single();
     public static void Interface()
     {
-        IsolatedHost.LoadWoodie(Path.GetFullPath(Path.Combine(Output, "../../src/Woodie/bin/Release/net7.0/Woodie.gha")));
+        IsolatedHost.LoadWoodie(Path.GetFullPath(Path.Combine(Output, "../../src/Woodie/bin/Release/net8.0/Woodie.gha")));
         GH_Document.EnableSolutions = true;
         using var doc = new GH_Document { Enabled = true };
         var c = new SettingsComponent(); c.CreateAttributes(); doc.AddObject(c, false);
