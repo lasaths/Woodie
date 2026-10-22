@@ -15,7 +15,7 @@ pwsh ./tools/package.ps1 -YakPath '/Applications/Rhino 8.app/Contents/Resources/
 
 The script builds Release, stages an explicit set of distributable files and invokes `yak build --platform any`. It validates the archive before copying it to `artifacts/release/`. Each invocation uses a fresh staging directory; old packages are not used as input.
 
-The .NET 8 package requires Rhino 8.20+ and uses the `rh8_20-any` distribution tag. The API reference still targets RhinoCommon 8.0; the packaging tool raises the distribution minimum to match the host runtime requirement. The package contains `net8.0/Woodie.gha`, manifest, icon, public documentation, licences and exactly one definition: `examples/Timber-preview.ghx`. Host SDKs, runtime dependencies supplied by Rhino, source, debug symbols, logs, caches and development galleries are excluded.
+The .NET 8 package requires Rhino 8.20+ and uses the `rh8_20-any` distribution tag. The API reference still targets RhinoCommon 8.0; the packaging tool raises the distribution minimum to match the host runtime requirement. The runtime package contains `net8.0/Woodie.gha`, manifest, icon, a short standalone README, licences and exactly one complete gallery definition: `examples/Timber-preview.ghx`. Host SDKs, runtime dependencies supplied by Rhino, source, debug symbols, logs, caches and development galleries are excluded.
 
 A separate `woodie-<version>-source.zip` contains the curated GitHub source tree, tests and that same example, without local artifacts or Git metadata. SHA-256 checksums accompany both archives. The version comes from `src/Woodie/Woodie.csproj`; the Yak manifest's `$version` placeholder is resolved by Yak.
 
@@ -44,3 +44,5 @@ pwsh ./tools/package.ps1 -VerifiedGhaPath /path/to/tested/Woodie.gha -ExpectedGh
 ```
 
 Both arguments are required together. The hash is checked before staging, and the archived GHA is compared with the selected artifact. Without these arguments the command builds normally. Verify that the tested binary corresponds to the release source before promotion; compiler module/debug metadata may change across builds even when runtime code is identical.
+
+From 0.1.2, the installed Yak excludes the full docs folder, changelog and contributor guide. Full documentation and screenshots remain in GitHub and the source ZIP. The runtime README links to them online; it does not contain broken local links to excluded files. Packaging rejects developer-documentation entries in the Yak.

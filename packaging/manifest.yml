@@ -7,7 +7,8 @@ description: >
   Preview meshes, Breps, surfaces and extrusions as CLT, three-layer panels,
   glulam, Kerto-Q, KVH, solid timber, plywood or parallel LVL. Includes combined material
   settings with product and appearance dropdowns, fibre-aligned bounds, bent surface grain,
-  guide-curve bending and adjustable appearance settings.
+  guide-curve bending, explicit source units and adjustable appearance settings.
+  Includes a unit-aware gallery covering all eight products and eleven geometry types.
   Requires Rhino 8.20 or later running .NET 8 on Windows or Mac.
   Mac native verification is pending.
   Visual presets do not specify manufactured or structural products.

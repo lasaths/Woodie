@@ -19,13 +19,17 @@ The grain and knot model is inspired by **Maria Larsson et al., [*Procedural Tex
 
 **Use Rhino PackageManager for normal installation and updates.** No GitHub checkout, SDK or command-line installation is needed. Remove a previously copied Woodie.gha from Grasshopper Libraries before installing through PackageManager to avoid duplicate components.
 
-**Woodie 0.1.1** targets **.NET 8** and requires **Rhino 8.20 or later** on Windows or Mac. Rhino 8.20 supplies .NET 8 by default; see [McNeel's runtime guidance](https://developer.rhino3d.com/en/guides/rhinocommon/moving-to-dotnet-core/). On Windows, use modern .NET rather than .NET Framework mode. Rhino 7 is unsupported. Native Mac display and interaction remain unverified; see [validation](docs/validation.md).
+**0.1.2** targets **.NET 8** and requires **Rhino 8.20 or later** on Windows or Mac. Rhino 8.20 supplies .NET 8 by default; see [McNeel's runtime guidance](https://developer.rhino3d.com/en/guides/rhinocommon/moving-to-dotnet-core/). On Windows, use modern .NET rather than .NET Framework mode. Rhino 7 is unsupported. Native Mac display and interaction remain unverified; see [validation](docs/validation.md).
 
 ## Start with the example
 
-Download [Timber-preview.ghx](examples/Timber-preview.ghx) and open it in a **millimetre Rhino document**. It contains embedded geometry, one Timber Material component, and flat/upward-bowed previews with equal centreline lengths. No external geometry or scripts are needed. The saved **Three-layer panel / Clean/Pale** settings demonstrate a 27 mm section.
+The expanded [Timber-preview.ghx](examples/Timber-preview.ghx) on this branch requires **Woodie 0.1.2+** and contains **88 examples: all eight products × eleven geometry cases**. It embeds all geometry and declares **Geometry Units = Millimetres**, so the same definition works in millimetre, metre and inch Rhino documents.
 
-Connect geometry to **Timber Preview → Geometry**, and **Timber Material → Settings** to the preview's **Settings** input. Change the dropdowns to explore products. Supply Fibre or Base Plane for explicit orientation and Guide Curve for a controlled bend.
+Each canvas group contains one product with its appropriate representative thickness. The viewport initially shows eight matched flat/bowed pairs; the remaining surface, extrusion, mesh, trimmed and guided cases are included with preview hidden. Enable those preview components or a product group's preview to explore them. See the [gallery guide](examples/README.md).
+
+For older **0.1.1** installations, use its [matching two-board example](https://raw.githubusercontent.com/lasaths/Woodie/v0.1.1/examples/Timber-preview.ghx) in a **millimetre Rhino document**. The new Geometry Units input is available from 0.1.2.
+
+Connect geometry to **Timber Preview → Geometry**, and **Timber Material → Settings** to the preview's **Settings** input. Supply Fibre or Base Plane for explicit orientation and Guide Curve for a controlled bend.
 
 ## Timber Material
 
@@ -71,6 +75,7 @@ Prepares render meshes, maps timber coordinates and supplies textured Rhino view
 | Base Plane | Optional reference plane; X guides fibre orientation and Z defines thickness/layer direction. Inferred when omitted |
 | Guide Curve | Optional smooth, open centreline for bent timber; takes precedence over automatic surface mapping. Curve direction sets grain X |
 | Show | Enables textured display and texture generation; default true |
+| Geometry Units (0.1.2+) | Source coordinate units: Document (default), Millimetres/mm, Centimetres/cm, Metres/m, Inches or Feet. Converts copies of geometry, guide and plane origins to Rhino units |
 
 | Output | Use |
 | --- | --- |
@@ -81,7 +86,7 @@ Prepares render meshes, maps timber coordinates and supplies textured Rhino view
 
 Woodie supplies the viewport materials; downstream mesh previews do not automatically inherit the textures. The aligned box and frame remain available with bent mapping. Use a guide for curved multi-face or arbitrary mesh geometry when automatic surface mapping is unavailable. Closed guides, cusps and ambiguous mappings are rejected with messages.
 
-Texture, board, ring and veneer dimensions use **millimetres**, converted from Rhino document units. Thin surfaces use a virtual depth for appearance and are not thickened. Quick textures refine in the background. See [usage](docs/usage.md) for mapping, virtual depths, quality limits and caching.
+Appearance dimensions (texture, board, ring and veneer settings) use **millimetres**. Geometry coordinates default to **Rhino document units**. If coordinates came from a different unit system, declare it with **Geometry Units**; do not manually scale the same input as well. Woodie cannot infer intended units from a shape and does not guess. Resource-limit errors report physical dimensions and units before suggesting appearance changes. Thin surfaces use a virtual depth for appearance and are not thickened. Quick textures refine in the background. See [usage](docs/usage.md) for mapping, virtual depths, quality limits and caching.
 
 ## Timber products
 
@@ -109,7 +114,7 @@ dotnet tests/Woodie.Checks/bin/Release/net8.0-windows/Woodie.Checks.dll
 pwsh ./tools/package.ps1
 ```
 
-The plugin targets cross-platform `net8.0`; the native runner is Windows-only and needs a licensed Rhino installation. Build the runner before the plugin because its project reference uses a DLL target. Packaging writes a validated Rhino 8.20+ Yak, source ZIP, documentation, licences and one example under `artifacts/release/`. It does not install or publish anything. See [packaging](docs/packaging.md), [development](docs/development.md), [contributing](CONTRIBUTING.md) and the [changelog](CHANGELOG.md).
+The plugin targets cross-platform `net8.0`; the native runner is Windows-only and needs a licensed Rhino installation. Build the runner before the plugin because its project reference uses a DLL target. Packaging writes a slim Rhino 8.20+ Yak (GHA, short README, manifest/icon, licences and the gallery) and a source ZIP with full documentation under `artifacts/release/`. It does not install or publish anything. See [packaging](docs/packaging.md), [development](docs/development.md), [contributing](CONTRIBUTING.md) and the [changelog](CHANGELOG.md).
 
 ## Research and credits
 

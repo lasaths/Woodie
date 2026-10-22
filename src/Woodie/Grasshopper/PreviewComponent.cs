@@ -39,7 +39,9 @@ public sealed class PreviewComponent : GH_Component
         p.AddPlaneParameter("Base Plane", "P", "Optional base plane: X is fibre, Z is thickness", GH_ParamAccess.item);
         p.AddCurveParameter("Guide Curve", "C", "Optional smooth open centreline for bent timber; curve direction sets grain X", GH_ParamAccess.item);
         p.AddBooleanParameter("Show", "S", "Enable preview and texture generation", GH_ParamAccess.item, true);
+        p.AddTextParameter("Geometry Units", "U", "Source coordinate units: Document (default), Millimetres/mm, Centimetres/cm, Metres/m, Inches or Feet. Converts copies of geometry, guide and base-plane origin into Rhino document units.", GH_ParamAccess.item);
         for (int i = 1; i <= 4; i++) p[i].Optional = true;
+        p[6].Optional = true;
     }
 
     protected override void RegisterOutputParams(GH_OutputParamManager p)
@@ -88,13 +90,17 @@ public sealed class PreviewComponent : GH_Component
         bool hasFibre = da.GetData(2, ref f), hasPlane = da.GetData(3, ref p);
         da.GetData(4, ref guide);
         var doc = RhinoDoc.ActiveDoc;
-        double scale = doc == null ? 1 : RhinoMath.UnitScale(doc.ModelUnitSystem, UnitSystem.Millimeters);
+        var documentUnits = doc?.ModelUnitSystem ?? UnitSystem.Millimeters;
+        string sourceUnits = "Document"; if (Params.Input.Count > 6) da.GetData(6, ref sourceUnits);
         double tolerance = doc?.ModelAbsoluteTolerance ?? 0.001;
         var finals = new List<AtlasPage>();
         var quick = new List<AtlasPage>();
         try
         {
-            using var part = PreparedPart.Create(geometry, settings, scale, tolerance, hasPlane ? p : null, hasFibre ? f : null, guide);
+            using var input = new GeometryUnits(geometry, guide, hasPlane ? p : null, sourceUnits, documentUnits);
+            using var part = PreparedPart.Create(input.Geometry, settings, input.ToMillimetres, tolerance, input.BasePlane, hasFibre ? f : null, input.Guide);
+            if (Math.Abs(input.Conversion - 1) > 1e-12)
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"Converted input coordinates from {input.Source} to {input.Document}; source geometry is unchanged.");
             da.SetData(2, part.Alignment.Box); da.SetData(3, part.Alignment.Frame);
             foreach (string remark in part.Remarks) AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, remark);
             finals = TextureAtlas.Prepare(part, settings);
@@ -118,7 +124,7 @@ public sealed class PreviewComponent : GH_Component
         catch (Exception ex)
         {
             foreach (var page in finals.Concat(quick).Where(page => !shown.Contains(page) && !pending.Contains(page))) page.Dispose();
-            AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ex.Message);
+            AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ex is AppearanceBudgetException ? GeometryUnits.BudgetMessage(ex, sourceUnits, documentUnits) : ex.Message);
         }
     }
 

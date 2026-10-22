@@ -18,8 +18,19 @@ Connect a Mesh, Brep, Surface, or Extrusion to **Geometry**. Settings are option
 | Base Plane | Reference X direction and layer-stacking Z; inferred when omitted |
 | Guide Curve | Smooth open centreline for bent timber; guide direction sets grain X |
 | Show | Enables preview and texture generation |
+| Geometry Units (0.1.2+) | Source coordinate units; defaults to Document. mm/cm/m/inches/feet are accepted, including full unit names |
 
 Outputs are UV-mapped meshes, matching product labels, and one aligned bounding box and frame per input item. The component supplies viewport materials; connecting the mesh output to another preview or baking it does not transfer Woodie's texture materials.
+
+### Source geometry units (0.1.2+)
+
+Rhino geometry carries coordinates, not a reliable independent unit declaration. By default, Woodie interprets them in the active Rhino document units. An imported or embedded millimetre model opened in a metre document can therefore appear 1,000 times too large.
+
+Set **Geometry Units = Millimetres** when the coordinate values are millimetres, even if Rhino uses metres. Woodie scales copies of the geometry, guide curve and Base Plane origin into document units. Fibre vectors retain their direction. The source geometry, guide and Rhino document units remain unchanged. Outputs and bounds are in document coordinates; texture and construction settings remain in millimetres. Do not scale the input manually as well as selecting the source units.
+
+Use Document for normal geometry modelled in the current Rhino document. Explicit values use ordinary item matching and can broadcast or vary per object. Invalid unit names or unset/nonphysical document units produce actionable errors. Woodie does not automatically guess source units or impose a maximum physical extent.
+
+If the appearance budget is exceeded, the message reports mapped dimensions in millimetres, estimated board segments/knots and the source/document units. Check units first; for a correctly sized object, increase Lamella Width, reduce Knot Density or split the part. The allocation limits remain in place.
 
 ### Alignment and bending
 

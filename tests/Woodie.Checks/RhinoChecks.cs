@@ -20,6 +20,9 @@ internal static class RhinoChecks
         Check("Beam and inferred mesh orientation", MeshAlignment);
         Check("Surface, extrusion, trimmed Brep and invalid input", GeometryTypes);
         Check("Millimetre/metre mapping equivalence", Units);
+        Check("Unit mismatch produces actionable diagnostics", UnitInputChecks.Diagnostic);
+        Check("Explicit source units scale geometry in mm, m and inch documents", UnitInputChecks.Explicit);
+        Check("Source-unit guides, planes, invalid units and legacy input archives", UnitInputChecks.GuidesAndArchives);
         Check("Geometry larger than 30 metres is accepted", LargeGeometry);
         Check("Curved surface uses physical arc lengths", SurfaceBend);
         Check("Guide bending, closed guide and cusp rejection", GuideBend);
@@ -32,8 +35,8 @@ internal static class RhinoChecks
         Check("All timber presets solve and retain selection in archives", Presets);
         if (integration) Check("Material dropdowns, precedence, undo, migration and serialization", MaterialChecks.Interface);
         if (integration) Check("Grasshopper solve, broadcast, lifecycle and definition reopen", SolveAndReopen);
-        if (integration) Check("Shipped release example reopens and solves", () => ExampleDefinitions.Verify(Path.GetFullPath(Path.Combine(Output, "../../examples/Timber-preview.ghx"))));
         if (examples) Check("Generate and reopen the release example", Examples);
+        if (integration) Check("Shipped release example reopens and solves", () => ExampleDefinitions.Verify(Path.GetFullPath(Path.Combine(Output, "../../examples/Timber-preview.ghx"))));
     }
 
     static Brep Plate() => new Box(Plane.WorldXY, new Interval(0, 1200), new Interval(0, 600), new Interval(0, 120)).ToBrep();

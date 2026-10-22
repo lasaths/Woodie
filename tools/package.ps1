@@ -43,9 +43,13 @@ $binary = [IO.File]::ReadAllBytes($gha)
 if ([Text.Encoding]::ASCII.GetString($binary) -match $privatePath -or [Text.Encoding]::Unicode.GetString($binary) -match $privatePath) { throw 'Private machine path embedded in the GHA.' }
 Copy-Item -LiteralPath $gha -Destination (Join-Path $yakStage 'net8.0')
 foreach ($name in @('README.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'docs', 'examples')) {
-    Copy-Item -LiteralPath (Join-Path $repo $name) -Destination $yakStage -Recurse
     Copy-Item -LiteralPath (Join-Path $repo $name) -Destination $sourceStage -Recurse
 }
+# Runtime package: keep developer documentation exclusively in the source archive.
+foreach ($name in @('LICENSE', 'THIRD-PARTY-NOTICES.md', 'examples')) {
+    Copy-Item -LiteralPath (Join-Path $repo $name) -Destination $yakStage -Recurse
+}
+Copy-Item -LiteralPath (Join-Path $repo 'packaging/README.md') -Destination (Join-Path $yakStage 'README.md')
 foreach ($name in @('.gitignore', '.gitattributes', '.editorconfig', 'Woodie.sln', 'NuGet.Config', '.github', 'packaging', 'tools')) {
     Copy-Item -LiteralPath (Join-Path $repo $name) -Destination $sourceStage -Recurse
 }
@@ -80,13 +84,14 @@ try {
     $archive = [IO.Compression.ZipFile]::OpenRead($package.FullName)
     try {
         $names = @($archive.Entries | ForEach-Object { $_.FullName.Replace('\', '/') })
-        foreach ($required in @('manifest.yml', 'icon.png', 'net8.0/Woodie.gha', 'README.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'examples/Timber-preview.ghx')) {
+        foreach ($required in @('manifest.yml', 'icon.png', 'net8.0/Woodie.gha', 'README.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'examples/Timber-preview.ghx')) {
             if ($required -notin $names) { throw "Missing package content: $required" }
         }
         $binaries = @($names | Where-Object { $_ -match '(?i)\.(dll|gha|rhp|exe|pdb)$' })
         if ($binaries.Count -ne 1 -or $binaries[0] -ne 'net8.0/Woodie.gha') { throw 'Package may contain only the Woodie GHA binary.' }
         if (@($names | Where-Object { $_ -match '(?i)\.ghx?$' }).Count -ne 1) { throw 'Exactly one Grasshopper example is required.' }
         if (@($names | Where-Object { $_ -match '(?i)(^|/)(bin|obj|artifacts|\.git)/|\.(log|tmp|cs|csproj|ps1|mjs)$' }).Count) { throw 'Development files leaked into Yak.' }
+        if (@($names | Where-Object { $_ -match '(?i)^docs/|^(CHANGELOG|CONTRIBUTING)\.md$' }).Count) { throw 'Developer documentation must not be shipped in the runtime Yak.' }
         foreach ($credited in @('manifest.yml', 'README.md')) {
             $reader = [IO.StreamReader]::new($archive.GetEntry($credited).Open())
             try { $text = $reader.ReadToEnd() } finally { $reader.Dispose() }

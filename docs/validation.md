@@ -1,5 +1,21 @@
 # Release validation
 
+## 0.1.2 — slim package and explicit source units
+
+- Release builds: PASS, zero warnings/errors.
+- Full native suite: PASS, 31 checks including existing 88 product/geometry cases.
+- Expanded shipped gallery: all 88 cases reopen and solve in millimetre and metre documents; physical output dimensions agree.
+- Explicit source-unit inputs: tested in millimetre, metre and inch documents; original geometry remains unchanged.
+- Guide lengths and plane origins scale with geometry; invalid source/document units and old six-input archives are covered.
+- The original metre-document reproduction failed with an unhelpful boards/knots error before the fix. It now reports physical dimensions, source/document units and the Geometry Units remedy.
+- Appearance golden fixtures remain unchanged.
+- Slim Yak inspection: PASS; developer docs are excluded and the expanded example is included.
+- Independent extracted-source build: PASS; both projects build and all 30 native integration checks pass.
+- Hosted checks: pending.
+- Fresh installed 0.1.2 viewport and Mac native checks: not yet run. Published with these checks outstanding.
+
+
+
 ## 0.1.1 — .NET 8
 
 Target: Rhino 8.20+ running .NET 8. The release uses the exact locally installed and viewport-tested GHA recorded below.

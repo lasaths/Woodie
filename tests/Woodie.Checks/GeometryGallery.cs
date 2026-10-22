@@ -14,7 +14,7 @@ namespace Woodie.Checks;
 
 internal static class GeometryGallery
 {
-    sealed record Fixture(string Name, GeometryBase Geometry, string Mapping, Curve Guide = null) : IDisposable
+    internal sealed record Fixture(string Name, GeometryBase Geometry, string Mapping, Curve Guide = null) : IDisposable
     {
         public void Dispose() { Geometry.Dispose(); Guide?.Dispose(); }
     }
@@ -55,7 +55,7 @@ internal static class GeometryGallery
         return mesh;
     }
 
-    static List<Fixture> Fixtures(double depth)
+    internal static List<Fixture> Fixtures(double depth)
     {
         var items = new List<Fixture>();
         items.Add(new("01 Solid Brep", new Box(Plane.WorldXY, new Interval(0, 1800), new Interval(0, 500), new Interval(0, depth)).ToBrep(), "Straight"));

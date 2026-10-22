@@ -4,6 +4,7 @@ using Grasshopper.Kernel;
 using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Special;
 using Grasshopper.Kernel.Types;
+using Rhino;
 using Rhino.Geometry;
 using Woodie.Appearance;
 using Woodie.Grasshopper;
@@ -18,87 +19,115 @@ internal static class ExampleDefinitions
         Directory.CreateDirectory(directory);
         using var doc = new GH_Document { Enabled = true };
         var note = new GH_Panel {
-            NickName = "Woodie · Timber preview",
-            UserText = "WOODIE | TIMBER PREVIEW\n\nUse a millimetre Rhino document.\nChoose Product / Appearance on Timber Material.\nThe triangle below its icon hides the controls.\n\nFlat and bowed boards: same centreline length,\n500 x 27 mm section; 220 mm bow rise.\nGuide Curve controls longitudinal grain.\n\nVisual presets only: changing Product does not\nchange geometry or specify a manufactured layup."
+            NickName = "Woodie · Complete gallery",
+            UserText = "WOODIE | 8 PRODUCTS × 11 GEOMETRY CASES\n\nWorks in millimetre, metre and inch Rhino documents.\nEvery preview declares Geometry Units = Millimetres.\nSource geometry remains unchanged.\n\nViewport rows = products; columns = geometry cases.\nFlat/bowed solid pairs are visible initially and have\nequal centreline lengths. Enable other preview\ncomponents or a product group's preview to explore.\n\nEach product uses its own representative thickness.\nOpen surfaces stay open; presets are visual only."
         };
-        note.CreateAttributes();
-        note.Attributes.Bounds = new RectangleF(30, 20, 400, 200);
-        doc.AddObject(note, false);
-        var material = new SettingsComponent();
-        material.CreateAttributes();
-        material.SelectProduct(TimberProduct.ThreeS);
-        material.SelectLook(TimberLook.CleanPale);
-        material.Attributes.Pivot = new PointF(350, 280);
-        doc.AddObject(material, false);
-
-        using var guide = GeometryGallery.Bow();
-        double length = guide.GetLength();
-        using var flat = new Box(Plane.WorldXY, new Interval(0, length), new Interval(800, 1300), new Interval(0, 27)).ToBrep();
-        using var extrusion = GeometryGallery.BowedExtrusion();
-        using var bowed = extrusion.ToBrep();
-        int index = 0;
-        foreach (var shape in new[] { flat, bowed })
-        {
-            var input = new Param_Geometry {
-                Name = index == 0 ? "Flat board (mm)" : "Upward-bowed board (mm)",
-                NickName = index == 0 ? "Flat" : "Bowed",
-                Hidden = true
-            };
-            input.SetPersistentData(new GH_Brep(shape.DuplicateBrep()));
-            input.CreateAttributes();
-            input.Attributes.Pivot = new PointF(90, 290 + index * 230);
-            doc.AddObject(input, false);
-            var preview = new PreviewComponent { NickName = index == 0 ? "Flat timber" : "Bowed timber" };
-            preview.CreateAttributes();
-            preview.Attributes.Pivot = new PointF(730, 290 + index * 230);
-            doc.AddObject(preview, false);
-            preview.Params.Input[0].AddSource(input);
-            preview.Params.Input[1].AddSource(material.Params.Output[0]);
-            ((Param_Plane)preview.Params.Input[3]).SetPersistentData(new GH_Plane(Plane.WorldXY));
-            if (index == 1)
-            {
-                var curve = new Param_Curve { Name = "Longitudinal bend guide", NickName = "Guide", Hidden = true };
-                curve.SetPersistentData(new GH_Curve(guide.DuplicateCurve()));
-                curve.CreateAttributes();
-                curve.Attributes.Pivot = new PointF(390, 540);
-                doc.AddObject(curve, false);
-                preview.Params.Input[4].AddSource(curve);
-            }
-            index++;
+        note.CreateAttributes(); note.Attributes.Bounds = new RectangleF(20, 0, 440, 230); doc.AddObject(note, false);
+        using var referenceGuide = GeometryGallery.Bow();
+        double length = referenceGuide.GetLength();
+        int row = 0;
+        foreach (var product in TimberProducts.MenuOrder) {
+            double depth = new TimberSettings { Product = product }.VirtualDepthMm;
+            float column = row * 1000;
+            var members = new List<Guid>();
+            void Add(IGH_DocumentObject obj) { doc.AddObject(obj, false); members.Add(obj.InstanceGuid); }
+            var material = new SettingsComponent(); material.CreateAttributes();
+            material.SelectProduct(product); material.SelectLook(TimberLook.CleanPale);
+            material.Attributes.Pivot = new PointF(column + 350, 320); Add(material);
+            ((Param_Number)material.Params.Input[2]).PersistentData.Clear();
+            ((Param_Number)material.Params.Input[2]).SetPersistentData(8d);
+            var units = new Param_String { Name = "Source coordinate units", NickName = "Millimetres" };
+            units.SetPersistentData("Millimetres"); units.CreateAttributes(); units.Attributes.Pivot = new PointF(column + 160, 540); Add(units);
+            var fixtures = GeometryGallery.Fixtures(depth);
+            fixtures[0].Dispose();
+            fixtures[0] = new GeometryGallery.Fixture("01 Flat solid Brep (matched length)",
+                new Box(Plane.WorldXY, new Interval(0, length), new Interval(0, 500), new Interval(0, depth)).ToBrep(), "Straight");
+            try {
+                for (int index = 0; index < fixtures.Count; index++) {
+                    var fixture = fixtures[index];
+                    int slot = index == 0 ? 0 : index == 8 ? 1 : index < 8 ? index + 1 : index;
+                    var move = Transform.Translation(slot * 2600, row * 1400, 0);
+                    fixture.Geometry.Transform(move); fixture.Guide?.Transform(move);
+                    IGH_GeometricGoo goo = fixture.Geometry switch {
+                        Extrusion extrusion => new GH_Extrusion((Extrusion)extrusion.Duplicate()),
+                        Brep brep => new GH_Brep(brep.DuplicateBrep()),
+                        Surface surface => new GH_Surface((Surface)surface.Duplicate()),
+                        Mesh mesh => new GH_Mesh(mesh.DuplicateMesh()), _ => throw new Exception("Unsupported example fixture")
+                    };
+                    float y = 750 + index * 200;
+                    var input = new Param_Geometry { Name = product.Label() + " / " + fixture.Name, NickName = fixture.Name, Hidden = true };
+                    input.SetPersistentData(goo); input.CreateAttributes(); input.Attributes.Pivot = new PointF(column + 100, y); Add(input);
+                    var preview = new PreviewComponent { NickName = product.Label() + " / " + fixture.Name, Hidden = index != 0 && index != 8 };
+                    preview.CreateAttributes(); preview.Attributes.Pivot = new PointF(column + 700, y); Add(preview);
+                    preview.Params.Input[0].AddSource(input); preview.Params.Input[1].AddSource(material.Params.Output[0]);
+                    preview.Params.Input[6].AddSource(units);
+                    if (fixture.Guide != null) {
+                        var guide = new Param_Curve { Name = product.Label() + " / " + fixture.Name + " guide", NickName = "Guide (mm)", Hidden = true };
+                        guide.SetPersistentData(new GH_Curve(fixture.Guide.DuplicateCurve())); guide.CreateAttributes();
+                        guide.Attributes.Pivot = new PointF(column + 400, y + 80); Add(guide);
+                        preview.Params.Input[4].AddSource(guide);
+                        ((Param_Plane)preview.Params.Input[3]).SetPersistentData(new GH_Plane(Plane.WorldXY));
+                    }
+                }
+            } finally { foreach (var fixture in fixtures) fixture.Dispose(); }
+            var group = new GH_Group { NickName = product.Label() + $" · {depth:0.#} mm · 11 cases", Colour = Color.FromArgb(65, 190, 160, 120) };
+            foreach (var id in members) group.AddObject(id);
+            doc.AddObject(group, false); row++;
         }
-
-        var archive = new GH_Archive();
-        Assert(archive.AppendObject(doc, "Definition"), "Could not serialize release example");
+        var archive = new GH_Archive(); Assert(archive.AppendObject(doc, "Definition"), "Gallery serialization failed");
         string path = Path.Combine(directory, "Timber-preview.ghx");
-        Assert(archive.WriteToFile(path, true, false), "Could not write release example");
-        Verify(path);
-        Console.WriteLine("  Wrote and reopened " + path);
+        Assert(archive.WriteToFile(path, true, false), "Could not write complete gallery");
+        Verify(path); Console.WriteLine("  Wrote and reopened 88-case gallery: " + path);
     }
 
     internal static void Verify(string path)
     {
-        using var reopened = new GH_Document { Enabled = true };
-        var archive = new GH_Archive();
-        Assert(archive.ReadFromFile(path) && archive.ExtractObject(reopened, "Definition"), "Release example did not reopen");
-        Assert(reopened.Objects.OfType<SettingsComponent>().Count() == 1, "Example must use the combined material component");
-        Assert(!reopened.Objects.OfType<PresetsComponent>().Any(), "Example must not use the legacy preset component");
-        var shapes = reopened.Objects.OfType<Param_Geometry>().SelectMany(p => p.PersistentData.AllData(true)).OfType<GH_Brep>().ToArray();
-        Assert(shapes.Length == 2 && shapes.All(g => g.Value != null && g.Value.IsValid && g.Value.IsSolid), "Example must embed two valid solid boards");
-        var guides = reopened.Objects.OfType<Param_Curve>().SelectMany(p => p.PersistentData.AllData(true)).OfType<GH_Curve>().ToArray();
-        Assert(guides.Length == 1 && guides[0].Value.IsValid && !guides[0].Value.IsClosed, "Example guide is missing or invalid");
-        Near(shapes[0].Value.GetBoundingBox(true).Diagonal.X, guides[0].Value.GetLength(), 0.01);
-        foreach (var shape in shapes) Near(shape.Value.GetVolume() / guides[0].Value.GetLength() / 500, 27, 0.02);
-        var previews = reopened.Objects.OfType<PreviewComponent>().ToArray();
-        Assert(previews.Length == 2, "Example must contain two timber previews");
-        foreach (var preview in previews) preview.Hidden = true;
-        reopened.NewSolution(false);
-        foreach (var preview in previews)
-        {
-            Assert(!preview.RuntimeMessages(GH_RuntimeMessageLevel.Error).Any(), "Release example preview failed");
-            Assert(preview.Params.Output[0].VolatileDataCount > 0 && preview.Params.Output[2].VolatileDataCount == 1, "Example mesh or box output missing");
-            foreach (var mesh in preview.Params.Output[0].VolatileData.AllData(true).OfType<GH_Mesh>())
-                Assert(mesh.Value.IsValid && mesh.Value.TextureCoordinates.Count == mesh.Value.Vertices.Count, "Example mesh or UVs invalid");
-        }
+        var rhino = RhinoDoc.ActiveDoc ?? throw new Exception("Example verification needs an active test Rhino document");
+        var previousUnits = rhino.ModelUnitSystem; double previousTolerance = rhino.ModelAbsoluteTolerance;
+        var dimensions = new Dictionary<string, double[]>();
+        try {
+            foreach (var documentUnits in new[] { UnitSystem.Millimeters, UnitSystem.Meters }) {
+                rhino.ModelUnitSystem = documentUnits;
+                double toMm = RhinoMath.UnitScale(documentUnits, UnitSystem.Millimeters);
+                rhino.ModelAbsoluteTolerance = .001 / toMm;
+                using var reopened = new GH_Document { Enabled = true };
+                var archive = new GH_Archive();
+                Assert(archive.ReadFromFile(path) && archive.ExtractObject(reopened, "Definition"), "Complete gallery did not reopen");
+                Assert(reopened.Objects.OfType<SettingsComponent>().Count() == 8, "Gallery needs all eight materials");
+                Assert(!reopened.Objects.OfType<PresetsComponent>().Any(), "Legacy presets are not release examples");
+                var inputs = reopened.Objects.OfType<Param_Geometry>().ToArray();
+                Assert(inputs.Length == 88, "Gallery needs all 8 × 11 geometry cases");
+                Assert(inputs.SelectMany(p => p.PersistentData.AllData(true)).All(g => g.IsValid), "Invalid embedded gallery geometry");
+                var previews = reopened.Objects.OfType<PreviewComponent>().ToArray();
+                Assert(previews.Length == 88, "Missing gallery previews");
+                Assert(previews.Count(p => !p.Hidden) == 16, "Initial view should show eight flat/bowed pairs");
+                foreach (var preview in previews) {
+                    Assert(preview.Params.Input[6].SourceCount == 1, "Example source units must be explicit");
+                    preview.Hidden = true;
+                }
+                foreach (var product in TimberProducts.MenuOrder) {
+                    var flat = inputs.Single(p => p.Name == product.Label() + " / 01 Flat solid Brep (matched length)");
+                    var bowed = inputs.Single(p => p.Name == product.Label() + " / 09 Bowed solid Brep - guide");
+                    var a = ((GH_Brep)flat.PersistentData.AllData(true).Single()).Value;
+                    var b = ((GH_Brep)bowed.PersistentData.AllData(true).Single()).Value;
+                    using var guide = GeometryGallery.Bow();
+                    Near(a.GetBoundingBox(true).Diagonal.X, guide.GetLength(), .02);
+                    Near(a.GetVolume(), b.GetVolume(), Math.Max(1, a.GetVolume() * .00001));
+                }
+                reopened.NewSolution(false);
+                foreach (var preview in previews) {
+                    Assert(!preview.RuntimeMessages(GH_RuntimeMessageLevel.Error).Any(), documentUnits + " gallery failed: " + preview.NickName + ": " + string.Join("; ", preview.RuntimeMessages(GH_RuntimeMessageLevel.Error)));
+                    Assert(preview.Params.Output[0].VolatileDataCount > 0, "Gallery mesh output missing");
+                    var box = ((GH_Box)preview.Params.Output[2].VolatileData.AllData(true).Single()).Value;
+                    var actual = new[] { box.X.Length * toMm, box.Y.Length * toMm, box.Z.Length * toMm };
+                    if (documentUnits == UnitSystem.Millimeters) dimensions[preview.NickName] = actual;
+                    else for (int axis = 0; axis < 3; axis++) Near(actual[axis], dimensions[preview.NickName][axis], .7);
+                    foreach (var mesh in preview.Params.Output[0].VolatileData.AllData(true).OfType<GH_Mesh>())
+                        Assert(mesh.Value.IsValid && mesh.Value.TextureCoordinates.Count == mesh.Value.Vertices.Count, "Invalid gallery mesh/UVs");
+                }
+                Console.WriteLine($"  Release gallery: 88 cases solve in {documentUnits}");
+            }
+        } finally { rhino.ModelUnitSystem = previousUnits; rhino.ModelAbsoluteTolerance = previousTolerance; }
     }
 
     internal static Mesh BentSolid(Curve guide)

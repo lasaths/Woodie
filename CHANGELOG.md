@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.2 — 2026-10-22
+
+- Slim runtime Yak: retain the GHA, manifest/icon, short README, licences and complete gallery; keep full documentation in GitHub/source ZIP.
+- Expand the example to eight products × eleven geometry cases, with matched flat/bowed pairs and product-appropriate depths.
+- Add optional Geometry Units source-unit conversion for geometry, guides and plane origins; ordinary inputs retain Document units.
+- Make the gallery unit-aware so it solves in millimetre and metre Rhino documents.
+- Report physical dimensions and source/document units in appearance-budget errors.
+- Preserve older six-input Preview archives and existing component GUIDs.
+
+
 ## 0.1.1 — 2026-10-22
 
 - Target .NET 8 and require Rhino 8.20+; Yak distributions use the Rhino 8.20 compatibility tag.

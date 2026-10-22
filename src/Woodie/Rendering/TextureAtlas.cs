@@ -26,6 +26,11 @@ internal sealed class TriangleTile
     public Vector3d CutNormal => Vector3d.CrossProduct(B - A, C - A);
 }
 
+public sealed class AppearanceBudgetException : ArgumentException
+{
+    public AppearanceBudgetException(string message) : base(message) { }
+}
+
 public static class TextureAtlas
 {
     public const string EngineVersion = "woodie-8";
@@ -97,7 +102,8 @@ public static class TextureAtlas
             knots += count * (Math.Ceiling(settings.EffectiveKnotDensity * settings.Palette().KdK * (layer.continuous ? length + 2 : layer.segMax) / 1000 * 1.5 * (layer.veneer ? 3 : 1)) + 1);
         }
         if (segments > 100000 || knots > 2000000)
-            throw new ArgumentException("Appearance needs too many boards or knots. Increase Lamella Width, reduce Knot Density, or split the part.");
+            throw new AppearanceBudgetException(FormattableString.Invariant(
+                $"Appearance needs too many boards or knots for a mapped {part.LengthMm:0.###} × {part.WidthMm:0.###} × {part.DepthMm:0.###} mm part ({segments:0} board segments; {knots:0} estimated knots)."));
     }
 
     static List<TriangleTile> MakeTiles(PreparedPart part, TimberSettings settings, double quality)

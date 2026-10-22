@@ -66,6 +66,8 @@ internal static class Program
         // Native safe mode additionally prevents unrelated Rhino plugins from loading.
         IsolatedHost.Prepare();
         using var core = new Rhino.Runtime.InProcess.RhinoCore(new[] { "/safemode", "/nosplash", "/notemplate" }, Rhino.Runtime.InProcess.WindowStyle.NoWindow);
+        using var testRhinoDocument = Rhino.RhinoDoc.Create(null);
+        testRhinoDocument.ModelUnitSystem = Rhino.UnitSystem.Millimeters;
         IsolatedHost.LoadBuiltIns();
         RhinoChecks.Run(examples, integration);
         if (gallery) Check("All geometry types and upward-bowed thin timber", GeometryGallery.Run);
