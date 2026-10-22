@@ -11,7 +11,7 @@
 - Appearance golden fixtures remain unchanged.
 - Slim Yak inspection: PASS; developer docs are excluded and the expanded example is included.
 - Independent extracted-source build: PASS; both projects build and all 30 native integration checks pass.
-- Hosted checks: pending.
+- Hosted checks: PASS; [Windows/Linux builds and Windows managed checks](https://github.com/lasaths/Woodie/actions/runs/39811473441).
 - Fresh installed 0.1.2 viewport and Mac native checks: not yet run. Published with these checks outstanding.
 
 
