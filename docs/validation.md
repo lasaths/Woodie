@@ -1,8 +1,8 @@
 # Release validation
 
-## 0.1.1 development — .NET 8
+## 0.1.1 — .NET 8
 
-Target: Rhino 8.20+ running .NET 8. This candidate is installed locally for testing and has not been published. The published PackageManager release remains 0.1.0.
+Target: Rhino 8.20+ running .NET 8. The release uses the exact locally installed and viewport-tested GHA recorded below.
 
 | Check | Result |
 | --- | --- |

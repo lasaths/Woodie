@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.1 — Unreleased
+## 0.1.1 — 2026-10-22
 
 - Target .NET 8 and require Rhino 8.20+; Yak distributions use the Rhino 8.20 compatibility tag.
 - Recommend installation through Rhino PackageManager.
