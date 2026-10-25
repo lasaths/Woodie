@@ -40,6 +40,7 @@ internal static class Program
         Check("Stock sampling matches TimberPanel for all eight products", StockChecks.TimberParity);
         Check("Natural Log and Bamboo features: seed identity, variation bounds, hollow anatomy", NaturalChecks.Features);
         Check("Natural Log and Bamboo appearance: bark, timber, nodes, variation zero", NaturalChecks.Appearance);
+        Check("Engineered bamboo: plain/side strip mapping, machining, layered panels, Fit to part", StockChecks.EngineeredBamboo);
         Check("Managed PNG round trip", Png);
         Check("Appearance deterministic for all eight products", Appearance);
         Check("Product constructions and appearance precedence", MaterialChecks.Constructions);

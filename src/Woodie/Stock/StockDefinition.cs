@@ -28,9 +28,10 @@ public sealed class StockDefinition : IMaterialModel
     {
         if (settings == null) throw new ArgumentNullException(nameof(settings));
         settings.Validate();
-        if (settings.IsNatural) return FromNatural(settings, lengthMm, widthMm, depthMm, layers);
         if (!(lengthMm > 0) || !(widthMm > 0) || !(depthMm > 0) || !double.IsFinite(lengthMm + widthMm + depthMm))
             throw new ArgumentException("Stock dimensions must be finite and positive.");
+        if (settings.IsNatural) return FromNatural(settings, lengthMm, widthMm, depthMm, layers);
+        if (settings.IsEngineeredBamboo) return FromBamboo(settings, lengthMm, widthMm, depthMm, toleranceMm, layers);
         layers ??= TimberLayups.Resolve(settings, depthMm, widthMm, toleranceMm);
         var panel = new TimberPanel(settings.Product, lengthMm, widthMm, depthMm, settings.Seed,
             settings.EffectiveKnotDensity, settings.Palette(), settings.LamellaWidth, settings.VeneerThickness, layers);
@@ -49,6 +50,15 @@ public sealed class StockDefinition : IMaterialModel
         var piece = new MaterialPiece(new SourceSpecimen(settings.Seed, features), model, 0, 0, 0, lengthMm, widthMm, depthMm);
         layers ??= TimberLayups.Make(settings.Product, depthMm, widthMm);
         return new StockDefinition(settings.Duplicate(), lengthMm, widthMm, depthMm, layers, new Construction(new[] { piece }));
+    }
+
+    /// <summary>Laminated bamboo lumber or layered panel: many machined strips, each mapped into a source culm. Dimensions are stock mm.</summary>
+    public static StockDefinition FromBamboo(TimberSettings settings, double lengthMm, double widthMm, double depthMm,
+        double toleranceMm = .01, IReadOnlyList<TimberLayer> layers = null)
+    {
+        layers ??= TimberLayups.Resolve(settings, depthMm, widthMm, toleranceMm);
+        return new StockDefinition(settings.Duplicate(), lengthMm, widthMm, depthMm, layers,
+            BambooConstruction.Build(settings, lengthMm, widthMm, depthMm, layers));
     }
 
     public int Sample(double x, double y, double z) => Sample(x, y, z, 0, 0, 0, false);

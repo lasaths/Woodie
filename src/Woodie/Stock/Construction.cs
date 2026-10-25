@@ -4,9 +4,12 @@ namespace Woodie.Stock;
 public sealed class Construction
 {
     readonly MaterialPiece[] pieces;
+    readonly Func<double, double, double, int> locate;
 
-    public Construction(IEnumerable<MaterialPiece> pieces)
+    /// <param name="locate">Optional O(1) piece index for a stock point (must be in range); strip constructions have thousands of pieces.</param>
+    public Construction(IEnumerable<MaterialPiece> pieces, Func<double, double, double, int> locate = null)
     {
+        this.locate = locate;
         this.pieces = (pieces ?? throw new ArgumentNullException(nameof(pieces))).ToArray();
         if (this.pieces.Length == 0) throw new ArgumentException("Construction needs at least one material piece.");
         if (this.pieces.Any(p => p == null)) throw new ArgumentException("Construction contains an empty piece.");
@@ -17,6 +20,7 @@ public sealed class Construction
     /// <summary>Resolve the piece covering a stock-space point. Falls back to the nearest piece centre.</summary>
     public MaterialPiece PieceAt(double x, double y, double z)
     {
+        if (locate != null) return pieces[locate(x, y, z)];
         for (int i = pieces.Length - 1; i >= 0; i--)
             if (pieces[i].Contains(x, y, z)) return pieces[i];
         MaterialPiece best = pieces[0];
