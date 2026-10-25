@@ -12,6 +12,8 @@ description: >
   Define custom layer stacks with schedules and section diagrams. Move capped cutting planes
   through fixed stock to reveal its original grain and knots. One grouped, Scribble-labelled example
   includes basic cutting, a stepped knot cutaway, custom buildup and the product library.
+  Bake native geometry with persistent timber textures through Timber Preview.
+  Baked objects are independent snapshots; save textures in the 3dm for portability.
   Requires Rhino 8.20 or later running .NET 8 on Windows or Mac.
   Mac native verification is pending.
   Visual presets do not specify manufactured or structural products.

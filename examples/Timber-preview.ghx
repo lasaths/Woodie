@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <Archive name="Root">
   <!--Grasshopper archive-->
   <!--Grasshopper and GH_IO.dll are copyrighted by Robert McNeel & Associates-->
@@ -360,7 +360,8 @@ Procedural appearance inspired by Larsson et al. (2022), DOI 10.1145/3528223.353
                     <item name="NickName" type_name="gh_string" type_code="10">Scribble</item>
                     <item name="Size" type_name="gh_single" type_code="5">12</item>
                     <item name="Text" type_name="gh_string" type_code="10">Move Position and Angle to expose the interior. Keep Positive reverses the retained side.
-The original stock fixes the knot field; Cut outputs document units. Preview uses Document.</item>
+The original stock fixes the knot field; Cut outputs document units. Preview uses Document.
+Right-click Preview &gt; Bake for native textured geometry. Save textures in the 3dm.</item>
                   </items>
                   <chunks count="1">
                     <chunk name="Attributes">

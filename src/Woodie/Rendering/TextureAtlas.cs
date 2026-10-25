@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using Rhino.Geometry;
 using Woodie.Appearance;
 using Woodie.Geometry;
@@ -90,7 +90,7 @@ public static class TextureAtlas
 
     static void AddUv(Mesh mesh, double x, double y, int w, int h) => mesh.TextureCoordinates.Add(x / w, 1 - y / h);
 
-    static void ValidateAppearanceBudget(PreparedPart part, TimberSettings settings, IReadOnlyList<TimberLayer> layers)
+    internal static void ValidateAppearanceBudget(PreparedPart part, TimberSettings settings, IReadOnlyList<TimberLayer> layers)
     {
         double segments = 0, knots = 0;
         foreach (var layer in layers)
@@ -165,7 +165,7 @@ public static class TextureAtlas
         return pages;
     }
 
-    static string Key(PreparedPart p, TimberSettings s, double density)
+    internal static string Key(PreparedPart p, TimberSettings s, double density)
     {
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         using var buffer = new MemoryStream();
@@ -243,5 +243,5 @@ public static class TextureAtlas
         return pixels;
     }
 
-    static double Snap(double v, double max) => v < 1e-3 ? 0 : v > max - 1e-3 ? max : v;
+    internal static double Snap(double v, double max) => v < 1e-3 ? 0 : v > max - 1e-3 ? max : v;
 }

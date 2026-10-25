@@ -8,9 +8,7 @@ The grain and knot model is inspired by **Maria Larsson et al., [*Procedural Tex
 
 **Timber Material → optional Timber Buildup → Timber Preview** · **Display → Woodie**
 
-The upcoming **0.1.3** candidate adds custom physical layer stacks and capped timber cuts. Connect Timber Cut's **Geometry** and original **Stock** outputs to Preview's **Geometry** and **Stock Geometry** inputs: moving the plane reveals the same material volume rather than generating new knots. The published PackageManager version remains **0.1.2** until the candidate is released.
-
-![Timber Material controls](docs/images/material-controls.png)
+**0.1.3** adds custom layer stacks, stock-aware cuts and native textured baking. Mac native display and a fresh interactive Bake-menu session remain unverified; see [validation](docs/validation.md).
 
 ## Install from Rhino PackageManager
 
@@ -21,11 +19,29 @@ The upcoming **0.1.3** candidate adds custom physical layer stacks and capped ti
 
 **Use Rhino PackageManager for normal installation and updates.** No GitHub checkout, SDK or command-line installation is needed. Remove a previously copied Woodie.gha from Grasshopper Libraries before installing through PackageManager to avoid duplicate components.
 
-**0.1.2** targets **.NET 8** and requires **Rhino 8.20 or later** on Windows or Mac. Rhino 8.20 supplies .NET 8 by default; see [McNeel's runtime guidance](https://developer.rhino3d.com/en/guides/rhinocommon/moving-to-dotnet-core/). On Windows, use modern .NET rather than .NET Framework mode. Rhino 7 is unsupported. Native Mac display and interaction remain unverified; see [validation](docs/validation.md).
+**0.1.3** targets **.NET 8** and requires **Rhino 8.20 or later** on Windows or Mac. Rhino 8.20 supplies .NET 8 by default; see [McNeel's runtime guidance](https://developer.rhino3d.com/en/guides/rhinocommon/moving-to-dotnet-core/). On Windows, use modern .NET rather than .NET Framework mode. Rhino 7 is unsupported. Native Mac display and interaction remain unverified; see [validation](docs/validation.md).
+
+## Components
+
+All five components are under **Display → Woodie**.
+
+| Component | Purpose |
+| --- | --- |
+| **Timber Material** | Choose a product and Natural/Clean-Pale appearance. Seed controls repeatability; Resolution controls face detail in mm/pixel. Advanced inputs expose knots, rings, board/veneer dimensions and palette colours. |
+| **Timber Layer** | Define one layer: thickness, longitudinal/cross grain, solid/boards/veneer construction and optional board joints. |
+| **Timber Buildup** | Combine layers from bottom to top; output material settings, a schedule and section diagram. Exact thickness is checked; Fit to part scales proportions explicitly. |
+| **Timber Cut** | Cut and cap closed stock with a plane. Outputs the retained geometry, original Stock and section outlines. |
+| **Timber Preview** | Display textured meshes for native geometry. Fibre, Base Plane and Guide Curve control mapping; Geometry Units declares source units. Its Bake action creates native textured Rhino objects. |
+
+**Timber Material → optional Timber Buildup → Timber Preview**. For cuts, connect Cut's Geometry and Stock outputs to Preview's Geometry and Stock Geometry inputs. The uncut stock keeps grain and knots fixed as the plane moves.
+
+Material starts at **CLT / Natural**. Click the triangle beneath its icon to collapse the control panel without changing wires or settings. A wired Product value overrides the dropdown. Settings resolve as product defaults → appearance defaults → explicit inputs. [All inputs, outputs and defaults](docs/usage.md#complete-component-input-reference).
+
+Choose Solid timber, KVH, Glulam, CLT, Three-layer panel (3S), Plywood, LVL — parallel or Kerto-Q. These represent different board/veneer constructions; they are visual approximations rather than manufacturing or structural specifications. See [material coverage](docs/materials.md) and [limitations](docs/material-realism-audit.md).
 
 ## Start with the example
 
-Open the single **[Timber-preview.ghx](examples/Timber-preview.ghx)** definition with the **Woodie 0.1.3 candidate**. It contains four numbered sections, with Scribble headings and groups:
+Open the single **[Timber-preview.ghx](examples/Timber-preview.ghx)** definition with **Woodie 0.1.3**. It contains four numbered sections, with Scribble headings and groups:
 
 1. **Cut through the stock:** one rectangular piece with position/angle sliders and a textured interior cap.
 2. **Follow a knot:** a stepped cutaway with a **Knot section (%)** slider and capped exposed face, revealing the same automatic knot field through its depth.
@@ -44,99 +60,24 @@ For older **0.1.1** installations, use its [matching two-board example](https://
 
 Connect geometry to **Timber Preview → Geometry**, and **Timber Material → Settings** to the preview's **Settings** input. Supply Fibre or Base Plane for explicit orientation and Guide Curve for a controlled bend.
 
-## Custom buildups and cuts (0.1.3)
+## Bake with textures
 
-Use **Timber Layer → Timber Buildup**, with **Timber Material → Timber Buildup → Timber Preview**, to define thicknesses and longitudinal/cross directions. Buildup outputs settings, resolved layers, total thickness, a bottom-to-top schedule and a section diagram. Exact thickness is the default; enable **Fit to part** explicitly to scale the proportions. An open surface uses the stack's total thickness as virtual depth. The original product remains the palette family; custom stacks are labelled **Custom buildup**.
+Right-click **Timber Preview → Bake**, then choose the Rhino layer normally. Woodie prepares final-quality textures and creates one native object per shown input: Breps stay joined, extrusions remain extrusions, and meshes keep their vertices and faces. Stock is a mapping reference and is not baked.
 
-**Timber Cut** cuts and caps closed Breps, solid extrusions and closed meshes. Its **Keep Positive** toggle selects the retained side. Geometry Units applies to the source stock and cutting-plane origin; outputs use Rhino document units, so leave downstream Preview Geometry Units at **Document**. Preview's optional **Stock Geometry** locks its mapping frame, dimensions and layer positions to the uncut stock. The Aligned Box still describes the displayed cut geometry; Frame describes the original material reference. Knots remain continuous within each board or veneer, not across independent layers or glue lines.
+Baked objects are independent snapshots that display without Woodie. Save the `.3dm` with **Save textures** enabled for portability. Textures also live beside a saved model in `<model>_WoodieTextures`; unsaved models use Woodie's persistent application-data folder. Later shape edits or cuts require rebaking. [Bake workflow, resolution limits and persistence](docs/baking.md).
 
-See [buildup and cutting controls](docs/usage.md#custom-layers-buildups-and-cuts) for the complete inputs, outputs and examples. No input stock is transformed or cut in place.
+## Development
 
-## Timber Material
-
-Creates settings for Timber Preview. The on-canvas **Product** and **Appearance** dropdowns default to **CLT / Natural**.
-
-Click the small triangle beneath the icon to hide or reveal the whole control panel without losing wires or values ([collapsed view](docs/images/material-collapsed.png)). **Advanced inputs** exposes additional ports. Advanced ports stay visible if hiding them would remove wires or stored overrides.
-
-| Basic input | What it controls | Default |
-| --- | --- | --- |
-| Product | Optional product name or identifier; a wire or stored value takes control of the Product dropdown | Dropdown selection |
-| Seed | Repeatable random grain, knots and board variation | 0 |
-| Resolution | Broad-face texture density in **mm/pixel**; smaller values give finer detail at greater cost | 2 |
-
-| Advanced input | What it controls | Default |
-| --- | --- | --- |
-| Edge Resolution | Narrow-face texture density, in mm/pixel | 0.5; Kerto-Q 0.25 |
-| Knot Density | Knot frequency in knots/metre; 0 removes knots | Product/appearance preset; Clean/Pale 0.25 |
-| Ring Spacing | Annual growth-ring spacing, in mm | Product preset |
-| Lamella Width | CLT and Three-layer board width, in mm | CLT 150; Three-layer panel 120 |
-| Brightness | Colour brightness multiplier | 1 |
-| Earlywood A / Earlywood B | Two colours for lighter growth regions | Product/appearance preset |
-| Latewood | Darker growth-ring colour | Product/appearance preset |
-| Knot | Knot colour | Product/appearance preset |
-| Glue | Adhesive/seam colour; Three-layer defaults are light, veneer bond lines darker | Product preset |
-| Veneer Thickness | Nominal thickness in mm for Plywood or parallel LVL; layer count is fitted to part depth | Plywood 1.5; parallel LVL 3 |
-
-Settings resolve as **product defaults → appearance defaults → explicit inputs**. **Natural** uses softwood-oriented colours and product-specific knot settings. **Clean/Pale** uses restrained colours and sparse knots. Both preserve the selected construction and use reduced board-to-board tint variation.
-
-| Output | Use |
-| --- | --- |
-| Settings | Connect to Timber Preview's Settings input; remains output 0 for older definitions |
-| Product | Canonical product identifier, such as GL, ThreeS or ParallelLVL |
-
-## Timber Preview
-
-Prepares render meshes, maps timber coordinates and supplies textured Rhino viewport materials. Inputs use Grasshopper **item access**: a single settings value broadcasts over many parts, or matching lists assign different materials, fibres and guides per part.
-
-| Input | Use |
-| --- | --- |
-| Geometry | Required mesh, Brep, surface or extrusion |
-| Settings | Optional Timber Material settings; defaults to CLT when omitted |
-| Fibre | Optional world-space vector projected into the base plane; reversing it reverses grain X. Perpendicular vectors are rejected |
-| Base Plane | Optional reference plane; X guides fibre orientation and Z defines thickness/layer direction. Inferred when omitted |
-| Guide Curve | Optional smooth, open centreline for bent timber; takes precedence over automatic surface mapping. Curve direction sets grain X |
-| Show | Enables textured display and texture generation; default true |
-| Geometry Units (0.1.2+) | Source coordinate units: Document (default), Millimetres/mm, Centimetres/cm, Metres/m, Inches or Feet. Converts copies of geometry, guide and plane origins to Rhino units |
-| Stock Geometry (0.1.3+) | Original uncut geometry in the same source units; locks the material field while Geometry is cut. Omit for normal previews |
-
-| Output | Use |
-| --- | --- |
-| Meshes | Render meshes with UV coordinates |
-| Products | Matching product identifiers for those meshes |
-| Aligned Box | One full-geometry bounding box per part in its straight fibre-aligned frame |
-| Frame | Matching material frame, anchored at the aligned box minimum |
-
-Woodie supplies the viewport materials; downstream mesh previews do not automatically inherit the textures. The aligned box and frame remain available with bent mapping. Use a guide for curved multi-face or arbitrary mesh geometry when automatic surface mapping is unavailable. Closed guides, cusps and ambiguous mappings are rejected with messages.
-
-Appearance dimensions (texture, board, ring and veneer settings) use **millimetres**. Geometry coordinates default to **Rhino document units**. If coordinates came from a different unit system, declare it with **Geometry Units**; do not manually scale the same input as well. Woodie cannot infer intended units from a shape and does not guess. Resource-limit errors report physical dimensions and units before suggesting appearance changes. Thin surfaces use a virtual depth for appearance and are not thickened. Quick textures refine in the background. See [usage](docs/usage.md) for mapping, virtual depths, quality limits and caching.
-
-## Timber products
-
-| Product | Construction represented |
-| --- | --- |
-| Solid timber | Continuous solid wood without manufactured joints |
-| KVH | Finger-jointed solid timber |
-| Glulam | Parallel timber laminations |
-| CLT | Seven-layer cross-laminated board preset |
-| Three-layer panel (3S) | Longitudinal faces and cross-grain core |
-| Plywood | Alternating continuous veneers with an odd layer count |
-| LVL — parallel | Longitudinal continuous veneers |
-| Kerto-Q | Cross-banded LVL, based on the 45 mm layup |
-
-These are **visual approximations**, not manufactured or structural specifications. Species, coatings, OSB/MDF and NLT/DLT are outside this release. See [material coverage](docs/materials.md) and [known limitations](docs/material-realism-audit.md).
-
-## Build and package
-
-Use the **.NET 8 SDK**, PowerShell 7 and Rhino 8.20+ for native checks.
+Use the .NET 8 SDK and PowerShell 7. Native checks need a licensed Rhino 8.20+ on Windows; the plugin itself targets cross-platform `net8.0`.
 
 ```powershell
 dotnet build tests/Woodie.Checks -c Release
 dotnet build src/Woodie/Woodie.csproj -c Release
-dotnet tests/Woodie.Checks/bin/Release/net8.0-windows/Woodie.Checks.dll
+dotnet tests/Woodie.Checks/bin/Release/net8.0-windows/Woodie.Checks.dll --rhino --integration
 pwsh ./tools/package.ps1
 ```
 
-The plugin targets cross-platform `net8.0`; the native runner is Windows-only and needs a licensed Rhino installation. Build the runner before the plugin because its project reference uses a DLL target. Packaging writes a slim Rhino 8.20+ Yak (GHA, short README, manifest/icon, licences and the gallery) and a source ZIP with full documentation under `artifacts/release/`. It does not install or publish anything. See [packaging](docs/packaging.md), [development](docs/development.md), [contributing](CONTRIBUTING.md) and the [changelog](CHANGELOG.md).
+Build the checks runner before the plugin because its project reference uses a DLL target. Packaging creates a slim Yak and a source ZIP under `artifacts/release/`; it does not install or publish them. See [development](docs/development.md), [packaging](docs/packaging.md), [validation](docs/validation.md), [contributing](CONTRIBUTING.md) and [changelog](CHANGELOG.md).
 
 ## Research and credits
 

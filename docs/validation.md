@@ -1,6 +1,10 @@
 # Release validation
 
-## 0.1.3 candidate — one clean example and unique icons
+## Native textured baking — 2026-10-25
+
+Bake is integrated. Projection-based mapping failed the remesh gate; production uses Rhino packed surface UVs for Breps/surfaces, enclosing-cube box mapping for solid extrusions, and topology-preserving mesh charts. Headless suite: **40** integration checks and the full **88**-case bake matrix. Cassis inspected native Brep/extrusion/mesh proofs and the stepped knot section. Failed projection probes remain opt-in under `tests/Woodie.Checks/Diagnostics/`. See [feasibility](development/native-baking-feasibility.md), [bake usage](baking.md) and the [bake results](#native-textured-baking-2026-10-25) below. **0.1.3** is published with Mac and a fresh interactive Bake-menu session still outstanding, matching the 0.1.2 publication pattern.
+
+## 0.1.3 — one clean example and unique icons
 
 - Release builds: PASS; zero warnings/errors.
 - Native suite: PASS, 36 checks including regeneration, archive reopening, controls and appearance regressions. All 88 library cases solve in millimetre/metre documents; cutting, knot and custom-buildup demonstrations also solve in inch documents.
@@ -13,7 +17,7 @@
 - Refreshed GHA installation: PASS; SHA-256 matches the tested binary, `43eb4a5cb573b5e295d9d3b94a2ba1fb4b9f1dbbc7f52226b9280962e6076b3c`. The sole installed definition is Timber-preview.ghx; the final section-slider archive matches the repository SHA-256 `5afbef7bced2aedddca137d484903bbb35cb0a71900717a52fe92afdb7b26590`. The two superseded installed definitions were backed up before removal.
 - Installed Windows canvas check: PASS; Consolas annotations, compact materials and distinct Layer/Buildup icons were inspected. The refreshed 414-object example was subsequently loaded from the repository and solved without reported errors; the ribbon popup was not separately captured.
 - Stepped-section example: PASS, all 36 checks after adding Knot section (%). Slider positions reopen and solve in millimetre, metre and inch documents with fixed material frames. The stored default plane normal was explicitly cleared after live inspection revealed a second overlapping cut; regression coverage requires exactly one cut frame and verifies its normal, physical retained volume and stable frame in all three unit systems. The strengthened suite passes all 35 integration checks (example regeneration was not repeated).
-- Live Arctic recording (2026-10-25): PASS through Cassis on Windows. One cutting plane, one closed capped Brep and one outline, with no errors/warnings. A fixed low camera faces the stepped profile. Captured 94 distinct slider positions from 95% down to 15%; the end face reveals a knot. Smoothstep easing and continuous Gaussian weighting add finer steps around four observed knot crossings (83.5%, 66%, 49.5% and 17%). The README embeds a 186-frame, 12.24-second looping GIF with a position indicator. Encoding checks confirm distinct captures, monotonic outbound positions, frame count, loop flag and total duration; encoded knot detail was visually inspected. The camera helper was temporary and removed; the shipped example contains no scripts. Mac native checks remain unperformed; candidate is not published.
+- Live Arctic recording (2026-10-25): PASS through Cassis on Windows. One cutting plane, one closed capped Brep and one outline, with no errors/warnings. A fixed low camera faces the stepped profile. Captured 94 distinct slider positions from 95% down to 15%; the end face reveals a knot. Smoothstep easing and continuous Gaussian weighting add finer steps around four observed knot crossings (83.5%, 66%, 49.5% and 17%). The README embeds a 186-frame, 12.24-second looping GIF with a position indicator. Encoding checks confirm distinct captures, monotonic outbound positions, frame count, loop flag and total duration; encoded knot detail was visually inspected. The camera helper was temporary and removed; the shipped example contains no scripts. Mac native checks remain unperformed.
 
 ## Example resolution correction — 2026-10-24
 
@@ -137,3 +141,13 @@ Pixel fixtures establish consistency with reviewed procedural baselines. They do
 Earlier live Windows checks confirmed the dropdown handlers, collapse/expand, save/reopen and textured preview for all eight products. Those observations predate this release build and must not be presented as a fresh live check of 0.1.0. Native release checks and the live installed session are reported separately.
 
 Mac loading, viewport materials, mouse interaction and OS-level DPI changes must still be checked on Mac hardware. No stable cross-platform acceptance claim is made.
+
+## Native textured baking (2026-10-25)
+
+The Windows native integration suite passes **40 checks**. A separate bake matrix generates final PNGs for **8 products × 11 geometry cases**, using 16 mm/pixel faces and 8 mm/pixel edges with product-appropriate depths. The native geometry/persistence checks use 8/4 mm/pixel. These are declared test settings, not changes to component defaults. The unpublished 0.1.3 Yak GHA SHA-256 is `a3bf4009c696b88b61958e8aa18d0047bb31c5762f4c466910a5db2fc9ad67cc` (matches the local Release build used for those checks).
+
+All eleven geometry cases retain native types and mesh topology, save without render meshes, reopen and regenerate different meshes. No sampled triangle centre loses its native UV chart; largest measured physical interpolation difference is 0.049 mm. Unit/Stock checks cover millimetre, metre and inch documents, capped custom-stack cuts and unchanged sources. Repeated bakes share the registered Rhino render material and content-addressed PNG; per-object legacy simulation rows are a Rhino detail. A failure on item two removes item one's object and new materials. Pre-cancelled batches add nothing. Embedded bitmap lookup succeeds after the external PNG is temporarily made unavailable.
+
+Cassis has displayed native textured Brep, bowed extrusion and mesh proofs. The installed plugin's Bake menu/action, interactive cancellation, stale-solution cancellation, Undo/Redo, and portable reopened viewport still require live checks after PackageManager install. Mac remains untested. See the [native mapping investigation](development/native-baking-feasibility.md) for failed approaches and [bake instructions](baking.md) for limitations. Published with these live/Mac checks outstanding.
+
+The full-resolution stepped knot section was inspected through Cassis in Rendered mode. Moving the inset into native mapping eliminated white face-boundary lines; its 2144-pixel atlas retains 1 mm/pixel face and 0.5 mm/pixel edge settings. The baked object remains a joined capped Brep. See the [close-view evidence](development/images/native-bake-knot-section.png).

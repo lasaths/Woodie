@@ -1,6 +1,6 @@
 # Contributing
 
-Use the build instructions in [README](README.md) and the architecture notes in [development](docs/development.md). Keep changes focused and explain the behaviour and validation in a pull request.
+Use the build instructions in [README](README.md) and the architecture notes in [development](docs/development.md). Repository-specific agent guidance is in [AGENTS.md](AGENTS.md). Keep changes focused and explain the behaviour and validation in a pull request.
 
 For bug reports, include the Woodie/Rhino versions, operating system, document units, input geometry type and a small shareable definition. Remove private geometry, paths and credentials before attaching files. A screenshot of the affected face and edge is useful for appearance issues.
 

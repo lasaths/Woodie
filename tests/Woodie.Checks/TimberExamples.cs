@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Drawing;
 using System.Reflection;
 using GH_IO.Serialization;
@@ -56,7 +56,7 @@ internal static class TimberExamples
         IsolatedHost.LoadExampleBuiltIns(); int seed=ReviewedKnotSeed();
         int start=doc.Objects.Count;
         Text(doc,"01 / CUT THROUGH THE STOCK",40,270,20,true);
-        Text(doc,"Move Position and Angle to expose the interior. Keep Positive reverses the retained side.\nThe original stock fixes the knot field; Cut outputs document units. Preview uses Document.",40,325,12);
+        Text(doc,"Move Position and Angle to expose the interior. Keep Positive reverses the retained side.\nThe original stock fixes the knot field; Cut outputs document units. Preview uses Document.\nRight-click Preview > Bake for native textured geometry. Save textures in the 3dm.",40,325,12);
         Text(doc,"Cut controls",40,420,12,true);
         var position=Slider(doc,"Position (%)",0,100,50,null,40,500);
         var angle=Slider(doc,"Angle (degrees)",-75,75,0,null,40,690);

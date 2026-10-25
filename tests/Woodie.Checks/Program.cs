@@ -1,4 +1,4 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Buffers.Binary;
 using System.IO.Compression;
@@ -17,6 +17,10 @@ internal static class Program
     {
         Directory.CreateDirectory(Output);
         if (args.Contains("--capture-appearance")) { AppearanceChecks.Capture(args[Array.IndexOf(args, "--capture-appearance") + 1]); return 0; }
+        if (args.Contains("--bake-checks")||args.Contains("--bake-matrix")) { RhinoInside.Resolver.Initialize(); RunBakeChecks(args.Contains("--bake-matrix")); return failures==0?0:1; }
+        if (args.Contains("--native-packed-probe")) { RhinoInside.Resolver.Initialize(); RunPackedBakeProbe(); return failures==0?0:1; }
+        if (args.Contains("--native-surface-probe")) { RhinoInside.Resolver.Initialize(); RunSurfaceBakeProbe(); return failures==0?0:1; }
+        if ((args.Contains("--native-bake-probe") || args.Contains("--native-chart-probe") || args.Contains("--native-chart-ray-probe"))) { RhinoInside.Resolver.Initialize(); RunNativeBakeProbe(args.Contains("--native-chart-probe") || args.Contains("--native-chart-ray-probe"),args.Contains("--native-chart-ray-probe")); return failures==0?0:1; }
         if (args.Contains("--material-ui")) {
             RhinoInside.Resolver.Initialize(); RunMaterialUI(); return failures == 0 ? 0 : 1;
         }
@@ -49,6 +53,41 @@ internal static class Program
         }
         Console.WriteLine($"{passed} passed, {failures} failed");
         return failures == 0 ? 0 : 1;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunBakeChecks(bool matrix)
+    {
+        IsolatedHost.Prepare();
+        using var core=new Rhino.Runtime.InProcess.RhinoCore(new[]{"/safemode","/nosplash","/notemplate"},Rhino.Runtime.InProcess.WindowStyle.NoWindow);
+        using var testDoc=Rhino.RhinoDoc.Create(null);testDoc.ModelUnitSystem=Rhino.UnitSystem.Millimeters;IsolatedHost.LoadBuiltIns();
+        if(matrix)Check("Native bake eight-product matrix",NativeBakingChecks.MaterialMatrix);
+        Check("Native bake core",NativeBakingChecks.Core);Check("Native bake geometry",NativeBakingChecks.Geometry);Check("Native bake units/stock",NativeBakingChecks.UnitsAndStock);Check("Native bake component",NativeBakingChecks.Component);Check("Native knot section",NativeBakingChecks.KnotSection);
+        Console.WriteLine($"{passed} passed, {failures} failed");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunPackedBakeProbe()
+    {
+        IsolatedHost.Prepare();
+        using var core=new Rhino.Runtime.InProcess.RhinoCore(new[]{"/safemode","/nosplash","/notemplate"},Rhino.Runtime.InProcess.WindowStyle.NoWindow);
+        Check("Native packed surface UV persistence across remeshing",PackedBakeProbe.Run);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunSurfaceBakeProbe()
+    {
+        IsolatedHost.Prepare();
+        using var core=new Rhino.Runtime.InProcess.RhinoCore(new[]{"/safemode","/nosplash","/notemplate"},Rhino.Runtime.InProcess.WindowStyle.NoWindow);
+        Check("Native joined Brep surface materials survive reopening and remesh",SurfaceBakeProbe.Run);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunNativeBakeProbe(bool continuousCharts,bool rayProjection)
+    {
+        IsolatedHost.Prepare();
+        using var core = new Rhino.Runtime.InProcess.RhinoCore(new[] { "/safemode", "/nosplash", "/notemplate" }, Rhino.Runtime.InProcess.WindowStyle.NoWindow);
+        Check("Native geometry mapping survives reopen and remeshing",()=>NativeBakeProbe.Run(continuousCharts,rayProjection));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

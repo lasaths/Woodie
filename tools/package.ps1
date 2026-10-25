@@ -42,7 +42,7 @@ if ($VerifiedGhaPath -and (Get-FileHash -LiteralPath $gha -Algorithm SHA256).Has
 $binary = [IO.File]::ReadAllBytes($gha)
 if ([Text.Encoding]::ASCII.GetString($binary) -match $privatePath -or [Text.Encoding]::Unicode.GetString($binary) -match $privatePath) { throw 'Private machine path embedded in the GHA.' }
 Copy-Item -LiteralPath $gha -Destination (Join-Path $yakStage 'net8.0')
-foreach ($name in @('README.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'docs', 'examples')) {
+foreach ($name in @('README.md', 'AGENTS.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'docs', 'examples')) {
     Copy-Item -LiteralPath (Join-Path $repo $name) -Destination $sourceStage -Recurse
 }
 # Runtime package: keep developer documentation exclusively in the source archive.
@@ -56,7 +56,8 @@ foreach ($name in @('.gitignore', '.gitattributes', '.editorconfig', 'Woodie.sln
 # Enumerate only redistributable source; never recurse into caches or build outputs.
 foreach ($folder in @('src', 'tests')) {
     foreach ($file in Get-PublicFiles (Join-Path $repo $folder)) {
-        $relative = [IO.Path]::GetRelativePath($repo, $file.FullName)
+        # PS5 / .NET Framework lack Path.GetRelativePath; Uri keeps separators portable.
+        $relative = [Uri]::new(($repo.TrimEnd('\') + '\')).MakeRelativeUri([Uri]::new($file.FullName)).ToString().Replace('/', [IO.Path]::DirectorySeparatorChar)
         $destination = Join-Path $sourceStage $relative
         New-Item -ItemType Directory -Path ([IO.Path]::GetDirectoryName($destination)) -Force | Out-Null
         Copy-Item -LiteralPath $file.FullName -Destination $destination
@@ -91,7 +92,7 @@ try {
         if ($binaries.Count -ne 1 -or $binaries[0] -ne 'net8.0/Woodie.gha') { throw 'Package may contain only the Woodie GHA binary.' }
         if (@($names | Where-Object { $_ -match '(?i)\.ghx?$' }).Count -ne 1) { throw 'Exactly one combined Grasshopper example is required.' }
         if (@($names | Where-Object { $_ -match '(?i)(^|/)(bin|obj|artifacts|\.git)/|\.(log|tmp|cs|csproj|ps1|mjs)$' }).Count) { throw 'Development files leaked into Yak.' }
-        if (@($names | Where-Object { $_ -match '(?i)^docs/|^(CHANGELOG|CONTRIBUTING)\.md$' }).Count) { throw 'Developer documentation must not be shipped in the runtime Yak.' }
+        if (@($names | Where-Object { $_ -match '(?i)^docs/|^(AGENTS|CLAUDE|CHANGELOG|CONTRIBUTING)\.md$' }).Count) { throw 'Developer documentation must not be shipped in the runtime Yak.' }
         foreach ($credited in @('manifest.yml', 'README.md')) {
             $reader = [IO.StreamReader]::new($archive.GetEntry($credited).Open())
             try { $text = $reader.ReadToEnd() } finally { $reader.Dispose() }
@@ -99,7 +100,7 @@ try {
             if ($credited -eq 'manifest.yml' -and $text -notmatch ('(?m)^version:\s*' + [regex]::Escape($version) + '\s*$')) { throw 'Yak version does not match source.' }
         }
         $stream = $archive.GetEntry('net8.0/Woodie.gha').Open()
-        try { $sha = [Security.Cryptography.SHA256]::Create(); $packedHash = [Convert]::ToHexString($sha.ComputeHash($stream)); $sha.Dispose() } finally { $stream.Dispose() }
+        try { $sha = [Security.Cryptography.SHA256]::Create(); $packedHash = [BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-', ''); $sha.Dispose() } finally { $stream.Dispose() }
         if ($packedHash -ne (Get-FileHash -LiteralPath $gha -Algorithm SHA256).Hash) { throw 'Packaged GHA differs from the selected release artifact.' }
     } finally { $archive.Dispose() }
     $packageDestination = Join-Path $release $package.Name

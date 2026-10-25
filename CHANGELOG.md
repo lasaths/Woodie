@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.1.3 — Unreleased
+## 0.1.3 — 2026-10-25
+
+- Add native textured baking through Timber Preview's standard Bake action, with owned solved snapshots, persistent content-addressed PNGs and one native object per item.
+- Preserve native types/topology and stock-aware material coordinates; enforce the 8192-pixel bake limit without silently reducing density.
+- Register portable textures and shared Rhino render materials; roll back incomplete batches and retain normal bake attributes/layers.
 
 - Add a movable capped section to the stepped knot example and a profile-facing Arctic animation in the README.
 - Consolidate every demonstration and all 88 library cases into one clean definition with Scribble headings, rectangular groups, compact controls and product Show toggles.

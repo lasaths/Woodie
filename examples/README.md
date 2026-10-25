@@ -1,4 +1,4 @@
-# Timber playground — Woodie 0.1.3 candidate
+# Timber playground — Woodie 0.1.3
 
 Open **Timber-preview.ghx**. Everything is in this one self-contained definition: cutting, knot transitions, a custom buildup, and all eight products across eleven geometry cases. No external geometry or scripts are required.
 
@@ -51,3 +51,5 @@ The definition works in millimetre, metre and inch Rhino documents. All embedded
 Face resolution is **1 mm/pixel**. Smaller values provide finer close views at greater texture cost; allow background refinement to finish. Open surfaces remain open. The guide sets grain coordinates and does not predict physical bending. Custom stacks and presets are visual approximations, not structural specifications; see the [material limitations](https://github.com/lasaths/Woodie/blob/main/docs/material-realism-audit.md).
 
 The appearance is inspired by Maria Larsson et al., [Procedural Texturing of Solid Wood with Knots](https://doi.org/10.1145/3528223.3530081), SIGGRAPH 2022. Credits and MIT notices accompany Woodie.
+
+Bake the remaining cut or any library object by right-clicking its **Timber Preview → Bake** (0.1.3). This creates native textured Rhino geometry; enable **Save textures** when saving the model. Shape changes require rebaking.

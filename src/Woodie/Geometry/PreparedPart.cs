@@ -1,10 +1,15 @@
-using Rhino.Geometry;
+﻿using Rhino.Geometry;
 using Woodie.Appearance;
 
 namespace Woodie.Geometry;
 
 public sealed class PreparedPart : IDisposable
 {
+    readonly ICoordinateMap coordinateMap;
+    readonly Point3d coordinateMinimum;
+    readonly bool usesVirtualDepth;
+    PreparedPart(ICoordinateMap map,Point3d minimum,bool virtualDepth) { coordinateMap=map;coordinateMinimum=minimum;usesVirtualDepth=virtualDepth; }
+    internal Point3d MaterialPoint(Point3d point) { var p=coordinateMap.Map(point);return new Point3d((p.X-coordinateMinimum.X)*UnitToMm,(p.Y-coordinateMinimum.Y)*UnitToMm,usesVirtualDepth?DepthMm:(p.Z-coordinateMinimum.Z)*UnitToMm); }
     public Mesh Mesh { get; private init; }
     public Point3d[] Coordinates { get; private init; }
     public AlignmentResult Alignment { get; private init; }
@@ -61,7 +66,7 @@ public sealed class PreparedPart : IDisposable
                 coords[i] = new Point3d((coords[i].X - bounds.Min.X) * unitToMm, (coords[i].Y - bounds.Min.Y) * unitToMm,
                     virtualDepth ? h : (coords[i].Z - bounds.Min.Z) * unitToMm);
             mesh.Normals.ComputeNormals();
-            return new PreparedPart { Mesh = mesh, Coordinates = coords, Alignment = alignment, LengthMm = l, WidthMm = w,
+            return new PreparedPart(mapper,bounds.Min,virtualDepth) { Mesh = mesh, Coordinates = coords, Alignment = alignment, LengthMm = l, WidthMm = w,
                 DepthMm = h, Mapping = mapper.Description + (stock == null ? "" : " · fixed stock"), UnitToMm = unitToMm, ToleranceMm = tolerance * unitToMm, Remarks = remarks, Layers = layers };
         }
         catch { mesh.Dispose(); throw; }

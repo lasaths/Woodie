@@ -18,7 +18,7 @@ $examples = @($files | Where-Object { $_.Extension -in @('.gh', '.ghx') })
 if ($examples.Count -ne 1 -or $examples[0].Name -ne 'Timber-preview.ghx') {
     throw 'Public source must contain only the combined Timber-preview.ghx example.'
 }
-foreach ($required in @('README.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'examples/Timber-preview.ghx')) {
+foreach ($required in @('README.md', 'AGENTS.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'examples/Timber-preview.ghx')) {
     if (-not (Test-Path -LiteralPath (Join-Path $Root $required) -PathType Leaf)) { throw "Missing $required" }
 }
 # Patterns are assembled to avoid flagging this scanner's own source.

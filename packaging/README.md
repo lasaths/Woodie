@@ -21,3 +21,5 @@ Appearance inspired by Maria Larsson et al., [Procedural Texturing of Solid Wood
 ACM TOG 41(4), Article 45, SIGGRAPH 2022; independent C# procedural adaptation.
 
 MIT licence and third-party credits are included alongside this file.
+
+Bake the remaining cut or any library object by right-clicking its **Timber Preview → Bake** (0.1.3). This creates native textured Rhino geometry; enable **Save textures** when saving the model. Shape changes require rebaking.

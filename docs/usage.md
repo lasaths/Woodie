@@ -2,7 +2,7 @@
 
 ## Custom layers, buildups and cuts
 
-These controls require the 0.1.3 candidate. They are under **Display → Woodie** and retain item matching. Layer lists are ordered from the stock's minimum thickness coordinate upward.
+These controls require **0.1.3**. They are under **Display → Woodie** and retain item matching. Layer lists are ordered from the stock's minimum thickness coordinate upward.
 
 **Timber Layer** takes Thickness (mm; default 30), Direction (right-click: Longitudinal 0° or Cross 90°), Construction (Solid, Boards or Veneer; default Boards), Board Width (mm; default 150) and End Joints (None, Butt or Finger; default None). Width and joints describe board construction; solid and continuous veneer layers require no end joints. The component outputs an immutable Layer and its description. Native input values, named choices, wires and undo behavior are managed by Grasshopper.
 
@@ -54,7 +54,7 @@ Connect a Mesh, Brep, Surface, or Extrusion to **Geometry**. Settings are option
 | Show | Enables preview and texture generation |
 | Geometry Units (0.1.2+) | Source coordinate units; defaults to Document. mm/cm/m/inches/feet are accepted, including full unit names |
 
-Outputs are UV-mapped meshes, matching product labels, and one aligned bounding box and frame per input item. The component supplies viewport materials; connecting the mesh output to another preview or baking it does not transfer Woodie's texture materials.
+Outputs are UV-mapped meshes, matching product labels, and one aligned bounding box and frame per input item. The component supplies viewport materials; connecting the mesh output to another preview does not transfer the materials. Use Timber Preview's own Bake action for native textured objects; see [baking](baking.md).
 
 ### Source geometry units (0.1.2+)
 
@@ -101,3 +101,63 @@ The renderer pads unused triangle-tile space with edge colours to prevent filter
 
 
 See [material limitations](material-realism-audit.md) before using a preset as a reference for a particular manufactured product.
+
+## Complete component input reference
+
+## Timber Material
+
+Creates settings for Timber Preview. The on-canvas **Product** and **Appearance** dropdowns default to **CLT / Natural**.
+
+Click the small triangle beneath the icon to hide or reveal the whole control panel without losing wires or values ([collapsed view](images/material-collapsed.png)). **Advanced inputs** exposes additional ports. Advanced ports stay visible if hiding them would remove wires or stored overrides.
+
+| Basic input | What it controls | Default |
+| --- | --- | --- |
+| Product | Optional product name or identifier; a wire or stored value takes control of the Product dropdown | Dropdown selection |
+| Seed | Repeatable random grain, knots and board variation | 0 |
+| Resolution | Broad-face texture density in **mm/pixel**; smaller values give finer detail at greater cost | 2 |
+
+| Advanced input | What it controls | Default |
+| --- | --- | --- |
+| Edge Resolution | Narrow-face texture density, in mm/pixel | 0.5; Kerto-Q 0.25 |
+| Knot Density | Knot frequency in knots/metre; 0 removes knots | Product/appearance preset; Clean/Pale 0.25 |
+| Ring Spacing | Annual growth-ring spacing, in mm | Product preset |
+| Lamella Width | CLT and Three-layer board width, in mm | CLT 150; Three-layer panel 120 |
+| Brightness | Colour brightness multiplier | 1 |
+| Earlywood A / Earlywood B | Two colours for lighter growth regions | Product/appearance preset |
+| Latewood | Darker growth-ring colour | Product/appearance preset |
+| Knot | Knot colour | Product/appearance preset |
+| Glue | Adhesive/seam colour; Three-layer defaults are light, veneer bond lines darker | Product preset |
+| Veneer Thickness | Nominal thickness in mm for Plywood or parallel LVL; layer count is fitted to part depth | Plywood 1.5; parallel LVL 3 |
+
+Settings resolve as **product defaults → appearance defaults → explicit inputs**. **Natural** uses softwood-oriented colours and product-specific knot settings. **Clean/Pale** uses restrained colours and sparse knots. Both preserve the selected construction and use reduced board-to-board tint variation.
+
+| Output | Use |
+| --- | --- |
+| Settings | Connect to Timber Preview's Settings input; remains output 0 for older definitions |
+| Product | Canonical product identifier, such as GL, ThreeS or ParallelLVL |
+
+## Timber Preview
+
+Prepares render meshes, maps timber coordinates and supplies textured Rhino viewport materials. Inputs use Grasshopper **item access**: a single settings value broadcasts over many parts, or matching lists assign different materials, fibres and guides per part.
+
+| Input | Use |
+| --- | --- |
+| Geometry | Required mesh, Brep, surface or extrusion |
+| Settings | Optional Timber Material settings; defaults to CLT when omitted |
+| Fibre | Optional world-space vector projected into the base plane; reversing it reverses grain X. Perpendicular vectors are rejected |
+| Base Plane | Optional reference plane; X guides fibre orientation and Z defines thickness/layer direction. Inferred when omitted |
+| Guide Curve | Optional smooth, open centreline for bent timber; takes precedence over automatic surface mapping. Curve direction sets grain X |
+| Show | Enables textured display and texture generation; default true |
+| Geometry Units (0.1.2+) | Source coordinate units: Document (default), Millimetres/mm, Centimetres/cm, Metres/m, Inches or Feet. Converts copies of geometry, guide and plane origins to Rhino units |
+| Stock Geometry (0.1.3+) | Original uncut geometry in the same source units; locks the material field while Geometry is cut. Omit for normal previews |
+
+| Output | Use |
+| --- | --- |
+| Meshes | Render meshes with UV coordinates |
+| Products | Matching product identifiers for those meshes |
+| Aligned Box | One full-geometry bounding box per part in its straight fibre-aligned frame |
+| Frame | Matching material frame, anchored at the aligned box minimum |
+
+Woodie supplies the viewport materials; downstream mesh previews do not automatically inherit the textures. The aligned box and frame remain available with bent mapping. Use a guide for curved multi-face or arbitrary mesh geometry when automatic surface mapping is unavailable. Closed guides, cusps and ambiguous mappings are rejected with messages.
+
+Appearance dimensions (texture, board, ring and veneer settings) use **millimetres**. Geometry coordinates default to **Rhino document units**. If coordinates came from a different unit system, declare it with **Geometry Units**; do not manually scale the same input as well. Woodie cannot infer intended units from a shape and does not guess. Resource-limit errors report physical dimensions and units before suggesting appearance changes. Thin surfaces use a virtual depth for appearance and are not thickened. Quick textures refine in the background. See [usage](usage.md) for mapping, virtual depths, quality limits and caching.

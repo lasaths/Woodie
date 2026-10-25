@@ -1,8 +1,11 @@
-using System.Drawing;
+﻿using System.Drawing;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Types;
 using Rhino;
 using Rhino.Display;
+using Rhino.DocObjects;
+using Rhino.Input.Custom;
+using Woodie.Baking;
 using Rhino.Geometry;
 using Woodie.Appearance;
 using Woodie.Geometry;
@@ -17,6 +20,9 @@ public sealed class PreviewComponent : GH_Component
     readonly Dictionary<string, DisplayMaterial> materials = new();
     readonly RefinementGate refinement = new();
     BoundingBox bounds = BoundingBox.Unset;
+    readonly List<BakeSnapshot> bakeItems=new();
+    CancellationTokenSource activeBake;
+    long solutionVersion;
 
     public PreviewComponent() : base("Timber Preview", "TimberPreview", "Preview Rhino geometry as straight or bent timber. " + ResearchCredit.Timber, "Display", "Woodie")
     {
@@ -56,6 +62,7 @@ public sealed class PreviewComponent : GH_Component
 
     protected override void BeforeSolveInstance()
     {
+        InvalidateBake();
         refinement.Cancel();
         ReleasePages();
         bounds = BoundingBox.Unset;
@@ -65,12 +72,14 @@ public sealed class PreviewComponent : GH_Component
 
     public override void ExpireSolution(bool recompute)
     {
+        InvalidateBake();
         refinement.Cancel();
         base.ExpireSolution(recompute);
     }
 
     public override void ClearData()
     {
+        InvalidateBake();
         refinement.Cancel();
         ReleasePages();
         bounds = BoundingBox.Unset;
@@ -126,6 +135,7 @@ public sealed class PreviewComponent : GH_Component
             da.SetDataList(0, displayed.Select(m => m.Mesh));
             da.SetDataList(1, displayed.Select(m => settings.Layers == null ? m.Product.ToString() : "Custom buildup (" + m.Product + " palette)"));
             Message = part.Mapping + (pending.Count > 0 ? " · refining" : "");
+            bakeItems.Add(new BakeSnapshot(input.Geometry,settings,documentUnits,input.BasePlane,hasFibre?f:null,input.Guide,input.Stock));
         }
         catch (Exception ex)
         {
@@ -169,13 +179,62 @@ public sealed class PreviewComponent : GH_Component
 
     public override void RemovedFromDocument(GH_Document document)
     {
+        InvalidateBake();
         refinement.Cancel(); ReleasePages();
         base.RemovedFromDocument(document);
     }
     public override void DocumentContextChanged(GH_Document document, GH_DocumentContext context)
     {
+        activeBake?.Cancel();
         refinement.Cancel();
         base.DocumentContextChanged(document, context);
+    }
+    sealed class BakeProgress(Action<double> report) : IProgress<double> { public void Report(double value)=>report(value); }
+    void InvalidateBake()
+    {
+        solutionVersion++;activeBake?.Cancel();
+        foreach(var item in bakeItems)item.Dispose();bakeItems.Clear();
+    }
+    public override bool IsBakeCapable=>bakeItems.Count>0 && activeBake==null;
+    public override void BakeGeometry(RhinoDoc doc,List<Guid> objIds)=>BakeGeometry(doc,null,objIds);
+    public override void BakeGeometry(RhinoDoc doc,ObjectAttributes attributes,List<Guid> objIds)
+    {
+        if(!IsBakeCapable||doc==null)return;
+        refinement.Cancel();
+        long revision=solutionVersion;var units=doc.ModelUnitSystem;uint serial=doc.RuntimeSerialNumber;
+        var copies=new List<BakeSnapshot>();var plans=new List<NativeBakePlan>();
+        using var source=new CancellationTokenSource();activeBake=source;
+        EventHandler escape=(_,_)=>source.Cancel();RhinoApp.EscapeKeyPressed+=escape;
+        try {
+            foreach(var item in bakeItems)copies.Add(item.CopyFor(item.Units));
+            using var cancel=new GetCancel { ProgressReporting=true,ProgressMessage="Preparing full-quality native timber textures" };
+            using var linked=CancellationTokenSource.CreateLinkedTokenSource(source.Token,cancel.Token);
+            foreach(var item in copies) {
+                linked.Token.ThrowIfCancellationRequested();plans.Add(new NativeBakePlan(item,doc,linked.Token));
+                RhinoApp.Wait();linked.Token.ThrowIfCancellationRequested();
+            }
+            var task=Task.Run(()=> {
+                for(int i=0;i<plans.Count;i++) {
+                    int at=i;
+                    var progress=new BakeProgress(p=>cancel.Progress.Report((at+p)/plans.Count));
+                    plans[i].Render(linked.Token,progress);
+                }
+            },linked.Token);
+            cancel.Wait(task,doc);
+            // Cancellation must finish the worker before its immutable jobs are disposed.
+            if(!task.IsCompleted)linked.Cancel();
+            task.GetAwaiter().GetResult();linked.Token.ThrowIfCancellationRequested();
+            if(revision!=solutionVersion||RhinoDoc.FromRuntimeSerialNumber(serial)==null||doc.ModelUnitSystem!=units)throw new OperationCanceledException("The solution or bake document changed.");
+            var ids=TimberBaker.Commit(doc,plans,attributes,linked.Token);foreach(var id in ids)objIds.Add(id);
+            AddRuntimeMessage(GH_RuntimeMessageLevel.Remark,$"Baked {ids.Count} native timber object(s). Use Save textures when saving the 3dm for portability. Later shape edits require rebaking.");
+        }
+        catch(OperationCanceledException){AddRuntimeMessage(GH_RuntimeMessageLevel.Remark,"Timber bake cancelled; no new objects were added.");}
+        catch(Exception ex){AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,"Timber bake failed: "+ex.Message);}
+        finally {
+            RhinoApp.EscapeKeyPressed-=escape;activeBake=null;
+            foreach(var plan in plans)plan.Dispose();foreach(var item in copies)item.Dispose();
+            if(revision==solutionVersion&&OnPingDocument()!=null&&!Hidden&&pending.Count>0)ExpireSolution(true);
+        }
     }
     public override void DrawViewportMeshes(IGH_PreviewArgs args)
     {

@@ -27,6 +27,7 @@ internal static class RhinoChecks
         Check("Custom buildup construction, thickness, serialization and cache", BuildupCutChecks.Layers);
         Check("Capped stock cuts preserve the material field and units", BuildupCutChecks.Cutting);
         if (integration) Check("Layer, buildup, cut and preview component workflow", BuildupCutChecks.Components);
+        if(integration){Check("Native textured baking, reuse, persistence and cancellation",NativeBakingChecks.Core);Check("Native geometry UV layouts preserve source types and topology",NativeBakingChecks.Geometry);Check("Native stock-aware baking in mm, metres and inches",NativeBakingChecks.UnitsAndStock);Check("Native baking snapshot lifecycle and Show",NativeBakingChecks.Component);Check("Native stepped knot section at final example resolution",NativeBakingChecks.KnotSection);}
         Check("Curved surface uses physical arc lengths", SurfaceBend);
         Check("Guide bending, closed guide and cusp rejection", GuideBend);
         Check("Material-space cut orientation on straight and guided surfaces", MappedCutOrientation);
