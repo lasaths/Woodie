@@ -31,3 +31,7 @@ Deferred: scrimber, flattened-culm products, explicit user-authored manufacturin
 ## Randomness
 
 Resolve features once per specimen. Use separate deterministic streams for geometry and appearance. Correlate shape changes smoothly along the specimen. Pieces from the same source stay correlated; independent sources vary independently. Changing resolution, remeshing or moving a cut must not reshuffle features.
+
+## Implementation note: natural stock
+
+Log bark is the outer material region (default 5 mm) and fresh cuts reveal timber. Moso bamboo uses hollow internodes, annular end rims, external ridges, internal diaphragms, graded vascular bundles and node fibre changes. Node positions and colour are shared between geometry and appearance and are appearance adaptations of the cited research. See stock-architecture.md.

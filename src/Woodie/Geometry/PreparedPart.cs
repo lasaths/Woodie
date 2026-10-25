@@ -1,4 +1,4 @@
-﻿using Rhino.Geometry;
+using Rhino.Geometry;
 using Woodie.Appearance;
 
 namespace Woodie.Geometry;
@@ -29,10 +29,10 @@ public sealed class PreparedPart : IDisposable
         if (stock != null && !stock.IsValid) throw new ArgumentException("Stock Geometry is invalid.");
         if (!double.IsFinite(unitToMm) || unitToMm <= 0) throw new ArgumentException("Document units must have a valid physical scale.");
         var remarks = new List<string>();
-        Mesh mesh = MakeMesh(geometry);
+        Mesh mesh = MakeMesh(geometry, settings.GridAngle);
         try
         {
-            using var stockMesh = stock == null ? null : MakeMesh(stock);
+            using var stockMesh = stock == null ? null : MakeMesh(stock, settings.GridAngle);
             mesh.Faces.ConvertQuadsToTriangles();
             mesh.Faces.CullDegenerateFaces();
             mesh.Compact();
@@ -70,7 +70,7 @@ public sealed class PreparedPart : IDisposable
         catch { mesh.Dispose(); throw; }
     }
 
-    static Mesh MakeMesh(GeometryBase geometry)
+    static Mesh MakeMesh(GeometryBase geometry, double gridAngle)
     {
         if (geometry is Mesh mesh) return mesh.DuplicateMesh();
         Brep brep;
@@ -85,7 +85,7 @@ public sealed class PreparedPart : IDisposable
         try
         {
             Mesh[] pieces = Mesh.CreateFromBrep(brep, new MeshingParameters(MeshingParameters.Default)
-            { RefineGrid = true, GridAngle = Math.PI / 180, MinimumEdgeLength = 0 });
+            { RefineGrid = true, GridAngle = gridAngle, MinimumEdgeLength = 0 });
             if (pieces == null || pieces.Length == 0) throw new ArgumentException("Rhino could not mesh the geometry.");
             var result = new Mesh();
             foreach (var piece in pieces) { result.Append(piece); piece.Dispose(); }

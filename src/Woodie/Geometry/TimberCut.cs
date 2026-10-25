@@ -13,6 +13,25 @@ public sealed class TimberCutResult : IDisposable
 
 public static class TimberCut
 {
+    // Brep.Trim drops closed void shells, so hollow stock is cut shell by shell: untouched shells kept whole, crossed shells trimmed,
+    // and one planar cap built from all section loops so the voids stay holes in the annulus.
+    static void CutHollow(Brep[] shells, Plane plane, double tolerance, Curve[] curves, TimberCutResult result)
+    {
+        var parts = new List<Brep>();
+        foreach (var shell in shells) {
+            var z = shell.GetBoundingBox(plane);
+            if (z.Max.Z <= tolerance) parts.Add(shell.DuplicateBrep());
+            else if (z.Min.Z < -tolerance) parts.AddRange(shell.Trim(plane, tolerance) ?? Array.Empty<Brep>());
+        }
+        if (curves != null) parts.AddRange(Brep.CreatePlanarBreps(curves.Select(c => c.DuplicateCurve()), tolerance) ?? Array.Empty<Brep>());
+        foreach (var solid in NaturalGeometry.JoinSolids(parts, tolerance)) {
+            if (!solid.IsValid || !solid.IsSolid) { solid.Dispose(); throw new ArgumentException("The cut could not be capped into a valid solid. Check stock validity and document tolerance."); }
+            if (solid.SolidOrientation == BrepSolidOrientation.Inward) solid.Flip();
+            result.Geometry.Add(solid);
+        }
+        foreach (var part in parts) part.Dispose();
+    }
+
     public static TimberCutResult Create(GeometryBase stock, Plane plane, bool positive, double tolerance)
     {
         if (stock == null || !stock.IsValid) throw new ArgumentException("Supply valid closed Brep, solid Extrusion or closed Mesh stock.");
@@ -32,6 +51,8 @@ public static class TimberCut
             if (source is Brep b) {
                 Intersection.BrepPlane(b, plane, tolerance, out Curve[] curves, out _);
                 if (curves != null) result.Outlines.AddRange(curves);
+                var shells = b.GetConnectedComponents();
+                if (shells != null && shells.Length > 1) { CutHollow(shells, plane, tolerance, curves, result); return result; }
                 var pieces = b.Trim(plane, tolerance);
                 if (pieces == null || pieces.Length == 0) throw new ArgumentException("Rhino could not split the solid at this plane. Move the plane away from a tangent or tiny feature.");
                 try {

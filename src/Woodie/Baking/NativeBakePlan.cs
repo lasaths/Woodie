@@ -48,7 +48,7 @@ internal sealed class NativeBakePlan : IDisposable
         var settings = input.Settings.Duplicate();
         var layers = TimberLayups.Resolve(settings, part.DepthMm, part.WidthMm, part.ToleranceMm);
         TextureAtlas.ValidateAppearanceBudget(part, settings, layers);
-        native = NativeUvGeometry.Create(input.Geometry, input.Units, 8 * Math.Max(settings.Resolution, settings.EffectiveEdgeResolution), ct);
+        native = NativeUvGeometry.Create(input.Geometry, input.Units, 8 * Math.Max(settings.Resolution, settings.EffectiveEdgeResolution), ct, settings.GridAngle);
         try
         {
             Product = settings.Product; Label = settings.Layers == null ? Product.ToString() : "Custom buildup (" + Product + " palette)"; length = part.LengthMm; width = part.WidthMm; depth = part.DepthMm; tolerance = Math.Max(.01, 2 * part.ToleranceMm);

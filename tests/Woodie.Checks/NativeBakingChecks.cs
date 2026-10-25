@@ -141,7 +141,7 @@ internal static class NativeBakingChecks
     public static void MaterialMatrix()
     {
         using var doc=Document("materials");int count=0;
-        foreach(var product in Enum.GetValues<TimberProduct>()) {
+        foreach(var product in TimberProducts.MenuOrder) {
             var settings=new TimberSettings {Product=product,Resolution=16,EdgeResolution=8,Seed=3};
             var fixtures=GeometryGallery.Fixtures(settings.VirtualDepthMm);
             try {foreach(var fixture in fixtures) {

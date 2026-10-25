@@ -17,7 +17,7 @@ internal static class BuildupCutChecks
     static TimberPanel Panel(PreparedPart p, TimberSettings s) => new(s.Product,p.LengthMm,p.WidthMm,p.DepthMm,s.Seed,s.EffectiveKnotDensity,s.Palette(),resolvedLayers:TimberLayups.Resolve(s,p.DepthMm,p.WidthMm,p.ToleranceMm));
     public static void Layers()
     {
-        foreach (var product in Enum.GetValues<TimberProduct>()) {
+        foreach (var product in TimberProducts.MenuOrder) {
             var original = new TimberSettings { Product=product, Seed=17 }; double h=original.VirtualDepthMm;
             var expanded = original.Duplicate(); expanded.Layers=TimberLayups.Recipes(original,h);
             var before = new TimberPanel(product,1200,300,h,17,original.EffectiveKnotDensity,original.Palette());

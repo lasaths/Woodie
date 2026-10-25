@@ -11,7 +11,7 @@ internal static class StockChecks
 {
     public static void TimberParity()
     {
-        foreach (var product in Enum.GetValues<TimberProduct>())
+        foreach (var product in TimberProducts.MenuOrder)
         {
             var settings = new TimberSettings { Product = product, Seed = 17, KnotDensity = 0 };
             double h = settings.VirtualDepthMm;

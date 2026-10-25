@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Buffers.Binary;
 using System.IO.Compression;
@@ -38,6 +38,8 @@ internal static class Program
         }
         Check("Settings validation", Settings);
         Check("Stock sampling matches TimberPanel for all eight products", StockChecks.TimberParity);
+        Check("Natural Log and Bamboo features: seed identity, variation bounds, hollow anatomy", NaturalChecks.Features);
+        Check("Natural Log and Bamboo appearance: bark, timber, nodes, variation zero", NaturalChecks.Appearance);
         Check("Managed PNG round trip", Png);
         Check("Appearance deterministic for all eight products", Appearance);
         Check("Product constructions and appearance precedence", MaterialChecks.Constructions);
@@ -282,7 +284,7 @@ internal static class Program
         string golden = Path.Combine(AppContext.BaseDirectory, "appearance-golden.txt");
         Assert(File.Exists(golden), "Missing reference appearance fixture");
         var expected = File.ReadAllLines(golden).Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => l.Split(' ')).ToDictionary(p => p[0], p => p[1]);
-        foreach (TimberProduct product in Enum.GetValues<TimberProduct>())
+        foreach (var product in TimberProducts.MenuOrder)   // natural Log/Bamboo have no TimberPanel golden
         {
             string hash = AppearanceHash(product);
             Console.WriteLine($"  {product} {hash}");

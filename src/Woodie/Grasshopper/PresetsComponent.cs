@@ -19,7 +19,7 @@ public sealed class PresetsComponent : GH_Component
     {
         p.AddIntegerParameter("Preset", "P", "Right-click this input to choose CLT, ThreeS, GL, KertoQ or KVH", GH_ParamAccess.item, 0);
         var parameter = (Param_Integer)p[0];
-        foreach (TimberProduct product in Enum.GetValues<TimberProduct>())
+        foreach (TimberProduct product in TimberProducts.MenuOrder)
             parameter.AddNamedValue(product.ToString(), (int)product);
     }
 

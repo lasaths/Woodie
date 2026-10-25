@@ -42,6 +42,8 @@ public static class TimberLayups {
     var t = new List<Tuple<double, bool>>(); double bw = 150; bool ven = false, fj = true;
     switch (p) {
       case TimberProduct.SolidTimber:
+      case TimberProduct.Log:      // natural stock: one unbroken layer; anatomy comes from the natural material model
+      case TimberProduct.Bamboo:
         t.Add(Tuple.Create(H, true)); bw = Math.Max(W, 1); fj = false; break;
       case TimberProduct.Plywood:
       case TimberProduct.ParallelLVL: {
@@ -71,10 +73,10 @@ public static class TimberLayups {
     foreach (var e in t) { var ly = new TimberLayer { z0 = z, z1 = z + e.Item1 * s, alongX = e.Item2, bw = bw, veneer = ven, fingers = fj }; z = ly.z1;
       if (p == TimberProduct.ThreeS) { ly.segMin = 1e5; ly.segMax = 1e5; if (!ly.alongX) { ly.segMin = 800; ly.segMax = 2500; } } // butt-jointed core
       if (ven) { ly.bw = 1200; ly.segMin = 1800; ly.segMax = 2000; }   // veneer sheet ~1.2 m clip x ~1.9 m log length, scarfed
-      if (p == TimberProduct.SolidTimber || p == TimberProduct.Plywood || p == TimberProduct.ParallelLVL) {
+      if (p == TimberProduct.SolidTimber || p == TimberProduct.Plywood || p == TimberProduct.ParallelLVL || p == TimberProduct.Log || p == TimberProduct.Bamboo) {
         ly.continuous = true; ly.bw = Math.Max(W, H) + 1; // no clip seams within a generic veneer sheet
       }
-      ly.solidPith = p == TimberProduct.GL || p == TimberProduct.KVH || p == TimberProduct.SolidTimber;
+      ly.solidPith = p == TimberProduct.GL || p == TimberProduct.KVH || p == TimberProduct.SolidTimber || p == TimberProduct.Log || p == TimberProduct.Bamboo;
       ly.fingersThroughDepth = p == TimberProduct.GL || p == TimberProduct.KVH;
       L.Add(ly); }
     return L;

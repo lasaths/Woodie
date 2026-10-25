@@ -28,6 +28,7 @@ public sealed class StockDefinition : IMaterialModel
     {
         if (settings == null) throw new ArgumentNullException(nameof(settings));
         settings.Validate();
+        if (settings.IsNatural) return FromNatural(settings, lengthMm, widthMm, depthMm, layers);
         if (!(lengthMm > 0) || !(widthMm > 0) || !(depthMm > 0) || !double.IsFinite(lengthMm + widthMm + depthMm))
             throw new ArgumentException("Stock dimensions must be finite and positive.");
         layers ??= TimberLayups.Resolve(settings, depthMm, widthMm, toleranceMm);
@@ -35,6 +36,18 @@ public sealed class StockDefinition : IMaterialModel
             settings.EffectiveKnotDensity, settings.Palette(), settings.LamellaWidth, settings.VeneerThickness, layers);
         var specimen = new SourceSpecimen(settings.Seed);
         var piece = new MaterialPiece(specimen, panel, 0, 0, 0, lengthMm, widthMm, depthMm);
+        return new StockDefinition(settings.Duplicate(), lengthMm, widthMm, depthMm, layers, new Construction(new[] { piece }));
+    }
+
+    /// <summary>One natural Log or Bamboo piece; features resolve once from the settings' seed. Dimensions are the stock's mapped bounds in mm.</summary>
+    public static StockDefinition FromNatural(TimberSettings settings, double lengthMm, double widthMm, double depthMm,
+        IReadOnlyList<TimberLayer> layers = null)
+    {
+        var features = NaturalFeatures.Resolve(settings, lengthMm, widthMm, depthMm);
+        var palette = settings.Palette();
+        IMaterialModel model = features.Bamboo ? new BambooMaterialModel(features, palette, widthMm, depthMm) : new LogMaterialModel(features, palette, widthMm, depthMm);
+        var piece = new MaterialPiece(new SourceSpecimen(settings.Seed, features), model, 0, 0, 0, lengthMm, widthMm, depthMm);
+        layers ??= TimberLayups.Make(settings.Product, depthMm, widthMm);
         return new StockDefinition(settings.Duplicate(), lengthMm, widthMm, depthMm, layers, new Construction(new[] { piece }));
     }
 

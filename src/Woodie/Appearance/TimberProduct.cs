@@ -1,7 +1,7 @@
 namespace Woodie.Appearance;
 
 // Existing archive identifiers are permanent. Append new products only.
-public enum TimberProduct { CLT = 0, ThreeS = 1, GL = 2, KertoQ = 3, KVH = 4, SolidTimber = 5, Plywood = 6, ParallelLVL = 7 }
+public enum TimberProduct { CLT = 0, ThreeS = 1, GL = 2, KertoQ = 3, KVH = 4, SolidTimber = 5, Plywood = 6, ParallelLVL = 7, Log = 8, Bamboo = 9 }
 public enum TimberLook { Natural = 0, CleanPale = 1 }
 
 public static class TimberProducts
