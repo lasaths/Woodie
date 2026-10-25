@@ -20,7 +20,6 @@ public sealed class PreparedPart : IDisposable
     public double UnitToMm { get; private init; }
     public double ToleranceMm { get; private init; }
     public IReadOnlyList<string> Remarks { get; private init; }
-    public IReadOnlyList<TimberLayer> Layers { get; private init; }
 
     public static PreparedPart Create(GeometryBase geometry, TimberSettings settings, double unitToMm,
         double tolerance, Plane? basePlane = null, Vector3d? fibre = null, Curve guide = null, GeometryBase stock = null)
@@ -61,13 +60,12 @@ public sealed class PreparedPart : IDisposable
             bool virtualDepth = mapper is SurfaceMap || h <= tolerance * unitToMm;
             if (virtualDepth) { h = settings.VirtualDepthMm; remarks.Add($"Appearance only: using virtual timber depth {h:0.###} mm."); }
             if (l < 0.01 || w < 0.01 || !double.IsFinite(l + w + h)) throw new ArgumentException("Mapped geometry is degenerate. Change the base plane or guide direction.");
-            var layers = TimberLayups.Resolve(settings, h, w, tolerance * unitToMm);
             for (int i = 0; i < coords.Length; i++)
                 coords[i] = new Point3d((coords[i].X - bounds.Min.X) * unitToMm, (coords[i].Y - bounds.Min.Y) * unitToMm,
                     virtualDepth ? h : (coords[i].Z - bounds.Min.Z) * unitToMm);
             mesh.Normals.ComputeNormals();
             return new PreparedPart(mapper,bounds.Min,virtualDepth) { Mesh = mesh, Coordinates = coords, Alignment = alignment, LengthMm = l, WidthMm = w,
-                DepthMm = h, Mapping = mapper.Description + (stock == null ? "" : " · fixed stock"), UnitToMm = unitToMm, ToleranceMm = tolerance * unitToMm, Remarks = remarks, Layers = layers };
+                DepthMm = h, Mapping = mapper.Description + (stock == null ? "" : " · fixed stock"), UnitToMm = unitToMm, ToleranceMm = tolerance * unitToMm, Remarks = remarks };
         }
         catch { mesh.Dispose(); throw; }
     }

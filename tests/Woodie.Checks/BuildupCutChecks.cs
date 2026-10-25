@@ -14,7 +14,7 @@ namespace Woodie.Checks;
 internal static class BuildupCutChecks
 {
     internal static Brep Stock() => new Box(Plane.WorldXY, new Interval(0,1200), new Interval(0,300), new Interval(0,120)).ToBrep();
-    static TimberPanel Panel(PreparedPart p, TimberSettings s) => new(s.Product,p.LengthMm,p.WidthMm,p.DepthMm,s.Seed,s.EffectiveKnotDensity,s.Palette(),resolvedLayers:p.Layers);
+    static TimberPanel Panel(PreparedPart p, TimberSettings s) => new(s.Product,p.LengthMm,p.WidthMm,p.DepthMm,s.Seed,s.EffectiveKnotDensity,s.Palette(),resolvedLayers:TimberLayups.Resolve(s,p.DepthMm,p.WidthMm,p.ToleranceMm));
     public static void Layers()
     {
         foreach (var product in Enum.GetValues<TimberProduct>()) {

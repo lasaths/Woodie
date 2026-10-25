@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Woodie.Stock;
 
 namespace Woodie.Appearance
 {
 // Independent C# implementation inspired by Larsson et al. 2022, "Procedural Texturing of Solid Wood with Knots" (ACM TOG 41(4)); noise after Perlin 2002, "Improving Noise". See README.md and docs/appearance.md.
 // Cut-aware detail is an independent
 // adaptation informed by Larsson et al. 2024 and Mokume 2025. See docs/appearance.md.
-public class TimberPanel {
+public class TimberPanel : IMaterialModel {
   // Colours and growth samples are values: no allocation for every texel.
   struct Rgb {
     double r, g, b;
@@ -64,6 +65,8 @@ public class TimberPanel {
 
   // Layup query: point -> board/segment, local fibre coords (u along fibre, v across in-plane, w across thickness), glue flag
   public int Col(double x, double y, double z) => Colour(x, y, z, -1, -1);
+  public int Sample(double x, double y, double z) => Col(x, y, z);
+  public int Sample(double x, double y, double z, double nx, double ny, double nz) => Col(x, y, z, nx, ny, nz);
 
   /// <summary>Sample using a geometric cut normal in panel material coordinates (not a lighting normal).</summary>
   /// <remarks>Normal length and winding do not affect colour. Invalid/zero normals use the position-only fallback.</remarks>

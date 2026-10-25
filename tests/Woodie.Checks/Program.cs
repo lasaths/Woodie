@@ -37,6 +37,7 @@ internal static class Program
             return failures == 0 ? 0 : 1;
         }
         Check("Settings validation", Settings);
+        Check("Stock sampling matches TimberPanel for all eight products", StockChecks.TimberParity);
         Check("Managed PNG round trip", Png);
         Check("Appearance deterministic for all eight products", Appearance);
         Check("Product constructions and appearance precedence", MaterialChecks.Constructions);
@@ -158,7 +159,7 @@ internal static class Program
                 a = Math.Max(0, a); b = Math.Max(0, b); c = Math.Max(0, c);
                 double sum = a + b + c; a /= sum; b /= sum; c /= sum;
                 double Snap(double v, double max) => v < 1e-3 ? 0 : v > max - 1e-3 ? max : v;
-                pixels[(tile.Y + y) * page.Width + tile.X + x] = panel.Col(
+                pixels[(tile.Y + y) * page.Width + tile.X + x] = panel.Sample(
                     Snap(a * tile.A.X + b * tile.B.X + c * tile.C.X, page.L),
                     Snap(a * tile.A.Y + b * tile.B.Y + c * tile.C.Y, page.W),
                     Snap(a * tile.A.Z + b * tile.B.Z + c * tile.C.Z, page.H), normal.X, normal.Y, normal.Z);
@@ -180,7 +181,7 @@ internal static class Program
                 if (cut == 3) (tile.B, tile.C) = (tile.C, tile.B);
             }
             using var page = new AtlasPage { Width = 59, Height = tile.Height + 6, L = 2400, W = 600, H = 200,
-                Panel = new Lazy<TimberPanel>(() => new TimberPanel(TimberProduct.CLT, 2400, 600, 200, 17)), Tiles = new() { tile } };
+                Panel = new Lazy<Woodie.Stock.IMaterialModel>(() => new TimberPanel(TimberProduct.CLT, 2400, 600, 200, 17)), Tiles = new() { tile } };
             int[] expected = BaselineRasterize(page), actual = TextureAtlas.Rasterize(page, CancellationToken.None);
             for (int y = 0; y < tile.Height; y++) for (int x = 0; x < tile.Width; x++) {
                 double px = x - TextureAtlas.Gutter, py = y - TextureAtlas.Gutter;
@@ -209,7 +210,7 @@ internal static class Program
         {
             string path = Path.Combine(Output, "benchmark-" + Guid.NewGuid().ToString("N") + ".png");
             using var page = new AtlasPage { Width = 2034, Height = 1017, L = 2400, W = 600, H = 200,
-                TexturePath = path, Panel = new Lazy<TimberPanel>(() => new TimberPanel(TimberProduct.CLT, 2400, 600, 200, 17)),
+                TexturePath = path, Panel = new Lazy<Woodie.Stock.IMaterialModel>(() => new TimberPanel(TimberProduct.CLT, 2400, 600, 200, 17)),
                 Tiles = new List<TriangleTile> {
                     new() { X = 0, Y = 0, Width = 1017, Height = 1017, Bx = 1010, Cx = 0, Cy = 1010,
                         A = new(0, 0, 200), B = new(2400, 0, 200), C = new(0, 600, 200) },

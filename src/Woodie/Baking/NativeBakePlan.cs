@@ -5,6 +5,7 @@ using Rhino;
 using Rhino.Geometry;
 using Woodie.Appearance;
 using Woodie.Rendering;
+using Woodie.Stock;
 namespace Woodie.Baking;
 
 // A native object plus an immutable managed pixel job. No Rhino document is touched by Render.
@@ -14,7 +15,7 @@ internal sealed class NativeBakePlan : IDisposable
     const int Gutter = 3;
     readonly NativeUvGeometry native;
     readonly Triangle[] triangles;
-    readonly Lazy<TimberPanel> panel;
+    readonly Lazy<IMaterialModel> panel;
     readonly double length, width, depth, tolerance;
     readonly string directory, recipe;
     internal GeometryBase Geometry => native.Geometry;
@@ -45,13 +46,13 @@ internal sealed class NativeBakePlan : IDisposable
         using var input = snapshot.CopyFor(target.ModelUnitSystem);
         using var part = input.Prepare(target.ModelAbsoluteTolerance);
         var settings = input.Settings.Duplicate();
-        TextureAtlas.ValidateAppearanceBudget(part, settings, part.Layers);
+        var layers = TimberLayups.Resolve(settings, part.DepthMm, part.WidthMm, part.ToleranceMm);
+        TextureAtlas.ValidateAppearanceBudget(part, settings, layers);
         native = NativeUvGeometry.Create(input.Geometry, input.Units, 8 * Math.Max(settings.Resolution, settings.EffectiveEdgeResolution), ct);
         try
         {
             Product = settings.Product; Label = settings.Layers == null ? Product.ToString() : "Custom buildup (" + Product + " palette)"; length = part.LengthMm; width = part.WidthMm; depth = part.DepthMm; tolerance = Math.Max(.01, 2 * part.ToleranceMm);
-            var layers = part.Layers.ToArray();
-            panel = new Lazy<TimberPanel>(() => new TimberPanel(settings.Product, length, width, depth, settings.Seed, settings.EffectiveKnotDensity, settings.Palette(), settings.LamellaWidth, settings.VeneerThickness, layers));
+            panel = new Lazy<IMaterialModel>(() => StockDefinition.FromTimber(settings, length, width, depth, part.ToleranceMm, layers));
             var mesh = native.Samples;
             if (mesh.TextureCoordinates.Count != mesh.Vertices.Count) throw new ArgumentException("Rhino did not supply native UV coordinates for this geometry.");
             var coordinates = mesh.Vertices.ToPoint3dArray().Select(part.MaterialPoint).ToArray();
@@ -122,7 +123,7 @@ internal sealed class NativeBakePlan : IDisposable
                     double c = ((t.B.X - t.A.X) * (v - t.A.Y) - (t.B.Y - t.A.Y) * (u - t.A.X)) / t.Area;
                     if (b < -.0000001 || c < -.0000001 || b + c > 1.0000001) continue;
                     var p = t.Point(new Point2d(u, v));
-                    pixels[y * Side + x] = field.Col(TextureAtlas.Snap(p.X, length), TextureAtlas.Snap(p.Y, width), TextureAtlas.Snap(p.Z, depth), n.X, n.Y, n.Z);
+                    pixels[y * Side + x] = field.Sample(TextureAtlas.Snap(p.X, length), TextureAtlas.Snap(p.Y, width), TextureAtlas.Snap(p.Z, depth), n.X, n.Y, n.Z);
                 }
             }
             int done = Interlocked.Increment(ref completed); if (done % 32 == 0) progress?.Report(.8 * done / bands.Length);

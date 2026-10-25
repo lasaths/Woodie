@@ -93,7 +93,7 @@ internal static class ExteriorGlueChecks
             {
                 var actual = TextureAtlas.Rasterize(page, CancellationToken.None);
                 var palette = settings.Palette(); palette.GlueK = 0;
-                page.Panel = new Lazy<TimberPanel>(() => new TimberPanel(settings.Product, part.LengthMm, part.WidthMm,
+                page.Panel = new Lazy<Woodie.Stock.IMaterialModel>(() => new TimberPanel(settings.Product, part.LengthMm, part.WidthMm,
                     part.DepthMm, settings.Seed, 0, palette, settings.LamellaWidth));
                 var expected = TextureAtlas.Rasterize(page, CancellationToken.None);
                 foreach (var tile in page.Tiles)
