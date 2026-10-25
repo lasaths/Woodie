@@ -1,5 +1,13 @@
 # Using Woodie
 
+## Stock models (0.1.4+)
+
+**Material Stock** wraps a Mesh/Brep/Surface/Extrusion plus Material or Buildup settings into a **Stock Model**. **Natural Stock** builds a tapered Log or hollow Moso bamboo culm from a straight Line (base→tip), with Diameter/Wall/Node Spacing/Bark/Taper/Variation in millimetres and Geometry Units for the line. Both output a Stock Model and ordinary geometry.
+
+Wire **Stock Model → Timber Cut → Stock Model** and **Stock Model → Timber Preview**. In Stock Model mode, Preview rejects simultaneous Geometry, Settings, Fibre, Base Plane, Guide and Stock Geometry overrides. Show still works. Legacy Geometry + Settings + optional Stock Geometry continues on the original ports. Cut appends a Stock Model output list while keeping Geometry, Stock and Section Outlines at their previous indices.
+
+Engineered bamboo products `BambooLumber` (plain-pressed), `BambooLumberSide` and `BambooPanel` are available by name on Timber Display Settings. They are not in the Material product dropdown; strip width/thickness reuse Lamella Width / Veneer Thickness. BambooPanel uses Layer/Buildup with the usual exact-thickness and Fit to part rules. See [stock architecture](development/stock-architecture.md) and [natural-materials research](development/natural-materials-research.md).
+
 ## Custom layers, buildups and cuts
 
 These controls require **0.1.3**. They are under **Display → Woodie** and retain item matching. Layer lists are ordered from the stock's minimum thickness coordinate upward.

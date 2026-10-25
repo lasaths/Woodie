@@ -1,6 +1,8 @@
-# Timber playground — Woodie 0.1.3
+# Timber playground — Woodie 0.1.3 (+ 0.1.4 stock APIs)
 
 Open **Timber-preview.ghx**. Everything is in this one self-contained definition: cutting, knot transitions, a custom buildup, and all eight products across eleven geometry cases. No external geometry or scripts are required.
+
+**0.1.4 stock APIs** (Material Stock, Natural Stock, Stock Model ports on Cut/Preview, engineered bamboo products) are in the plugin and covered by managed/native checks. They are not yet laid out as extra Scribble sections in this gallery; use the new components directly or wait for a follow-up example update.
 
 ## Find your way around
 
