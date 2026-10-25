@@ -89,7 +89,7 @@ try {
         }
         $binaries = @($names | Where-Object { $_ -match '(?i)\.(dll|gha|rhp|exe|pdb)$' })
         if ($binaries.Count -ne 1 -or $binaries[0] -ne 'net8.0/Woodie.gha') { throw 'Package may contain only the Woodie GHA binary.' }
-        if (@($names | Where-Object { $_ -match '(?i)\.ghx?$' }).Count -ne 1) { throw 'Exactly one Grasshopper example is required.' }
+        if (@($names | Where-Object { $_ -match '(?i)\.ghx?$' }).Count -ne 1) { throw 'Exactly one combined Grasshopper example is required.' }
         if (@($names | Where-Object { $_ -match '(?i)(^|/)(bin|obj|artifacts|\.git)/|\.(log|tmp|cs|csproj|ps1|mjs)$' }).Count) { throw 'Development files leaked into Yak.' }
         if (@($names | Where-Object { $_ -match '(?i)^docs/|^(CHANGELOG|CONTRIBUTING)\.md$' }).Count) { throw 'Developer documentation must not be shipped in the runtime Yak.' }
         foreach ($credited in @('manifest.yml', 'README.md')) {

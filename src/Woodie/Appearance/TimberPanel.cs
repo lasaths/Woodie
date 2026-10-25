@@ -24,9 +24,9 @@ public class TimberPanel {
   class Lam { public double c0, c1; public List<Seg> segs = new List<Seg>(); }
   public TimberProduct Prod; public TimberPalette Pal; double L, W, H, RS = 3.5; List<TimberLayer> layers; List<Lam>[] lams;
 
-  public TimberPanel(TimberProduct prod, double L, double W, double H, int seed, double KD = 3, TimberPalette pal = null, double boardWidth = double.NaN, double veneerThickness = double.NaN) {
+  public TimberPanel(TimberProduct prod, double L, double W, double H, int seed, double KD = 3, TimberPalette pal = null, double boardWidth = double.NaN, double veneerThickness = double.NaN, IReadOnlyList<TimberLayer> resolvedLayers = null) {
     Prod = prod; this.L = L; this.W = W; this.H = H; Pal = pal ?? TimberPalette.For(prod); RS = Pal.RS;
-    layers = TimberLayups.Make(prod, H, W, boardWidth, veneerThickness); lams = new List<Lam>[layers.Count]; var rnd0 = new Random(seed);
+    layers = resolvedLayers?.ToList() ?? TimberLayups.Make(prod, H, W, boardWidth, veneerThickness); lams = new List<Lam>[layers.Count]; var rnd0 = new Random(seed);
     for (int i = 0; i < layers.Count; i++) {
       var ly = layers[i]; double T = ly.z1 - ly.z0, across = ly.alongX ? W : L, len = ly.alongX ? L : W; lams[i] = new List<Lam>();
       int j = 0;
@@ -34,8 +34,9 @@ public class TimberPanel {
         var rnd = new Random(unchecked(seed * 7919 + i * 1009 + j++ * 131));   // v2.3: per-board seed -> boards stable when W/L change
         double bw = ly.continuous ? across : ly.veneer ? ly.bw * (0.8 + 0.4 * rnd.NextDouble()) : ly.bw;
         var lm = new Lam { c0 = c, c1 = Math.Min(across, c + bw) }; c = lm.c1;
-        double segmentMin = ly.continuous ? len + 2 : ly.segMin, segmentMax = ly.continuous ? len + 2 : ly.segMax;
-        for (double u = ly.continuous ? -1 : -rnd.NextDouble() * ly.segMax; u < len; ) {
+        bool unbroken = ly.continuous || ly.continuousLength;
+        double segmentMin = unbroken ? len + 2 : ly.segMin, segmentMax = unbroken ? len + 2 : ly.segMax;
+        for (double u = unbroken ? -1 : -rnd.NextDouble() * ly.segMax; u < len; ) {
           var s = new Seg { u0 = u, u1 = u + segmentMin + rnd.NextDouble() * (segmentMax - segmentMin), seed = rnd.Next(1 << 20) }; var r = new Random(s.seed);
           // Independent integer hash: no draws from the calibrated board/knot sequence.
           uint detail = unchecked((uint)s.seed * 747796405u + 2891336453u);
@@ -44,7 +45,7 @@ public class TimberPanel {
           double side = ly.veneer ? 30 : (ly.bw > 300 ? Math.Min(ly.bw, T) : ly.bw);
           s.pv = (r.NextDouble() - 0.5) * side * 1.2;
           s.pw = (r.NextDouble() < 0.5 ? -1 : 1) * (T * 0.5 + 40 + r.NextDouble() * 200);
-          if (Prod == TimberProduct.GL || Prod == TimberProduct.KVH || Prod == TimberProduct.SolidTimber) { s.pv = (r.NextDouble() - 0.5) * W * 0.3; s.pw = (r.NextDouble() < 0.5 ? -1 : 1) * (T * 0.5 + 5 + r.NextDouble() * 35); }  // pith just outside the lamella
+          if (ly.solidPith) { s.pv = (r.NextDouble() - 0.5) * W * 0.3; s.pw = (r.NextDouble() < 0.5 ? -1 : 1) * (T * 0.5 + 5 + r.NextDouble() * 35); }  // pith just outside the lamella
           s.R0 = 80 + r.NextDouble() * 120;                      // veneer: peel radius
           double tr = r.NextDouble(); s.tint = 1 - Pal.TintSpread / 2 + tr * Pal.TintSpread - (tr < 0.25 ? Pal.DarkTail * (0.25 - tr) / 0.25 : 0);   // v2.2: widen lower side only
           // NOTE: the tuned v2 script never assigned the pith drift (tv, tw) or per-board yellow shift (yel) (the code sat behind a comment), so they stay 0 to keep the calibrated look and random sequence identical.
@@ -79,7 +80,7 @@ public class TimberPanel {
     var ly = layers[li]; bool ax = ly.alongX; double c = ax ? y : x, u = ax ? x : y;
     var lay = lams[li]; int j = 0; while (j < lay.Count - 1 && c >= lay[j].c1) j++; var lm = lay[j];
     double v = c - 0.5 * (lm.c0 + lm.c1), w = z - 0.5 * (ly.z0 + ly.z1);
-    double fc = (Prod == TimberProduct.GL || Prod == TimberProduct.KVH) ? z : c;   // GL: fingers through the lamella height -> zig-zag on side faces, straight line on top
+    double fc = ly.fingersThroughDepth ? z : c;   // GL: fingers through the lamella height -> zig-zag on side faces, straight line on top
     double tri = ly.fingers ? Math.Abs(((fc / 6.0) % 1.0 + 1) % 1.0 - 0.5) * 2 - 0.5 : 0, uj = u - tri * 20;   // finger joints 20 mm / 6 mm pitch
     if (ly.veneer) uj = u - (w / 1.5) * 12;                                                                    // scarf joint ~1:8 slope through the veneer
     int si = 0; while (si < lm.segs.Count - 1 && uj >= lm.segs[si].u1) si++; var s = lm.segs[si];
@@ -107,7 +108,7 @@ public class TimberPanel {
       col = Wood(s, u, Math.Sqrt(dv * dv + dw * dw), Math.Atan2(dw, dv), v, w, endg);
     }
     double dark = Lerp(1, 0.94, endg), gk = gap < Pal.GlueW ? Pal.GlueK : 0;
-    if (!ly.continuous && jd < 0.5) gk = Math.Max(gk, ly.veneer ? (z > H - 3.01 ? 0.15 : Pal.GlueK) : Pal.JointK);  // face scarfs light glue (front side), inner dark
+    if (!ly.continuous && !ly.continuousLength && jd < 0.5) gk = Math.Max(gk, ly.veneer ? (z > H - 3.01 ? 0.15 : Pal.GlueK) : Pal.JointK);  // face scarfs light glue (front side), inner dark
     for (int k = 0; k < 3; k++) col[k] = (col[k] * (1 - gk) + Pal.Glue[k] * gk) * dark;
     double g = Pal.Gain; return (255 << 24) | (Cl(col[0] * g * Pal.GR) << 16) | (Cl(col[1] * g * Pal.GG * Lerp(1, Pal.EndG, endg)) << 8) | Cl(col[2] * g * Pal.GB * Lerp(1, Pal.EndB, endg));
   }

@@ -6,9 +6,36 @@ namespace Woodie.Appearance
 {
 // Representative product layups; see docs/materials.md and docs/material-realism-audit.md.
 // These visual presets do not reproduce every manufacturer thickness or construction.
-public class TimberLayer { public double z0, z1, bw; public bool alongX, veneer, fingers, continuous; public double segMin = 1500, segMax = 4000; }
+public class TimberLayer { public double z0, z1, bw; public bool alongX, veneer, fingers, continuous, continuousLength, solidPith, fingersThroughDepth; public double segMin = 1500, segMax = 4000; }
 
 public static class TimberLayups {
+  public static List<TimberLayer> Resolve(TimberSettings settings, double height, double width, double toleranceMm = .01) {
+    if (settings.Layers == null) return Make(settings.Product, height, width, settings.LamellaWidth, settings.VeneerThickness);
+    settings.Validate();
+    double total = settings.Layers.Sum(l => l.Thickness);
+    if (!settings.FitToPart && Math.Abs(total - height) > Math.Max(.01, toleranceMm))
+      throw new ArgumentException(FormattableString.Invariant($"Buildup is {total:0.###} mm thick; stock is {height:0.###} mm. Match the layer thicknesses or enable Fit to part on Timber Buildup."));
+    double scale = settings.FitToPart ? height / total : 1, z = 0;
+    var result = new List<TimberLayer>();
+    foreach (var layer in settings.Layers) {
+      bool full = layer.Construction != LayerConstruction.Boards;
+      var resolved = new TimberLayer { z0 = z, z1 = z + layer.Thickness * scale, alongX = layer.AlongX,
+        bw = double.IsNaN(layer.BoardWidth) ? Math.Max(width, 1) : layer.BoardWidth,
+        veneer = layer.Construction == LayerConstruction.Veneer,
+        fingers = layer.Joints == LayerJoints.Finger, continuous = full && (layer.Construction == LayerConstruction.Solid || layer.ContinuousSheet),
+        continuousLength = layer.Joints == LayerJoints.None && layer.Construction == LayerConstruction.Boards,
+        solidPith = layer.Construction == LayerConstruction.Solid || layer.NearPith,
+        fingersThroughDepth = layer.Joints == LayerJoints.Finger && double.IsNaN(layer.BoardWidth),
+        segMin = layer.SegmentMin, segMax = layer.SegmentMax };
+      z = resolved.z1; result.Add(resolved);
+    }
+    return result;
+  }
+
+  public static LayerDefinition[] Recipes(TimberSettings settings, double height) => Resolve(settings, height, 1000).Select(l =>
+    new LayerDefinition(l.z1 - l.z0, l.alongX, l.veneer ? LayerConstruction.Veneer : l.continuous ? LayerConstruction.Solid : LayerConstruction.Boards,
+      l.solidPith || l.fingersThroughDepth ? double.NaN : l.bw, l.veneer || l.continuous ? LayerJoints.None : l.fingers ? LayerJoints.Finger : l.continuousLength ? LayerJoints.None : LayerJoints.Butt,
+      l.segMin, l.segMax, l.continuous, l.solidPith)).ToArray();
   // thicknesses with orientation: true = along x (bold in drawing), false = cross
   public static List<TimberLayer> Make(TimberProduct p, double H, double W, double boardWidth = double.NaN, double veneerThickness = double.NaN) {
     if (!(H > 0) || !(W > 0)) throw new ArgumentException("Timber dimensions must be positive.");
@@ -47,6 +74,8 @@ public static class TimberLayups {
       if (p == TimberProduct.SolidTimber || p == TimberProduct.Plywood || p == TimberProduct.ParallelLVL) {
         ly.continuous = true; ly.bw = Math.Max(W, H) + 1; // no clip seams within a generic veneer sheet
       }
+      ly.solidPith = p == TimberProduct.GL || p == TimberProduct.KVH || p == TimberProduct.SolidTimber;
+      ly.fingersThroughDepth = p == TimberProduct.GL || p == TimberProduct.KVH;
       L.Add(ly); }
     return L;
   }

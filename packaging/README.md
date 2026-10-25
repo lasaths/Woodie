@@ -5,7 +5,9 @@ Procedural timber preview for Rhino 8.20+ / .NET 8 and Grasshopper.
 Install and update through Rhino **PackageManager**, searching for **woodie**.
 Components are under **Display → Woodie**: connect Timber Material → Settings to Timber Preview → Settings.
 
-Open examples/Timber-preview.ghx for all eight products and eleven geometry cases.
+Open the single examples/Timber-preview.ghx definition for all examples. Numbered Scribble headings and groups organize cutting, knot transitions, custom buildup and the eight-product library.
+The three demonstrations are visible initially. Product library Show toggles start off; Material panels start compact.
+Timber Layer and Timber Buildup define physical stacks and a section diagram. Exact thicknesses are checked; Fit to part scales proportions explicitly. Connect Timber Cut's uncut Stock output to Preview's Stock Geometry to preserve grain while cutting. Cut outputs are in document units.
 The gallery declares Geometry Units = Millimetres, so it works in millimetre, metre and inch documents.
 For your own geometry, Geometry Units defaults to Document; choose the source units explicitly when the coordinate values came from another unit system.
 Input geometry is never transformed in place.

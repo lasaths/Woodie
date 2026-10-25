@@ -24,6 +24,9 @@ internal static class RhinoChecks
         Check("Explicit source units scale geometry in mm, m and inch documents", UnitInputChecks.Explicit);
         Check("Source-unit guides, planes, invalid units and legacy input archives", UnitInputChecks.GuidesAndArchives);
         Check("Geometry larger than 30 metres is accepted", LargeGeometry);
+        Check("Custom buildup construction, thickness, serialization and cache", BuildupCutChecks.Layers);
+        Check("Capped stock cuts preserve the material field and units", BuildupCutChecks.Cutting);
+        if (integration) Check("Layer, buildup, cut and preview component workflow", BuildupCutChecks.Components);
         Check("Curved surface uses physical arc lengths", SurfaceBend);
         Check("Guide bending, closed guide and cusp rejection", GuideBend);
         Check("Material-space cut orientation on straight and guided surfaces", MappedCutOrientation);
@@ -36,7 +39,9 @@ internal static class RhinoChecks
         if (integration) Check("Material dropdowns, precedence, undo, migration and serialization", MaterialChecks.Interface);
         if (integration) Check("Grasshopper solve, broadcast, lifecycle and definition reopen", SolveAndReopen);
         if (examples) Check("Generate and reopen the release example", Examples);
+        Check("Shipped trimmed surfaces retain fine texture resolution", ExampleDefinitions.SurfaceResolution);
         if (integration) Check("Shipped release example reopens and solves", () => ExampleDefinitions.Verify(Path.GetFullPath(Path.Combine(Output, "../../examples/Timber-preview.ghx"))));
+        if (integration) Check("Combined cutting, knot and buildup example reopens and moves in mm, m and inches", () => TimberExamples.Verify(Path.GetFullPath(Path.Combine(Output, "../../examples"))));
     }
 
     static Brep Plate() => new Box(Plane.WorldXY, new Interval(0, 1200), new Interval(0, 600), new Interval(0, 120)).ToBrep();
@@ -234,6 +239,9 @@ internal static class RhinoChecks
         Assert(component.Description.Contains("3528223.3530081") && new SettingsComponent().Description.Contains("Larsson"), "Research credit missing from component descriptions");
         Assert(component.Icon_24x24.Width == 24 && new SettingsComponent().Icon_24x24.Height == 24, "Missing Phosphor icons");
         Assert(new PresetsComponent().Icon_24x24.Width == 24, "Missing Phosphor preset icon");
+        var icons = new IGH_DocumentObject[] { component, new SettingsComponent(), new LayerComponent(), new BuildupComponent(), new CutComponent(), new PresetsComponent(), new SettingsParam(), new LayerParam() };
+        var fingerprints = icons.Select(o => string.Join(",", Enumerable.Range(0,24*24).Select(i => o.Icon_24x24.GetPixel(i%24,i/24).ToArgb()))).ToArray();
+        Assert(fingerprints.Distinct().Count()==icons.Length,"Every Woodie component and parameter needs a unique Phosphor icon");
     }
 
     static void Presets()

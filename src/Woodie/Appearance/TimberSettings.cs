@@ -20,11 +20,14 @@ public sealed class TimberSettings
     public Color? Latewood { get; set; }
     public Color? Knot { get; set; }
     public Color? Glue { get; set; }
+    IReadOnlyList<LayerDefinition> layers;
+    public IReadOnlyList<LayerDefinition> Layers { get => layers; set => layers = value == null ? null : Array.AsReadOnly(value.ToArray()); }
+    public bool FitToPart { get; set; }
 
-    public TimberSettings Duplicate() => (TimberSettings)MemberwiseClone();
+    public TimberSettings Duplicate() { var copy = (TimberSettings)MemberwiseClone(); copy.Layers = Layers; return copy; }
     public double EffectiveEdgeResolution => double.IsNaN(EdgeResolution) ? (Product == TimberProduct.KertoQ ? 0.25 : 0.5) : EdgeResolution;
     public double EffectiveKnotDensity => double.IsNaN(KnotDensity) ? (Look == TimberLook.CleanPale ? 0.25 : Product == TimberProduct.CLT ? 8 : 3) : KnotDensity;
-    public double VirtualDepthMm => Product switch
+    public double VirtualDepthMm => Layers != null ? Layers.Sum(l => l.Thickness) : Product switch
     {
         TimberProduct.CLT => 200, TimberProduct.ThreeS => 27,
         TimberProduct.KertoQ or TimberProduct.ParallelLVL => 45, TimberProduct.Plywood => 18, _ => 120
@@ -32,6 +35,11 @@ public sealed class TimberSettings
 
     public void Validate()
     {
+        if (Layers != null) {
+            if (Layers.Count == 0 || Layers.Count > 4096) throw new ArgumentException("Buildup needs 1–4096 layers.");
+            foreach (var layer in Layers) { if (layer == null) throw new ArgumentException("Buildup contains an empty layer."); layer.Validate(); }
+            if (!double.IsFinite(Layers.Sum(l => l.Thickness))) throw new ArgumentException("Total buildup thickness is invalid.");
+        }
         if (!Enum.IsDefined(typeof(TimberProduct), Product)) throw new ArgumentException("Unknown timber product.");
         if (!Enum.IsDefined(typeof(TimberLook), Look)) throw new ArgumentException("Unknown appearance preset.");
         OptionalPositive(VeneerThickness, "Veneer thickness");
@@ -74,7 +82,8 @@ public sealed class TimberSettings
     static double[] Rgb(Color c) => new double[] { c.R, c.G, c.B };
     internal string Key => string.Join("|", (int)Product, (int)Look, F(VeneerThickness), Seed, F(Resolution), F(EdgeResolution), F(KnotDensity),
         F(RingSpacing), F(LamellaWidth), F(Brightness), EarlywoodA?.ToArgb(), EarlywoodB?.ToArgb(),
-        Latewood?.ToArgb(), Knot?.ToArgb(), Glue?.ToArgb());
+        Latewood?.ToArgb(), Knot?.ToArgb(), Glue?.ToArgb()) + (Layers == null ? "" : "|custom|" + FitToPart + "|" + string.Join(";", Layers.Select(l =>
+            string.Join(",", F(l.Thickness), l.AlongX, (int)l.Construction, F(l.BoardWidth), (int)l.Joints, F(l.SegmentMin), F(l.SegmentMax), l.ContinuousSheet, l.NearPith))));
     static string F(double v) => v.ToString("R", CultureInfo.InvariantCulture);
-    public override string ToString() => $"Woodie {Product}, seed {Seed}, {Resolution:0.##} mm/px";
+    public override string ToString() => $"Woodie {(Layers == null ? Product.ToString() : "Custom buildup (" + Product + " palette)")}, seed {Seed}, {Resolution:0.##} mm/px";
 }

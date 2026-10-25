@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.3 — Unreleased
+
+- Add a movable capped section to the stepped knot example and a profile-facing Arctic animation in the README.
+- Consolidate every demonstration and all 88 library cases into one clean definition with Scribble headings, rectangular groups, compact controls and product Show toggles.
+- Give every component and parameter its own Phosphor icon; Timber Layer and Timber Buildup are visually distinct.
+- Use Consolas for the combined example's Scribble headings, notes and live schedule.
+
+- Add Timber Layer, Timber Buildup and Timber Cut, with physical layer schedules, section diagrams and capped cuts.
+- Lock material coordinates to optional Stock Geometry so cutting does not regenerate knots or resize the layer stack.
+- Add movable-cut and stepped knot-cutaway demonstrations within the combined example, with a custom longitudinal/cross buildup and complete product library.
+- Store custom stacks in settings archive version 3 while accepting older archives; update texture cache identity.
+
+- Correct the gallery's saved face resolution from 8 to 1 mm/pixel so close views retain finer grain. No component update is required to use the corrected example.
+- Add a regression that measures actual atlas texel spacing on all eight shipped trimmed-surface examples.
+
 ## 0.1.2 — 2026-10-22
 
 - Slim runtime Yak: retain the GHA, manifest/icon, short README, licences and complete gallery; keep full documentation in GitHub/source ZIP.

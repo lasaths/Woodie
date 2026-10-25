@@ -6,7 +6,9 @@ Woodie resolves a fibre-aligned frame, measures the part in physical units and s
 
 The grain and knot model is inspired by **Maria Larsson et al., [*Procedural Texturing of Solid Wood with Knots*](https://doi.org/10.1145/3528223.3530081), ACM Transactions on Graphics 41(4), Article 45, SIGGRAPH 2022**. Woodie is an independent C# procedural adaptation, not a reproduction of the research implementation or a species-calibrated material model. Full credits and further references are [below](#research-and-credits).
 
-**Timber Material → Timber Preview** · **Display → Woodie**
+**Timber Material → optional Timber Buildup → Timber Preview** · **Display → Woodie**
+
+The upcoming **0.1.3** candidate adds custom physical layer stacks and capped timber cuts. Connect Timber Cut's **Geometry** and original **Stock** outputs to Preview's **Geometry** and **Stock Geometry** inputs: moving the plane reveals the same material volume rather than generating new knots. The published PackageManager version remains **0.1.2** until the candidate is released.
 
 ![Timber Material controls](docs/images/material-controls.png)
 
@@ -23,13 +25,32 @@ The grain and knot model is inspired by **Maria Larsson et al., [*Procedural Tex
 
 ## Start with the example
 
-The expanded [Timber-preview.ghx](examples/Timber-preview.ghx) on this branch requires **Woodie 0.1.2+** and contains **88 examples: all eight products × eleven geometry cases**. It embeds all geometry and declares **Geometry Units = Millimetres**, so the same definition works in millimetre, metre and inch Rhino documents.
+Open the single **[Timber-preview.ghx](examples/Timber-preview.ghx)** definition with the **Woodie 0.1.3 candidate**. It contains four numbered sections, with Scribble headings and groups:
 
-Each canvas group contains one product with its appropriate representative thickness. The viewport initially shows eight matched flat/bowed pairs; the remaining surface, extrusion, mesh, trimmed and guided cases are included with preview hidden. Enable those preview components or a product group's preview to explore them. See the [gallery guide](examples/README.md).
+1. **Cut through the stock:** one rectangular piece with position/angle sliders and a textured interior cap.
+2. **Follow a knot:** a stepped cutaway with a **Knot section (%)** slider and capped exposed face, revealing the same automatic knot field through its depth.
+3. **Build your own stack:** longitudinal/cross layers, a live schedule and a section diagram.
+4. **Product library:** all eight products × eleven geometry cases, with a Show toggle on each product card.
+
+The three demonstrations are visible initially; library previews start off to keep the viewport clean. Material controls start collapsed. All geometry is embedded and source units are declared, so the definition works in millimetre, metre and inch Rhino documents. Faces use **1 mm/pixel**. See the [example guide](examples/README.md). For the published 0.1.2 plugin, use its [matching gallery](https://raw.githubusercontent.com/lasaths/Woodie/v0.1.2/examples/Timber-preview.ghx).
+
+![Moving section through the stepped timber, captured in Rhino Arctic mode](docs/images/knot-section-arctic.gif)
+
+Move **Knot section (%)** in section 02 to reproduce this cut. The fixed camera faces the stepped profile; the moving cap samples the original material field, including the knot visible near the end of the sweep. The 186-frame loop runs from 95% to 15% and back, with eased starts/stops and slower travel through the knot crossings.
+
+The product library uses product-appropriate thicknesses and matched flat/bowed centreline lengths. Use a product card's Show toggle to explore its geometry cases.
 
 For older **0.1.1** installations, use its [matching two-board example](https://raw.githubusercontent.com/lasaths/Woodie/v0.1.1/examples/Timber-preview.ghx) in a **millimetre Rhino document**. The new Geometry Units input is available from 0.1.2.
 
 Connect geometry to **Timber Preview → Geometry**, and **Timber Material → Settings** to the preview's **Settings** input. Supply Fibre or Base Plane for explicit orientation and Guide Curve for a controlled bend.
+
+## Custom buildups and cuts (0.1.3)
+
+Use **Timber Layer → Timber Buildup**, with **Timber Material → Timber Buildup → Timber Preview**, to define thicknesses and longitudinal/cross directions. Buildup outputs settings, resolved layers, total thickness, a bottom-to-top schedule and a section diagram. Exact thickness is the default; enable **Fit to part** explicitly to scale the proportions. An open surface uses the stack's total thickness as virtual depth. The original product remains the palette family; custom stacks are labelled **Custom buildup**.
+
+**Timber Cut** cuts and caps closed Breps, solid extrusions and closed meshes. Its **Keep Positive** toggle selects the retained side. Geometry Units applies to the source stock and cutting-plane origin; outputs use Rhino document units, so leave downstream Preview Geometry Units at **Document**. Preview's optional **Stock Geometry** locks its mapping frame, dimensions and layer positions to the uncut stock. The Aligned Box still describes the displayed cut geometry; Frame describes the original material reference. Knots remain continuous within each board or veneer, not across independent layers or glue lines.
+
+See [buildup and cutting controls](docs/usage.md#custom-layers-buildups-and-cuts) for the complete inputs, outputs and examples. No input stock is transformed or cut in place.
 
 ## Timber Material
 
@@ -76,6 +97,7 @@ Prepares render meshes, maps timber coordinates and supplies textured Rhino view
 | Guide Curve | Optional smooth, open centreline for bent timber; takes precedence over automatic surface mapping. Curve direction sets grain X |
 | Show | Enables textured display and texture generation; default true |
 | Geometry Units (0.1.2+) | Source coordinate units: Document (default), Millimetres/mm, Centimetres/cm, Metres/m, Inches or Feet. Converts copies of geometry, guide and plane origins to Rhino units |
+| Stock Geometry (0.1.3+) | Original uncut geometry in the same source units; locks the material field while Geometry is cut. Omit for normal previews |
 
 | Output | Use |
 | --- | --- |

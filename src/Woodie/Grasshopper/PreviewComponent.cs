@@ -42,6 +42,8 @@ public sealed class PreviewComponent : GH_Component
         p.AddTextParameter("Geometry Units", "U", "Source coordinate units: Document (default), Millimetres/mm, Centimetres/cm, Metres/m, Inches or Feet. Converts copies of geometry, guide and base-plane origin into Rhino document units.", GH_ParamAccess.item);
         for (int i = 1; i <= 4; i++) p[i].Optional = true;
         p[6].Optional = true;
+        p.AddGeometryParameter("Stock Geometry", "Stock", "Optional original uncut geometry: fixes material coordinates, layers and knots as the displayed geometry is cut. Uses Geometry Units.", GH_ParamAccess.item);
+        p[7].Optional = true;
     }
 
     protected override void RegisterOutputParams(GH_OutputParamManager p)
@@ -49,7 +51,7 @@ public sealed class PreviewComponent : GH_Component
         p.AddMeshParameter("Meshes", "M", "UV-mapped meshes; Woodie supplies viewport textures", GH_ParamAccess.list);
         p.AddTextParameter("Products", "P", "Timber product per mesh", GH_ParamAccess.list);
         p.AddBoxParameter("Aligned Box", "B", "Full geometry bounds in the fibre-aligned frame", GH_ParamAccess.item);
-        p.AddPlaneParameter("Frame", "F", "Fibre-aligned frame anchored at box minimum", GH_ParamAccess.item);
+        p.AddPlaneParameter("Frame", "F", "Material frame anchored at the original stock minimum when Stock Geometry is supplied; otherwise at the displayed box minimum", GH_ParamAccess.item);
     }
 
     protected override void BeforeSolveInstance()
@@ -92,13 +94,17 @@ public sealed class PreviewComponent : GH_Component
         var doc = RhinoDoc.ActiveDoc;
         var documentUnits = doc?.ModelUnitSystem ?? UnitSystem.Millimeters;
         string sourceUnits = "Document"; if (Params.Input.Count > 6) da.GetData(6, ref sourceUnits);
+        IGH_GeometricGoo stockGoo = null;
+        if (Params.Input.Count > 7) da.GetData(7, ref stockGoo);
+        var stock = stockGoo?.ScriptVariable() as GeometryBase;
+        if (stockGoo != null && stock == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Stock Geometry must be Mesh, Brep, Surface or Extrusion."); return; }
         double tolerance = doc?.ModelAbsoluteTolerance ?? 0.001;
         var finals = new List<AtlasPage>();
         var quick = new List<AtlasPage>();
         try
         {
-            using var input = new GeometryUnits(geometry, guide, hasPlane ? p : null, sourceUnits, documentUnits);
-            using var part = PreparedPart.Create(input.Geometry, settings, input.ToMillimetres, tolerance, input.BasePlane, hasFibre ? f : null, input.Guide);
+            using var input = new GeometryUnits(geometry, guide, hasPlane ? p : null, sourceUnits, documentUnits, stock);
+            using var part = PreparedPart.Create(input.Geometry, settings, input.ToMillimetres, tolerance, input.BasePlane, hasFibre ? f : null, input.Guide, input.Stock);
             if (Math.Abs(input.Conversion - 1) > 1e-12)
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"Converted input coordinates from {input.Source} to {input.Document}; source geometry is unchanged.");
             da.SetData(2, part.Alignment.Box); da.SetData(3, part.Alignment.Frame);
@@ -118,7 +124,7 @@ public sealed class PreviewComponent : GH_Component
                 if (!bounds.IsValid) bounds = box; else bounds.Union(box);
             }
             da.SetDataList(0, displayed.Select(m => m.Mesh));
-            da.SetDataList(1, displayed.Select(m => m.Product.ToString()));
+            da.SetDataList(1, displayed.Select(m => settings.Layers == null ? m.Product.ToString() : "Custom buildup (" + m.Product + " palette)"));
             Message = part.Mapping + (pending.Count > 0 ? " · refining" : "");
         }
         catch (Exception ex)
