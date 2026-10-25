@@ -16,7 +16,7 @@ function Get-PublicFiles([string]$Directory) {
 $files = @(Get-PublicFiles $Root)
 $examples = @($files | Where-Object { $_.Extension -in @('.gh', '.ghx') })
 if ($examples.Count -ne 1 -or $examples[0].Name -ne 'Timber-preview.ghx') {
-    throw 'Public source must contain exactly one Grasshopper definition: Timber-preview.ghx.'
+    throw 'Public source must contain only the combined Timber-preview.ghx example.'
 }
 foreach ($required in @('README.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'examples/Timber-preview.ghx')) {
     if (-not (Test-Path -LiteralPath (Join-Path $Root $required) -PathType Leaf)) { throw "Missing $required" }
@@ -56,4 +56,4 @@ if (-not $notice.Contains('University of Stuttgart') -or -not $notice.Contains('
 [xml]$project = Get-Content -LiteralPath (Join-Path $Root 'src/Woodie/Woodie.csproj') -Raw
 $version = [string]$project.Project.PropertyGroup.Version
 if (-not $version -or -not [IO.File]::ReadAllText((Join-Path $Root 'CHANGELOG.md')).Contains($version)) { throw 'Project version has no changelog entry.' }
-Write-Output "Public content checks passed: $($files.Count) files; one self-contained example; version $version."
+Write-Output "Public content checks passed: $($files.Count) files; one combined example; version $version."

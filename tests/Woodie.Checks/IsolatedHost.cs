@@ -9,6 +9,7 @@ internal static class IsolatedHost
     static object server;
     static MethodInfo parse;
     static bool woodieLoaded;
+    static bool exampleBuiltInsLoaded;
 
     public static void Prepare()
     {
@@ -32,6 +33,15 @@ internal static class IsolatedHost
     }
 
     public static void LoadBuiltIns() => parse.Invoke(server, new object[] { grasshopper, grasshopper.Location });
+    public static void LoadExampleBuiltIns()
+    {
+        if (exampleBuiltInsLoaded) return;
+        foreach (string name in new[] { "VectorComponents.gha", "MathComponents.gha" }) {
+            string path = Path.Combine(Path.GetDirectoryName(grasshopper.Location), "Components", name);
+            parse.Invoke(server, new object[] { Assembly.LoadFrom(path), path });
+        }
+        exampleBuiltInsLoaded = true;
+    }
     public static void LoadWoodie(string path)
     {
         if (woodieLoaded) return;

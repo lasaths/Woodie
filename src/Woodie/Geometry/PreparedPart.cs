@@ -13,45 +13,56 @@ public sealed class PreparedPart : IDisposable
     public double DepthMm { get; private init; }
     public string Mapping { get; private init; }
     public double UnitToMm { get; private init; }
+    public double ToleranceMm { get; private init; }
     public IReadOnlyList<string> Remarks { get; private init; }
+    public IReadOnlyList<TimberLayer> Layers { get; private init; }
 
     public static PreparedPart Create(GeometryBase geometry, TimberSettings settings, double unitToMm,
-        double tolerance, Plane? basePlane = null, Vector3d? fibre = null, Curve guide = null)
+        double tolerance, Plane? basePlane = null, Vector3d? fibre = null, Curve guide = null, GeometryBase stock = null)
     {
         settings.Validate();
         if (geometry == null || !geometry.IsValid) throw new ArgumentException("Geometry is null or invalid.");
+        if (stock != null && !stock.IsValid) throw new ArgumentException("Stock Geometry is invalid.");
         if (!double.IsFinite(unitToMm) || unitToMm <= 0) throw new ArgumentException("Document units must have a valid physical scale.");
         var remarks = new List<string>();
         Mesh mesh = MakeMesh(geometry);
         try
         {
+            using var stockMesh = stock == null ? null : MakeMesh(stock);
             mesh.Faces.ConvertQuadsToTriangles();
             mesh.Faces.CullDegenerateFaces();
             mesh.Compact();
             if (mesh.Faces.Count == 0) throw new ArgumentException("Geometry has no usable mesh faces.");
             if (mesh.Faces.Count > 200000) throw new ArgumentException("Preview is limited to 200,000 triangles per object. Simplify the mesh.");
-            var alignment = TimberAlignment.Resolve(geometry, mesh, basePlane, fibre, tolerance);
+            var reference = stock ?? geometry;
+            var alignment = TimberAlignment.Resolve(reference, stockMesh ?? mesh, basePlane, fibre, tolerance);
+            if (stock != null) alignment = new AlignmentResult(alignment.Frame, new Box(alignment.Frame, geometry.GetBoundingBox(alignment.Frame)));
             ICoordinateMap mapper = new StraightMap(alignment.Frame);
-            Surface singleSurface = geometry is Extrusion ? null : geometry as Surface;
-            if (geometry is Brep b && b.Faces.Count == 1) singleSurface = b.Faces[0];
+            Surface singleSurface = reference is Extrusion ? null : reference as Surface;
+            if (reference is Brep b && b.Faces.Count == 1) singleSurface = b.Faces[0];
             if (guide != null) mapper = new GuideMap(guide, alignment.Frame, tolerance);
             else if (singleSurface != null && !singleSurface.IsPlanar(tolerance)) mapper = new SurfaceMap(singleSurface, alignment.Frame, !fibre.HasValue && !basePlane.HasValue);
-            else if (singleSurface == null && (geometry is Mesh || (geometry is Brep multi && multi.Faces.Any(f => !f.IsPlanar(tolerance)))))
+            else if (singleSurface == null && (reference is Mesh || (reference is Brep multi && multi.Faces.Any(f => !f.IsPlanar(tolerance)))))
                 remarks.Add("Using straight timber mapping. Supply a Guide Curve for bent grain on meshes and multi-face Breps.");
 
             Point3d[] coords = mesh.Vertices.ToPoint3dArray().Select(mapper.Map).ToArray();
-            var bounds = new BoundingBox(coords);
+            var bounds = new BoundingBox(stockMesh == null ? coords : stockMesh.Vertices.ToPoint3dArray().Select(mapper.Map));
+            if (stock != null) {
+                var domain = bounds; domain.Inflate(tolerance);
+                if (coords.Any(c => !domain.Contains(c))) throw new ArgumentException("Geometry extends outside the mapped Stock Geometry. Supply the original uncut stock and matching guide/plane.");
+            }
             double l = (bounds.Max.X - bounds.Min.X) * unitToMm, w = (bounds.Max.Y - bounds.Min.Y) * unitToMm;
             double h = (bounds.Max.Z - bounds.Min.Z) * unitToMm;
             bool virtualDepth = mapper is SurfaceMap || h <= tolerance * unitToMm;
             if (virtualDepth) { h = settings.VirtualDepthMm; remarks.Add($"Appearance only: using virtual timber depth {h:0.###} mm."); }
             if (l < 0.01 || w < 0.01 || !double.IsFinite(l + w + h)) throw new ArgumentException("Mapped geometry is degenerate. Change the base plane or guide direction.");
+            var layers = TimberLayups.Resolve(settings, h, w, tolerance * unitToMm);
             for (int i = 0; i < coords.Length; i++)
                 coords[i] = new Point3d((coords[i].X - bounds.Min.X) * unitToMm, (coords[i].Y - bounds.Min.Y) * unitToMm,
                     virtualDepth ? h : (coords[i].Z - bounds.Min.Z) * unitToMm);
             mesh.Normals.ComputeNormals();
             return new PreparedPart { Mesh = mesh, Coordinates = coords, Alignment = alignment, LengthMm = l, WidthMm = w,
-                DepthMm = h, Mapping = mapper.Description, UnitToMm = unitToMm, Remarks = remarks };
+                DepthMm = h, Mapping = mapper.Description + (stock == null ? "" : " · fixed stock"), UnitToMm = unitToMm, ToleranceMm = tolerance * unitToMm, Remarks = remarks, Layers = layers };
         }
         catch { mesh.Dispose(); throw; }
     }

@@ -1,5 +1,28 @@
 # Release validation
 
+## 0.1.3 candidate — one clean example and unique icons
+
+- Release builds: PASS; zero warnings/errors.
+- Native suite: PASS, 36 checks including regeneration, archive reopening, controls and appearance regressions. All 88 library cases solve in millimetre/metre documents; cutting, knot and custom-buildup demonstrations also solve in inch documents.
+- One self-contained Timber-preview.ghx now contains four numbered Scribble sections and rectangular groups. The three demonstrations are visible; eight product Show toggles start off. Material panels start compact, shared wires appear on selection, and only the live schedule uses a Panel.
+- Canvas layout: PASS; Consolas is used by every Scribble and the schedule Panel, and bounds retain at least 8 px separation. All 36 checks pass after the font change. The installed Consolas opening view, schedule and distinct Layer/Buildup icons were subsequently inspected through Cassis. Percentage/degree sliders display their actual labelled units; native components perform the conversions.
+- Icons: PASS; all five ribbon components, the legacy Presets component and the two settings/layer parameters have distinct 24 px Phosphor pixel fingerprints. Timber Layer uses one rectangle; Timber Buildup uses a stack.
+- Existing Natural appearance hashes and 1 mm/pixel library density are unchanged. Custom layer construction, exact/fit thickness handling, immutable copies, old/new settings archives and cache separation pass.
+- Capped Brep, extrusion and mesh cuts preserve the original stock field, including guide-mapped bent stock. Earlier live Windows checks passed for moved/angled/reversed cuts, the stepped knot transition and the 30 / 60 cross / 30 mm buildup and diagram.
+- Updated Yak/source inspection: PASS; exactly one combined definition, required credits and no developer docs in the runtime Yak. The independently extracted source builds with zero warnings/errors and passes all 35 integration checks.
+- Refreshed GHA installation: PASS; SHA-256 matches the tested binary, `43eb4a5cb573b5e295d9d3b94a2ba1fb4b9f1dbbc7f52226b9280962e6076b3c`. The sole installed definition is Timber-preview.ghx; the final section-slider archive matches the repository SHA-256 `5afbef7bced2aedddca137d484903bbb35cb0a71900717a52fe92afdb7b26590`. The two superseded installed definitions were backed up before removal.
+- Installed Windows canvas check: PASS; Consolas annotations, compact materials and distinct Layer/Buildup icons were inspected. The refreshed 414-object example was subsequently loaded from the repository and solved without reported errors; the ribbon popup was not separately captured.
+- Stepped-section example: PASS, all 36 checks after adding Knot section (%). Slider positions reopen and solve in millimetre, metre and inch documents with fixed material frames. The stored default plane normal was explicitly cleared after live inspection revealed a second overlapping cut; regression coverage requires exactly one cut frame and verifies its normal, physical retained volume and stable frame in all three unit systems. The strengthened suite passes all 35 integration checks (example regeneration was not repeated).
+- Live Arctic recording (2026-10-25): PASS through Cassis on Windows. One cutting plane, one closed capped Brep and one outline, with no errors/warnings. A fixed low camera faces the stepped profile. Captured 94 distinct slider positions from 95% down to 15%; the end face reveals a knot. Smoothstep easing and continuous Gaussian weighting add finer steps around four observed knot crossings (83.5%, 66%, 49.5% and 17%). The README embeds a 186-frame, 12.24-second looping GIF with a position indicator. Encoding checks confirm distinct captures, monotonic outbound positions, frame count, loop flag and total duration; encoded knot detail was visually inspected. The camera helper was temporary and removed; the shipped example contains no scripts. Mac native checks remain unperformed; candidate is not published.
+
+## Example resolution correction — 2026-10-24
+
+- Reproduced coarse final surface textures at 8 mm/pixel for all eight shipped trimmed-surface examples; the new density regression failed before the fix.
+- Corrected saved gallery face resolution to 1 mm/pixel; atlas measurements confirm that density is retained for all eight materials.
+- Native integration suite: PASS, 31 checks. The regenerated 88-case gallery also reopens and solves in millimetre and metre documents.
+- Cassis on installed 0.1.2: first verified the intermediate 2 mm/pixel gallery for all eight materials and inspected a close view of the trimmed Three-layer panel. The final 1 mm/pixel gallery was then reopened and its resolved material setting checked. The previous modified definition remains open.
+- No rendering engine or appearance fixture changes. This example correction is not yet published in Yak; Mac display was not rechecked.
+
 ## 0.1.2 — slim package and explicit source units
 
 - Release builds: PASS, zero warnings/errors.

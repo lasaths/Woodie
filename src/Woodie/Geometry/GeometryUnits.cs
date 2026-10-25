@@ -8,6 +8,7 @@ internal sealed class GeometryUnits : IDisposable
 {
     public GeometryBase Geometry { get; }
     public Curve Guide { get; }
+    public GeometryBase Stock { get; }
     public Plane? BasePlane { get; }
     public double ToMillimetres { get; }
     public double Conversion { get; }
@@ -15,7 +16,7 @@ internal sealed class GeometryUnits : IDisposable
     public UnitSystem Document { get; }
     readonly bool owns;
 
-    public GeometryUnits(GeometryBase geometry, Curve guide, Plane? plane, string source, UnitSystem document)
+    public GeometryUnits(GeometryBase geometry, Curve guide, Plane? plane, string source, UnitSystem document, GeometryBase stock = null)
     {
         if (document is UnitSystem.None or UnitSystem.Unset or UnitSystem.CustomUnits)
             throw new ArgumentException("Set physical Rhino document units before previewing timber (for example Millimetres or Metres).");
@@ -28,11 +29,12 @@ internal sealed class GeometryUnits : IDisposable
         owns = Math.Abs(Conversion - 1) > 1e-12;
         Geometry = owns ? geometry.Duplicate() : geometry;
         Guide = owns ? guide?.DuplicateCurve() : guide;
+        Stock = owns ? stock?.Duplicate() : stock;
         BasePlane = plane;
         if (!owns) return;
         try {
             var transform = Transform.Scale(Point3d.Origin, Conversion);
-            if (!Geometry.Transform(transform) || (Guide != null && !Guide.Transform(transform)))
+            if (!Geometry.Transform(transform) || (Guide != null && !Guide.Transform(transform)) || (Stock != null && !Stock.Transform(transform)))
                 throw new ArgumentException("Could not convert input geometry to the Rhino document units.");
             if (plane.HasValue) { var converted = plane.Value; converted.Transform(transform); BasePlane = converted; }
         } catch { Dispose(); throw; }
@@ -56,5 +58,5 @@ internal sealed class GeometryUnits : IDisposable
         "Check Geometry Units before changing appearance settings. If these coordinates were modelled in millimetres, set Geometry Units to Millimetres; otherwise use the correct source units. " +
         "For a correctly sized part, increase Lamella Width, reduce Knot Density, or split the part.";
 
-    public void Dispose() { if (owns) { Geometry?.Dispose(); Guide?.Dispose(); } }
+    public void Dispose() { if (owns) { Geometry?.Dispose(); Guide?.Dispose(); Stock?.Dispose(); } }
 }

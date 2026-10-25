@@ -1,5 +1,39 @@
 # Using Woodie
 
+## Custom layers, buildups and cuts
+
+These controls require the 0.1.3 candidate. They are under **Display → Woodie** and retain item matching. Layer lists are ordered from the stock's minimum thickness coordinate upward.
+
+**Timber Layer** takes Thickness (mm; default 30), Direction (right-click: Longitudinal 0° or Cross 90°), Construction (Solid, Boards or Veneer; default Boards), Board Width (mm; default 150) and End Joints (None, Butt or Finger; default None). Width and joints describe board construction; solid and continuous veneer layers require no end joints. The component outputs an immutable Layer and its description. Native input values, named choices, wires and undo behavior are managed by Grasshopper.
+
+**Timber Buildup** sits between Material and Preview. Its inputs are Settings (optional, default CLT), Layers (optional ordered list), Reference Thickness (optional mm), Fit to part (default false) and Diagram Plane (optional, document coordinates). Without Layers it expands the selected product preset at the reference thickness; the product's representative depth is the default. With Layers, their sum is the default reference thickness. Outputs are Settings, resolved Layers, total Thickness, a readable Schedule and a Section Diagram of 200 mm wide layer rectangles in document units. Hide the component or diagram parameter if the schematic is not needed in the model view.
+
+Exact thicknesses are checked against the original stock depth using document tolerance, with a minimum 0.01 mm physical tolerance. A mismatch reports both values. Enable **Fit to part** to scale the proportions explicitly. The schedule/diagram describe the reference thickness; Preview fits to its actual stock when Fit is enabled. An open surface uses the custom stack sum as virtual display depth and stays open. The selected product remains the appearance/palette family, while Preview labels an override **Custom buildup**. Changing a stack does not specify a manufactured or structural product.
+
+**Timber Cut** takes closed Brep, solid Extrusion or closed Mesh Stock, Cutting Plane, Keep Positive (default false) and optional Geometry Units (default Document). The plane origin uses the stock's source units; axes are directions. Outputs are capped remaining Geometry, the uncut Stock and Section Outlines, all in Rhino document units. A fully outside cut keeps everything or returns an empty result with a remark. Invalid stock or failed splitting/capping produces an error. Input geometry remains unchanged.
+
+Connect **Cut Geometry → Preview Geometry** and **Cut Stock → Preview Stock Geometry**, leaving downstream Geometry Units at **Document**. Preview derives its mapping frame, full dimensions and layer positions from Stock, including any supplied guide. Moving the cut reveals the original field rather than resizing it. Its Aligned Box describes the displayed cut geometry; Frame describes the original material reference. Geometry outside the stock's mapped domain is rejected. Knots remain continuous within a board/veneer and independent across glue lines. A cap is sampled from the material volume; it is not a flat image pasted onto the end.
+
+Open the single [Timber playground](../examples/Timber-preview.ghx). Its numbered Scribble sections cover movable cutting, knot transitions, a custom longitudinal/cross buildup with schedule, and the complete product library. The three demonstrations start visible; use each product card's Show toggle to inspect the library. Material panels start collapsed.
+
+![Clean combined example with Scribble headings and groups](images/timber-playground-canvas.png)
+
+The angled cut exposes an interior face sampled from the original stock:
+
+![Basic timber with an angled textured cap](images/basic-cutting.png)
+
+The stepped cutaway exposes one knot field across several depths. Its **Knot section (%)** slider moves a capped plane along the piece, revealing the same field on a cross-section. Cut Stock remains connected to Preview Stock Geometry, so downstream units are Document:
+
+![Moving capped section in Arctic mode](images/knot-section-arctic.gif)
+
+The custom stack changes grain direction between its outer layers and cross core:
+
+![Custom longitudinal-cross-longitudinal buildup](images/custom-buildup.png)
+
+Its [section diagram](images/buildup-diagram.png) shows the 30 / 60 / 30 mm proportions; the Schedule output provides layer directions and physical positions.
+
+## Material and preview controls
+
 
 Connect **Timber Material → Settings** to **Timber Preview → Settings**. Select **Product** and **Appearance** from the two on-canvas dropdowns. Defaults are **CLT / Natural**. The Product input is an optional override: a wire or stored input value takes control and disables the Product dropdown; its controlling source is shown on the component.
 

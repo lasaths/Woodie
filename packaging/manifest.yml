@@ -9,6 +9,9 @@ description: >
   settings with product and appearance dropdowns, fibre-aligned bounds, bent surface grain,
   guide-curve bending, explicit source units and adjustable appearance settings.
   Includes a unit-aware gallery covering all eight products and eleven geometry types.
+  Define custom layer stacks with schedules and section diagrams. Move capped cutting planes
+  through fixed stock to reveal its original grain and knots. One grouped, Scribble-labelled example
+  includes basic cutting, a stepped knot cutaway, custom buildup and the product library.
   Requires Rhino 8.20 or later running .NET 8 on Windows or Mac.
   Mac native verification is pending.
   Visual presets do not specify manufactured or structural products.

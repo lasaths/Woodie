@@ -1,38 +1,53 @@
-# Complete timber gallery — Woodie 0.1.2+
+# Timber playground — Woodie 0.1.3 candidate
 
-Open **Timber-preview.ghx** with Woodie 0.1.2 or later. It contains **88 cases: eight timber products × eleven geometry types**.
-No external geometry or scripts are required.
+Open **Timber-preview.ghx**. Everything is in this one self-contained definition: cutting, knot transitions, a custom buildup, and all eight products across eleven geometry cases. No external geometry or scripts are required.
 
-## Units
+## Find your way around
 
-Every preview is wired to **Geometry Units = Millimetres**. The plugin converts copies of the embedded geometry, guide and plane origins into the current Rhino document units.
-The same file therefore works in millimetre, metre and inch documents. Do not change Rhino units or manually scale the embedded geometry to use this gallery.
+Numbered **Scribble** headings and subtle rectangular groups divide the canvas into four sections. The three demonstrations are across the top; the product library is below. Material panels start collapsed: click the small arrow under a Timber Material icon to open its controls. The only large Panel shows the live layer schedule.
 
-For ordinary user geometry, Geometry Units defaults to **Document**. If the coordinate values were modelled in millimetres but Rhino uses metres, choose **Millimetres** explicitly.
-Woodie cannot infer the intended physical units from the shape alone and does not guess or rescale ordinary inputs automatically.
+Scribbles and the schedule use **Consolas**. If it is unavailable on another machine, Grasshopper may substitute a font; check text spacing there.
 
-## Layout
+The opening view focuses on cutting. Pan right for the knot and buildup demonstrations, or down for the product library.
 
-Each coloured canvas group contains one product's Timber Material component and eleven previews. The viewport uses one row per product.
-Flat and guide-bowed solid pairs are visible initially and have equal centreline lengths. The remaining cases are included with preview hidden to keep initial refinement manageable; enable those preview components or the group's preview to explore them.
+The viewport initially shows only the three demonstrations. Library **Show** toggles start off; enable one product at a time to inspect its eleven cases. Shared Settings, Show and Units wires appear when their inputs are selected. Input geometry stays hidden so it does not overlay the timber textures.
 
-All eight products are present: Solid timber, KVH, Glulam, CLT, Three-layer panel (3S), Plywood, parallel LVL and Kerto-Q.
-Each uses its product's representative depth rather than forcing all products into a 27 mm board.
-Clean/Pale and 8 mm/pixel are saved for a restrained, lighter initial gallery; adjust each material's dropdowns and resolution to compare appearances.
+## 01 / Cut through the stock
+
+One 1200 × 300 × 120 mm piece. Move **Position (%)** and **Angle (degrees)**; **Keep Positive** reverses the retained side. Timber Cut caps the exposed interior face. Its original Stock output fixes the material field in Preview, so moving the cut reveals existing grain and knots rather than regenerating them. End positions can retain the whole stock or leave an empty result.
+
+## 02 / Follow a knot
+
+One connected piece with terraces at 120, 80 and 40 mm. Move **Knot section (%)** to cut along its length and expose a capped cross-section, with a section outline. Inspect a knot across the cut face, top terraces and vertical risers. The uncut stepped stock is wired to Preview Stock Geometry; downstream units stay Document. Automatic seed **3** was reviewed for this transition; no individual knots are placed. A hidden original stock anchors the same volumetric field through every depth. This is procedural texturing, not biological growth simulation.
+
+The [Arctic section animation](../docs/images/knot-section-arctic.gif) uses a fixed, low camera facing the stepped end and sweeps the section from 95% to 15% and back. Its 186 frames ease into motion and slow through the knot crossings.
+
+## 03 / Build your own stack
+
+Three Timber Layer components define **30 mm longitudinal / 60 mm cross / 30 mm longitudinal** from bottom to top. They feed Timber Buildup, then Preview. Exact thicknesses are checked by default; **Fit to part** scales proportions explicitly. The live schedule reports layer directions and heights. The Section Diagram output is hidden initially; isolate its preview to inspect the schematic.
+
+## 04 / Product library
+
+Eight product cards each contain a compact Material, a **Show** toggle, source units and eleven labelled geometry cases. Products are Solid timber, KVH, Glulam, CLT, Three-layer panel (3S), Plywood, parallel LVL and Kerto-Q. Each uses its own representative depth with Clean/Pale at **1 mm/pixel**.
 
 | Case | Geometry/mapping |
 | --- | --- |
-| 01 | Flat solid Brep, matching the bowed centreline length |
-| 02 | Straight solid extrusion |
-| 03 | Flat open surface |
+| 01 | Flat solid Brep, matched to the bowed centreline length |
+| 02 | Solid extrusion |
+| 03 | Open planar surface |
 | 04 | Closed mesh |
-| 05 | Open planar mesh |
-| 06 | Trimmed planar face with a hole |
-| 07 | Automatically mapped bowed surface |
-| 08 | Automatically mapped bowed single-face Brep |
-| 09 | Guide-driven bowed solid Brep |
-| 10 | Guide-driven bowed extrusion |
-| 11 | Guide-driven bowed mesh |
+| 05 | Open mesh |
+| 06 | Trimmed face with a hole |
+| 07 | Bowed surface, automatic mapping |
+| 08 | Bowed single-face Brep, automatic mapping |
+| 09 | Bowed solid Brep with guide |
+| 10 | Bowed extrusion with guide |
+| 11 | Bowed mesh with guide |
 
-The guide defines grain coordinates; it does not predict physical bending. Open surfaces and meshes stay open. Nothing is baked into Rhino.
-Changing a preset does not turn geometry into a manufactured product; see [material limitations](https://github.com/lasaths/Woodie/blob/main/docs/material-realism-audit.md).
+## Units and appearance
+
+The definition works in millimetre, metre and inch Rhino documents. All embedded coordinates are authored in millimetres. Timber Cut declares **Millimetres** and outputs document units, so its downstream Preview uses **Document**. The other previews declare **Millimetres** directly. Do not scale the geometry or change document units to use the example.
+
+Face resolution is **1 mm/pixel**. Smaller values provide finer close views at greater texture cost; allow background refinement to finish. Open surfaces remain open. The guide sets grain coordinates and does not predict physical bending. Custom stacks and presets are visual approximations, not structural specifications; see the [material limitations](https://github.com/lasaths/Woodie/blob/main/docs/material-realism-audit.md).
+
+The appearance is inspired by Maria Larsson et al., [Procedural Texturing of Solid Wood with Knots](https://doi.org/10.1145/3528223.3530081), SIGGRAPH 2022. Credits and MIT notices accompany Woodie.

@@ -25,7 +25,10 @@ public sealed class SettingsGoo : GH_Goo<TimberSettings>
     {
         writer.SetBoolean("HasValue", Value != null);
         if (Value == null) return true;
-        writer.SetInt32("Version", 2); writer.SetInt32("Look", (int)Value.Look); writer.SetInt32("Product", (int)Value.Product); writer.SetInt32("Seed", Value.Seed);
+        writer.SetInt32("Version", 3); writer.SetInt32("Look", (int)Value.Look); writer.SetInt32("Product", (int)Value.Product); writer.SetInt32("Seed", Value.Seed);
+        writer.SetBoolean("FitToPart", Value.FitToPart);
+        writer.SetInt32("LayerCount", Value.Layers?.Count ?? 0);
+        if (Value.Layers != null) for (int i = 0; i < Value.Layers.Count; i++) LayerArchive.Write(writer.CreateChunk("Layer", i), Value.Layers[i]);
         foreach (var property in typeof(TimberSettings).GetProperties().Where(p => p.CanWrite && p.PropertyType == typeof(double)))
             writer.SetDouble(property.Name, (double)property.GetValue(Value));
         foreach (var property in typeof(TimberSettings).GetProperties().Where(p => p.CanWrite && p.PropertyType == typeof(Color?)))
@@ -36,9 +39,18 @@ public sealed class SettingsGoo : GH_Goo<TimberSettings>
     {
         Value = null;
         if (!reader.ItemExists("HasValue") || !reader.GetBoolean("HasValue")) return true;
-        if (!reader.ItemExists("Version") || (reader.GetInt32("Version") < 1 || reader.GetInt32("Version") > 2)) return false;
+        if (!reader.ItemExists("Version") || (reader.GetInt32("Version") < 1 || reader.GetInt32("Version") > 3)) return false;
         var value = new TimberSettings { Product = (TimberProduct)reader.GetInt32("Product"), Seed = reader.GetInt32("Seed") };
         if (reader.ItemExists("Look")) value.Look = (TimberLook)reader.GetInt32("Look");
+        if (reader.GetInt32("Version") >= 3) {
+            value.FitToPart = reader.GetBoolean("FitToPart");
+            int count = reader.GetInt32("LayerCount");
+            if (count < 0 || count > 4096) return false;
+            if (count > 0) {
+                try { value.Layers = Enumerable.Range(0, count).Select(i => LayerArchive.Read(reader.FindChunk("Layer", i) ?? throw new ArgumentException("Missing layer archive"))).ToArray(); }
+                catch (ArgumentException) { return false; }
+            }
+        }
         foreach (var property in typeof(TimberSettings).GetProperties().Where(p => p.CanWrite && p.PropertyType == typeof(double)))
             if (reader.ItemExists(property.Name)) property.SetValue(value, reader.GetDouble(property.Name));
         foreach (var property in typeof(TimberSettings).GetProperties().Where(p => p.CanWrite && p.PropertyType == typeof(Color?)))
@@ -52,7 +64,7 @@ public sealed class SettingsParam : GH_PersistentParam<SettingsGoo>
     public SettingsParam() : base("Timber Display Settings", "TDS", "Woodie timber appearance settings", "Display", "Woodie") { }
     public override Guid ComponentGuid => new("06b27042-911f-4614-ac44-378a78736284");
     public override GH_Exposure Exposure => GH_Exposure.hidden;
-    protected override Bitmap Icon => Icons.Sliders;
+    protected override Bitmap Icon => Icons.SettingsParameter;
     protected override GH_GetterResult Prompt_Singular(ref SettingsGoo value) => GH_GetterResult.cancel;
     protected override GH_GetterResult Prompt_Plural(ref List<SettingsGoo> values) => GH_GetterResult.cancel;
 }

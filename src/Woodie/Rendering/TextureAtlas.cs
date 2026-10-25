@@ -33,14 +33,15 @@ public sealed class AppearanceBudgetException : ArgumentException
 
 public static class TextureAtlas
 {
-    public const string EngineVersion = "woodie-8";
+    public const string EngineVersion = "woodie-9";
     internal const int Side = 2048, Gutter = 3, MaxPages = 16;
     public static string CacheDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Woodie", "Textures", EngineVersion);
 
     public static List<AtlasPage> Prepare(PreparedPart part, TimberSettings settings, double quality = 1, string cacheDirectory = null)
     {
         settings.Validate();
-        ValidateAppearanceBudget(part, settings);
+        var layers = TimberLayups.Resolve(settings, part.DepthMm, part.WidthMm, part.ToleranceMm);
+        ValidateAppearanceBudget(part, settings, layers);
         if (!(quality > 0 && quality <= 1)) throw new ArgumentOutOfRangeException(nameof(quality));
         List<List<TriangleTile>> packed = null;
         double density = quality;
@@ -52,7 +53,7 @@ public static class TextureAtlas
         }
         if (packed.Count > MaxPages) throw new ArgumentException("Mesh needs too many texture charts. Simplify the mesh.");
         var panel = new Lazy<TimberPanel>(() => new TimberPanel(settings.Product, part.LengthMm, part.WidthMm, part.DepthMm,
-            settings.Seed, settings.EffectiveKnotDensity, settings.Palette(), settings.LamellaWidth, settings.VeneerThickness));
+            settings.Seed, settings.EffectiveKnotDensity, settings.Palette(), settings.LamellaWidth, settings.VeneerThickness, layers));
         string key = Key(part, settings, density);
         var result = new List<AtlasPage>();
         try
@@ -89,17 +90,17 @@ public static class TextureAtlas
 
     static void AddUv(Mesh mesh, double x, double y, int w, int h) => mesh.TextureCoordinates.Add(x / w, 1 - y / h);
 
-    static void ValidateAppearanceBudget(PreparedPart part, TimberSettings settings)
+    static void ValidateAppearanceBudget(PreparedPart part, TimberSettings settings, IReadOnlyList<TimberLayer> layers)
     {
         double segments = 0, knots = 0;
-        foreach (var layer in TimberLayups.Make(settings.Product, part.DepthMm, part.WidthMm, settings.LamellaWidth, settings.VeneerThickness))
+        foreach (var layer in layers)
         {
             double across = layer.alongX ? part.WidthMm : part.LengthMm;
             double length = layer.alongX ? part.LengthMm : part.WidthMm;
             double boards = layer.continuous ? 1 : Math.Ceiling(across / (layer.bw * (layer.veneer ? 0.8 : 1)));
-            double count = layer.continuous ? 1 : boards * (Math.Ceiling(length / layer.segMin) + 2);
+            double count = layer.continuous ? 1 : layer.continuousLength ? boards : boards * (Math.Ceiling(length / layer.segMin) + 2);
             segments += count;
-            knots += count * (Math.Ceiling(settings.EffectiveKnotDensity * settings.Palette().KdK * (layer.continuous ? length + 2 : layer.segMax) / 1000 * 1.5 * (layer.veneer ? 3 : 1)) + 1);
+            knots += count * (Math.Ceiling(settings.EffectiveKnotDensity * settings.Palette().KdK * (layer.continuous || layer.continuousLength ? length + 2 : layer.segMax) / 1000 * 1.5 * (layer.veneer ? 3 : 1)) + 1);
         }
         if (segments > 100000 || knots > 2000000)
             throw new AppearanceBudgetException(FormattableString.Invariant(
