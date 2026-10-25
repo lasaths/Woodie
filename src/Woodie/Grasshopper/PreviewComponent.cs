@@ -50,6 +50,8 @@ public sealed class PreviewComponent : GH_Component
         p[6].Optional = true;
         p.AddGeometryParameter("Stock Geometry", "Stock", "Optional original uncut geometry: fixes material coordinates, layers and knots as the displayed geometry is cut. Uses Geometry Units.", GH_ParamAccess.item);
         p[7].Optional = true;
+        p.AddParameter(new StockParam(), "Stock Model", "Model", "Optional Woodie stock model; supplies geometry, settings and fixed material coordinates", GH_ParamAccess.item);
+        p[8].Optional = true;
     }
 
     protected override void RegisterOutputParams(GH_OutputParamManager p)
@@ -91,22 +93,41 @@ public sealed class PreviewComponent : GH_Component
     {
         bool show = true; da.GetData(5, ref show);
         if (!show) return;
+        StockGoo stockModel = null;
+        bool hasModel = Params.Input.Count > 8 && da.GetData(8, ref stockModel) && stockModel?.Value != null;
         IGH_GeometricGoo goo = null;
-        if (!da.GetData(0, ref goo)) return;
-        GeometryBase geometry = goo?.ScriptVariable() as GeometryBase;
-        if (geometry == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Supply a Mesh, Brep, Surface or Extrusion."); return; }
+        bool hasGeometry = da.GetData(0, ref goo);
         SettingsGoo settingsGoo = null;
-        var settings = da.GetData(1, ref settingsGoo) && settingsGoo?.Value != null ? settingsGoo.Value.Duplicate() : new TimberSettings();
+        bool hasSettings = da.GetData(1, ref settingsGoo) && settingsGoo?.Value != null;
         Vector3d f = Vector3d.Unset; Plane p = Plane.Unset; Curve guide = null;
-        bool hasFibre = da.GetData(2, ref f), hasPlane = da.GetData(3, ref p);
-        da.GetData(4, ref guide);
+        bool hasFibre = da.GetData(2, ref f), hasPlane = da.GetData(3, ref p), hasGuide = da.GetData(4, ref guide);
         var doc = RhinoDoc.ActiveDoc;
         var documentUnits = doc?.ModelUnitSystem ?? UnitSystem.Millimeters;
         string sourceUnits = "Document"; if (Params.Input.Count > 6) da.GetData(6, ref sourceUnits);
         IGH_GeometricGoo stockGoo = null;
         if (Params.Input.Count > 7) da.GetData(7, ref stockGoo);
-        var stock = stockGoo?.ScriptVariable() as GeometryBase;
-        if (stockGoo != null && stock == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Stock Geometry must be Mesh, Brep, Surface or Extrusion."); return; }
+        var legacyStock = stockGoo?.ScriptVariable() as GeometryBase;
+        if (stockGoo != null && legacyStock == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Stock Geometry must be Mesh, Brep, Surface or Extrusion."); return; }
+        if (hasModel && (hasGeometry || hasSettings || hasFibre || hasPlane || hasGuide || stockGoo != null))
+        { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Stock Model mode rejects Geometry, Settings, Fibre, Base Plane, Guide Curve and Stock Geometry overrides. Disconnect them or clear Stock Model."); return; }
+        GeometryBase geometry;
+        TimberSettings settings;
+        GeometryBase stock;
+        if (hasModel) {
+            geometry = stockModel.Value.Geometry;
+            settings = stockModel.Value.Settings.Duplicate();
+            stock = stockModel.Value.OriginalGeometry;
+            if (stockModel.Value.Fibre.HasValue) { f = stockModel.Value.Fibre.Value; hasFibre = true; }
+            if (stockModel.Value.BasePlane.HasValue) { p = stockModel.Value.BasePlane.Value; hasPlane = true; }
+            guide = stockModel.Value.Guide; hasGuide = guide != null;
+            sourceUnits = "Document";
+        } else {
+            if (!hasGeometry) return;
+            geometry = goo?.ScriptVariable() as GeometryBase;
+            if (geometry == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Supply a Mesh, Brep, Surface or Extrusion."); return; }
+            settings = hasSettings ? settingsGoo.Value.Duplicate() : new TimberSettings();
+            stock = legacyStock;
+        }
         double tolerance = doc?.ModelAbsoluteTolerance ?? 0.001;
         var finals = new List<AtlasPage>();
         var quick = new List<AtlasPage>();

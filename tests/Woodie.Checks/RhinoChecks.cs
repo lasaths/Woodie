@@ -35,6 +35,7 @@ internal static class RhinoChecks
         Check("Atlas triangle coverage and gutters", AtlasCoverage);
         Check("Atlas winding, UVs, bounded pages, cache and PNG", Atlas);
         Check("Settings archive round trip", Serialization);
+        Check("Stock model archive round trip", StockChecks.ArchiveRoundTrip);
         Check("Component GUIDs and item matching interface", Interface);
         Check("All timber presets solve and retain selection in archives", Presets);
         if (integration) Check("Material dropdowns, precedence, undo, migration and serialization", MaterialChecks.Interface);
