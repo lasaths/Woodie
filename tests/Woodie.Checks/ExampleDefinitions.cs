@@ -22,17 +22,18 @@ internal static class ExampleDefinitions
     public static void Write(string directory)
     {
         Directory.CreateDirectory(directory);
+        IsolatedHost.LoadWoodie(typeof(PreviewComponent).Assembly.Location);
         IsolatedHost.LoadExampleBuiltIns();
         using var doc = new GH_Document { Enabled=true };
         doc.Properties.ViewTarget = new System.Drawing.Point(40,40); doc.Properties.ZoomFactor=1;
         ExampleCanvas.Text(doc,"WOODIE / TIMBER PLAYGROUND",40,40,28,true);
-        ExampleCanvas.Text(doc,"01 Cut through the stock     02 Follow a knot     03 Build your own stack     04 Product library",40,100,14);
-        ExampleCanvas.Text(doc,"Start with the three demonstrations below. Open a material's arrow for its controls.\nUnits are handled by the definition · 1 mm/pixel · input geometry stays unchanged.\nProcedural appearance inspired by Larsson et al. (2022), DOI 10.1145/3528223.3530081.",40,145,12);
+        ExampleCanvas.Text(doc,"01 Cut through the stock     02 Follow a knot     03 Build your own stack     04 Product library     05 Rotated tower     06 Natural bamboo",40,100,14);
+        ExampleCanvas.Text(doc,"Start with the demonstrations below. Open a material's arrow for its controls.\nUnits are handled by the definition · 1 mm/pixel · input geometry stays unchanged.\nProcedural appearance inspired by Larsson et al. (2022), DOI 10.1145/3528223.3530081.",40,145,12);
         TimberExamples.AddDemonstrations(doc);
         AddCustomBuildup(doc);
         int libraryStart=doc.Objects.Count;
         ExampleCanvas.Text(doc,"04 / PRODUCT LIBRARY",40,1490,24,true);
-        ExampleCanvas.Text(doc,"Eight products × eleven geometry cases. Use each card's Show toggle to reveal it in the viewport.\nTurn one product on at a time for close inspection; the three demonstrations stay visible. Shared input wires appear when selected.",40,1550,12);
+        ExampleCanvas.Text(doc,"Eight products × eleven geometry cases. Use each card's Show toggle to reveal it in the viewport.\nTurn one product on at a time for close inspection; the numbered demonstrations stay visible. Shared input wires appear when selected.",40,1550,12);
         using var referenceGuide=GeometryGallery.Bow(); double length=referenceGuide.GetLength();
         string[] labels={"01 Solid Brep","02 Extrusion","03 Surface","04 Closed mesh","05 Open mesh","06 Trimmed + hole","07 Bowed surface","08 Bowed Brep","09 Guided solid","10 Guided extrusion","11 Guided mesh"};
         int productIndex=0;
@@ -82,6 +83,7 @@ internal static class ExampleDefinitions
     }
     internal static void Verify(string path)
     {
+        IsolatedHost.LoadWoodie(typeof(PreviewComponent).Assembly.Location);
         IsolatedHost.LoadExampleBuiltIns();
         var rhino=RhinoDoc.ActiveDoc ?? throw new Exception("Example verification needs an active Rhino document");
         var previous=rhino.ModelUnitSystem; double tolerance=rhino.ModelAbsoluteTolerance;
@@ -99,7 +101,7 @@ internal static class ExampleDefinitions
             var previews=doc.Objects.OfType<PreviewComponent>().Where(IsLibrary).ToArray(); Assert(previews.Length==88,"Library needs 88 previews");
             var toggles=doc.Objects.OfType<GH_BooleanToggle>().Where(t=>t.NickName.StartsWith("Show ")).ToArray();
             Assert(toggles.Length==8 && toggles.All(t=>!t.Value),"Product library must start off to keep the viewport uncluttered");
-            Assert(doc.Objects.OfType<PreviewComponent>().Count(p=>!IsLibrary(p) && !p.Hidden)==3,"Initial view needs the three demonstrations");
+            Assert(doc.Objects.OfType<PreviewComponent>().Count(p=>!IsLibrary(p) && !p.Hidden)==4,"Initial view needs the four visible demonstrations (bamboo culm starts hidden)");
             Assert(doc.Objects.OfType<SettingsComponent>().All(m=>!m.PanelExpanded),"Example material panels should start compact");
             foreach(var preview in doc.Objects.OfType<PreviewComponent>()) preview.Hidden=true;
             foreach(var toggle in toggles) { toggle.Value=true; toggle.ExpireSolution(false); }

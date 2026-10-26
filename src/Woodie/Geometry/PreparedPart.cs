@@ -29,10 +29,12 @@ public sealed class PreparedPart : IDisposable
         if (stock != null && !stock.IsValid) throw new ArgumentException("Stock Geometry is invalid.");
         if (!double.IsFinite(unitToMm) || unitToMm <= 0) throw new ArgumentException("Document units must have a valid physical scale.");
         var remarks = new List<string>();
-        Mesh mesh = MakeMesh(geometry, settings.GridAngle);
+        // Natural revolved solids (esp. hollow bamboo) explode under the flat-timber 1° grid; cap edge length in document units.
+        double maxEdge = settings.IsNatural ? Math.Max(10 / unitToMm, tolerance * 20) : 0;
+        Mesh mesh = MakeMesh(geometry, settings.GridAngle, maxEdge);
         try
         {
-            using var stockMesh = stock == null ? null : MakeMesh(stock, settings.GridAngle);
+            using var stockMesh = stock == null ? null : MakeMesh(stock, settings.GridAngle, maxEdge);
             mesh.Faces.ConvertQuadsToTriangles();
             mesh.Faces.CullDegenerateFaces();
             mesh.Compact();
@@ -52,7 +54,9 @@ public sealed class PreparedPart : IDisposable
             Point3d[] coords = mesh.Vertices.ToPoint3dArray().Select(mapper.Map).ToArray();
             var bounds = new BoundingBox(stockMesh == null ? coords : stockMesh.Vertices.ToPoint3dArray().Select(mapper.Map));
             if (stock != null) {
-                var domain = bounds; domain.Inflate(tolerance);
+                // Meshed stock can sit inside the true solid; cut faces may land outside that mesh AABB.
+                var domain = bounds;
+                domain.Inflate(Math.Max(tolerance, maxEdge > 0 ? maxEdge : tolerance));
                 if (coords.Any(c => !domain.Contains(c))) throw new ArgumentException("Geometry extends outside the mapped Stock Geometry. Supply the original uncut stock and matching guide/plane.");
             }
             double l = (bounds.Max.X - bounds.Min.X) * unitToMm, w = (bounds.Max.Y - bounds.Min.Y) * unitToMm;
@@ -70,7 +74,7 @@ public sealed class PreparedPart : IDisposable
         catch { mesh.Dispose(); throw; }
     }
 
-    static Mesh MakeMesh(GeometryBase geometry, double gridAngle)
+    static Mesh MakeMesh(GeometryBase geometry, double gridAngle, double maxEdgeDocument = 0)
     {
         if (geometry is Mesh mesh) return mesh.DuplicateMesh();
         Brep brep;
@@ -84,8 +88,10 @@ public sealed class PreparedPart : IDisposable
         }
         try
         {
-            Mesh[] pieces = Mesh.CreateFromBrep(brep, new MeshingParameters(MeshingParameters.Default)
-            { RefineGrid = true, GridAngle = gridAngle, MinimumEdgeLength = 0 });
+            var parameters = new MeshingParameters(MeshingParameters.Default)
+            { RefineGrid = maxEdgeDocument <= 0, GridAngle = gridAngle, MinimumEdgeLength = 0 };
+            if (maxEdgeDocument > 0) parameters.MaximumEdgeLength = maxEdgeDocument;
+            Mesh[] pieces = Mesh.CreateFromBrep(brep, parameters);
             if (pieces == null || pieces.Length == 0) throw new ArgumentException("Rhino could not mesh the geometry.");
             var result = new Mesh();
             foreach (var piece in pieces) { result.Append(piece); piece.Dispose(); }

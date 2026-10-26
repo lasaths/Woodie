@@ -17,6 +17,9 @@ for (const [name, target, size] of [
   ['palette', 'src/Woodie/Resources/palette-bold.png', 24],
   ['list-dashes', 'src/Woodie/Resources/list-dashes-bold.png', 24],
   ['selection-slash', 'src/Woodie/Resources/selection-slash-bold.png', 24],
+  ['eye', 'src/Woodie/Resources/eye-bold.png', 24],
+  ['package', 'src/Woodie/Resources/package-bold.png', 24],
+  ['cube', 'src/Woodie/Resources/cube-bold.png', 24],
   ['tree-evergreen', 'packaging/icon.png', 64],
 ]) {
   const source = await readFile(path.join(checkout, 'node_modules/@phosphor-icons/core/assets/bold', `${name}-bold.svg`), 'utf8');

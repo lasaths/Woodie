@@ -243,7 +243,9 @@ internal static class RhinoChecks
         Assert(component.Description.Contains("3528223.3530081") && new SettingsComponent().Description.Contains("Larsson"), "Research credit missing from component descriptions");
         Assert(component.Icon_24x24.Width == 24 && new SettingsComponent().Icon_24x24.Height == 24, "Missing Phosphor icons");
         Assert(new PresetsComponent().Icon_24x24.Width == 24, "Missing Phosphor preset icon");
-        var icons = new IGH_DocumentObject[] { component, new SettingsComponent(), new LayerComponent(), new BuildupComponent(), new CutComponent(), new PresetsComponent(), new SettingsParam(), new LayerParam() };
+        var icons = new IGH_DocumentObject[] {
+            component, new SettingsComponent(), new LayerComponent(), new BuildupComponent(), new CutComponent(), new PresetsComponent(),
+            new SettingsParam(), new LayerParam(), new NaturalStockComponent(), new MaterialStockComponent(), new StockParam() };
         var fingerprints = icons.Select(o => string.Join(",", Enumerable.Range(0,24*24).Select(i => o.Icon_24x24.GetPixel(i%24,i/24).ToArgb()))).ToArray();
         Assert(fingerprints.Distinct().Count()==icons.Length,"Every Woodie component and parameter needs a unique Phosphor icon");
     }
@@ -325,5 +327,9 @@ internal static class RhinoChecks
         preview.ClearData(); Assert(!preview.ClippingBox.IsValid, "ClearData retained clipping bounds");
         doc.RemoveObject(preview, false);
     }
-    static void Examples() => ExampleDefinitions.Write(Path.GetFullPath(Path.Combine(Output, "../../examples")));
+    static void Examples()
+    {
+        IsolatedHost.LoadWoodie(typeof(PreviewComponent).Assembly.Location);
+        ExampleDefinitions.Write(Path.GetFullPath(Path.Combine(Output, "../../examples")));
+    }
 }

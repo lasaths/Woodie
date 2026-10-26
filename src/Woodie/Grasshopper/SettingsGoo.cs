@@ -12,7 +12,7 @@ public sealed class SettingsGoo : GH_Goo<TimberSettings>
     public SettingsGoo(TimberSettings value) { Value = value; }
     public override bool IsValid => Value != null;
     public override string TypeName => "Woodie Timber Settings";
-    public override string TypeDescription => "Timber appearance settings for Woodie";
+    public override string TypeDescription => "Timber appearance settings.";
     public override IGH_Goo Duplicate() => new SettingsGoo(Value?.Duplicate());
     public override string ToString() => Value?.ToString() ?? "Null Woodie settings";
     public override object ScriptVariable() => Value;
@@ -61,7 +61,7 @@ public sealed class SettingsGoo : GH_Goo<TimberSettings>
 
 public sealed class SettingsParam : GH_PersistentParam<SettingsGoo>
 {
-    public SettingsParam() : base("Timber Display Settings", "TDS", "Woodie timber appearance settings", "Display", "Woodie") { }
+    public SettingsParam() : base("Timber Display Settings", "TDS", "Timber appearance settings", "Display", "Woodie") { }
     public override Guid ComponentGuid => new("06b27042-911f-4614-ac44-378a78736284");
     public override GH_Exposure Exposure => GH_Exposure.hidden;
     protected override Bitmap Icon => Icons.SettingsParameter;

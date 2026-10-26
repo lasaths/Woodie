@@ -11,28 +11,28 @@ namespace Woodie.Grasshopper;
 public sealed class NaturalStockComponent : GH_Component
 {
     public NaturalStockComponent() : base("Natural Stock", "NaturalStock",
-        "Generate a tapered natural Log or a hollow Moso bamboo culm along a Line (base to tip) with its stock model. Seed, colours and resolution come from Settings. " + ResearchCredit.Timber,
+        "Build a Log or bamboo culm Stock Model on a Line. " + ResearchCredit.Timber,
         "Display", "Woodie") { }
     public override Guid ComponentGuid => new("5d7f3c1e-8a42-4b6f-9e0d-1c3a7b9f2e64");
     protected override Bitmap Icon => Icons.Tree;
     protected override void RegisterInputParams(GH_InputParamManager p)
     {
-        p.AddLineParameter("Line", "L", "Straight axis from the base to the tip, in Geometry Units", GH_ParamAccess.item);
+        p.AddLineParameter("Line", "L", "Axis from base to tip, in Geometry Units", GH_ParamAccess.item);
         p.AddTextParameter("Kind", "K", "Log (default) or Bamboo", GH_ParamAccess.item, "Log");
-        p.AddParameter(new SettingsParam(), "Settings", "TDS", "Optional Material Settings: seed (specimen identity), colours and resolution. Product and buildup are replaced.", GH_ParamAccess.item);
-        p.AddNumberParameter("Diameter", "D", "Base diameter in mm including bark; default 200 (Log) or 80 (Bamboo)", GH_ParamAccess.item);
-        p.AddNumberParameter("Wall", "W", "Bamboo culm wall thickness in mm; default 7", GH_ParamAccess.item);
-        p.AddNumberParameter("Node Spacing", "N", "Nominal bamboo internode length in mm; default 270", GH_ParamAccess.item);
-        p.AddNumberParameter("Bark", "B", "Log bark thickness in mm; default 5, 0 for debarked", GH_ParamAccess.item);
-        p.AddNumberParameter("Taper", "T", "Diameter lost per metre of length in mm; default 10 (Log) or 5 (Bamboo)", GH_ParamAccess.item);
-        p.AddNumberParameter("Variation", "V", "Natural Variation 0..1: bounded section waviness, ovality, node jitter, knots and tint; 0 is nominal only. Default 0.5", GH_ParamAccess.item);
-        p.AddTextParameter("Geometry Units", "U", "Source units of the Line; Document by default. Dimensions are always millimetres.", GH_ParamAccess.item);
+        p.AddParameter(new SettingsParam(), "Settings", "TDS", "Optional seed, colours and resolution. Product is replaced.", GH_ParamAccess.item);
+        p.AddNumberParameter("Diameter", "D", "Base diameter in mm, including bark", GH_ParamAccess.item);
+        p.AddNumberParameter("Wall", "W", "Bamboo wall thickness in mm", GH_ParamAccess.item);
+        p.AddNumberParameter("Node Spacing", "N", "Bamboo node spacing in mm", GH_ParamAccess.item);
+        p.AddNumberParameter("Bark", "B", "Log bark thickness in mm. Use 0 for none.", GH_ParamAccess.item);
+        p.AddNumberParameter("Taper", "T", "Diameter loss per metre, in mm", GH_ParamAccess.item);
+        p.AddNumberParameter("Variation", "V", "Natural variation from 0 to 1", GH_ParamAccess.item);
+        p.AddTextParameter("Geometry Units", "U", "Source units of the Line. Default is Document.", GH_ParamAccess.item);
         for (int i = 1; i < p.ParamCount; i++) p[i].Optional = true;
     }
     protected override void RegisterOutputParams(GH_OutputParamManager p)
     {
-        p.AddParameter(new StockParam(), "Stock Model", "Stock", "Stock model for Timber Cut and Timber Preview", GH_ParamAccess.item);
-        p.AddGeometryParameter("Geometry", "G", "Ordinary closed Brep in document units", GH_ParamAccess.item);
+        p.AddParameter(new StockParam(), "Stock Model", "Stock", "Stock Model for Cut and Preview", GH_ParamAccess.item);
+        p.AddGeometryParameter("Geometry", "G", "Closed Brep in document units", GH_ParamAccess.item);
     }
     protected override void SolveInstance(IGH_DataAccess da)
     {

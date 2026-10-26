@@ -129,6 +129,6 @@ internal static class BuildupCutChecks
         Assert(buildup.Params.Output[4].VolatileDataCount == 1,"Diagram missing");
         var archive = new GH_Archive(); archive.AppendObject(doc,"Definition"); using var reopened = new GH_Document { Enabled=true };
         Assert(archive.ExtractObject(reopened,"Definition"),"New component archive failed"); reopened.NewSolution(false);
-        Assert(reopened.Objects.OfType<PreviewComponent>().Single().Params.Input[7].SourceCount == 1,"Stock wire lost");
+        Assert(reopened.Objects.OfType<PreviewComponent>().Single().Params.Input[7].SourceCount == 1,"Stock Geometry wire lost");
     }
 }

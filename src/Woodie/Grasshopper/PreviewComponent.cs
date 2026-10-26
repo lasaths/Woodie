@@ -24,7 +24,8 @@ public sealed class PreviewComponent : GH_Component
     CancellationTokenSource activeBake;
     long solutionVersion;
 
-    public PreviewComponent() : base("Timber Preview", "TimberPreview", "Preview Rhino geometry as straight or bent timber. " + ResearchCredit.Timber, "Display", "Woodie")
+    public PreviewComponent() : base("Timber Preview", "TimberPreview",
+        "Preview timber on geometry or a Stock Model. " + ResearchCredit.Timber, "Display", "Woodie")
     {
         ObjectChanged += (_, e) =>
         {
@@ -34,32 +35,33 @@ public sealed class PreviewComponent : GH_Component
         };
     }
     public override Guid ComponentGuid => new("b3bcf727-0468-4fb8-8ee5-55fb8084ffb6");
-    protected override Bitmap Icon => Icons.Tree;
+    protected override Bitmap Icon => Icons.Eye;
     public override BoundingBox ClippingBox => bounds;
 
     protected override void RegisterInputParams(GH_InputParamManager p)
     {
-        p.AddGeometryParameter("Geometry", "G", "Mesh, Brep, Surface or Extrusion; input geometry is unchanged", GH_ParamAccess.item);
-        p.AddParameter(new SettingsParam(), "Settings", "TDS", "Optional timber settings; default CLT", GH_ParamAccess.item);
-        p.AddVectorParameter("Fibre", "F", "Fibre direction projected into the inferred or supplied base plane", GH_ParamAccess.item);
-        p.AddPlaneParameter("Base Plane", "P", "Optional base plane: X is fibre, Z is thickness", GH_ParamAccess.item);
-        p.AddCurveParameter("Guide Curve", "C", "Optional smooth open centreline for bent timber; curve direction sets grain X", GH_ParamAccess.item);
-        p.AddBooleanParameter("Show", "S", "Enable preview and texture generation", GH_ParamAccess.item, true);
-        p.AddTextParameter("Geometry Units", "U", "Source coordinate units: Document (default), Millimetres/mm, Centimetres/cm, Metres/m, Inches or Feet. Converts copies of geometry, guide and base-plane origin into Rhino document units.", GH_ParamAccess.item);
+        p.AddGeometryParameter("Geometry", "G", "Mesh, Brep, Surface or Extrusion", GH_ParamAccess.item);
+        p.AddParameter(new SettingsParam(), "Settings", "TDS", "Optional timber settings. Default is CLT.", GH_ParamAccess.item);
+        p.AddVectorParameter("Fibre", "F", "Fibre direction in the base plane", GH_ParamAccess.item);
+        p.AddPlaneParameter("Base Plane", "P", "Optional base plane. X is fibre. Z is thickness.", GH_ParamAccess.item);
+        p.AddCurveParameter("Guide Curve", "C", "Optional open centreline for bent timber", GH_ParamAccess.item);
+        p.AddBooleanParameter("Show", "S", "Turn preview on or off", GH_ParamAccess.item, true);
+        p.AddTextParameter("Geometry Units", "U", "Source units. Default is Document.", GH_ParamAccess.item);
+        p[0].Optional = true; // Stock Model can supply geometry alone
         for (int i = 1; i <= 4; i++) p[i].Optional = true;
         p[6].Optional = true;
-        p.AddGeometryParameter("Stock Geometry", "Stock", "Optional original uncut geometry: fixes material coordinates, layers and knots as the displayed geometry is cut. Uses Geometry Units.", GH_ParamAccess.item);
+        p.AddGeometryParameter("Stock Geometry", "SG", "Optional uncut stock. Fixes material coordinates for cuts.", GH_ParamAccess.item);
         p[7].Optional = true;
-        p.AddParameter(new StockParam(), "Stock Model", "Model", "Optional Woodie stock model; supplies geometry, settings and fixed material coordinates", GH_ParamAccess.item);
+        p.AddParameter(new StockParam(), "Stock Model", "Stock", "Optional Stock Model. Prefer this alone over Geometry or Settings.", GH_ParamAccess.item);
         p[8].Optional = true;
     }
 
     protected override void RegisterOutputParams(GH_OutputParamManager p)
     {
-        p.AddMeshParameter("Meshes", "M", "UV-mapped meshes; Woodie supplies viewport textures", GH_ParamAccess.list);
-        p.AddTextParameter("Products", "P", "Timber product per mesh", GH_ParamAccess.list);
-        p.AddBoxParameter("Aligned Box", "B", "Full geometry bounds in the fibre-aligned frame", GH_ParamAccess.item);
-        p.AddPlaneParameter("Frame", "F", "Material frame anchored at the original stock minimum when Stock Geometry is supplied; otherwise at the displayed box minimum", GH_ParamAccess.item);
+        p.AddMeshParameter("Meshes", "M", "Preview meshes with viewport textures", GH_ParamAccess.list);
+        p.AddTextParameter("Products", "P", "Product name for each mesh", GH_ParamAccess.list);
+        p.AddBoxParameter("Aligned Box", "B", "Bounds in the fibre-aligned frame", GH_ParamAccess.item);
+        p.AddPlaneParameter("Frame", "F", "Material frame at the stock or display minimum", GH_ParamAccess.item);
     }
 
     protected override void BeforeSolveInstance()
@@ -108,12 +110,13 @@ public sealed class PreviewComponent : GH_Component
         if (Params.Input.Count > 7) da.GetData(7, ref stockGoo);
         var legacyStock = stockGoo?.ScriptVariable() as GeometryBase;
         if (stockGoo != null && legacyStock == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Stock Geometry must be Mesh, Brep, Surface or Extrusion."); return; }
-        if (hasModel && (hasGeometry || hasSettings || hasFibre || hasPlane || hasGuide || stockGoo != null))
-        { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Stock Model mode rejects Geometry, Settings, Fibre, Base Plane, Guide Curve and Stock Geometry overrides. Disconnect them or clear Stock Model."); return; }
         GeometryBase geometry;
         TimberSettings settings;
         GeometryBase stock;
         if (hasModel) {
+            // Stock Model is authoritative; ignore override ports (common when G and Stock are both wired from Natural/Material Stock).
+            if (hasGeometry || hasSettings || hasFibre || hasPlane || hasGuide || stockGoo != null)
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "Stock Model sets geometry and settings. The component ignores override inputs.");
             geometry = stockModel.Value.Geometry;
             settings = stockModel.Value.Settings.Duplicate();
             stock = stockModel.Value.OriginalGeometry;

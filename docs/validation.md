@@ -1,16 +1,14 @@
 # Release validation
 
-## Shared stock, natural materials and engineered bamboo — 2026-10-25
+## 0.1.4 — shared stock, natural materials and engineered bamboo — 2026-10-26
 
-Branch `codex/shared-stock-bamboo` against `main` (post-0.1.3). Package publication is out of scope for this PR.
+Branch `codex/shared-stock-bamboo` against `main` (post-0.1.3).
 
 - Release builds of `Woodie.Checks` then `Woodie.gha`: PASS, zero warnings/errors.
-- Managed suite: PASS, **14** checks including stock/TimberPanel parity, natural Log/Bamboo features and appearance, engineered bamboo strip mapping / Fit to part, and unchanged eight-product appearance hashes (`MenuOrder` only).
-- Native `--rhino --integration`: PASS, **47** checks including stock archive round trip, natural geometry/cuts, Natural Stock component + preview atlas, hollow bamboo cuts, existing buildup/cut/bake/example coverage.
-- Native bake matrix for the eight engineered products was previously green on this machine; a dedicated natural-product bake visual pass was not repeated in this session.
+- Native `--rhino` with `--examples`: PASS, **37** checks including stock archive, natural geometry/cuts, culm preview mesh under the triangle cap, vertical bamboo half-cut stock mapping, component GUIDs, and regenerate/reopen of Timber-preview.ghx.
+- Combined example now includes sections **05 Rotated tower** and **06 Natural bamboo**; temporary live Cut/Preview probes were discarded and the ghx regenerated from `TimberExamples`.
 - Mac native checks: not run.
-- Example definition still ships the 0.1.3 timber playground; Natural/Material Stock and bamboo products are covered by components and checks, not yet a combined gallery section.
-- Limitations recorded in development notes: bark ovality, constant bamboo wall with wobble, Lamella/Veneer reused for strip size, no scrimber/flattened culms/user manufacturing sequences, age/reuse deferred. Strip machining windows now track Outer(x)/WallAt(x) along each culm.
+- Limitations recorded in development notes: bark ovality, constant bamboo wall with wobble, Lamella/Veneer reused for strip size, no scrimber/flattened culms/user manufacturing sequences, age/reuse deferred. Strip machining windows track Outer(x)/WallAt(x) along each culm.
 
 ## Native textured baking — 2026-10-25
 

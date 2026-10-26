@@ -12,24 +12,24 @@ namespace Woodie.Grasshopper;
 public sealed class MaterialStockComponent : GH_Component
 {
     public MaterialStockComponent() : base("Material Stock", "MaterialStock",
-        "Build a Woodie stock model from Brep/mesh geometry and timber or buildup settings. " + ResearchCredit.Timber,
+        "Build a Stock Model from geometry and settings. " + ResearchCredit.Timber,
         "Display", "Woodie") { }
     public override Guid ComponentGuid => new("c4e8a912-6f3b-4a1d-9c57-8e2d0b4f1a63");
-    protected override Bitmap Icon => Icons.Buildup;
+    protected override Bitmap Icon => Icons.Package;
     protected override void RegisterInputParams(GH_InputParamManager p)
     {
-        p.AddGeometryParameter("Geometry", "G", "Mesh, Brep, Surface or Extrusion stock in Rhino document units", GH_ParamAccess.item);
-        p.AddParameter(new SettingsParam(), "Settings", "TDS", "Material or Buildup settings; default CLT", GH_ParamAccess.item);
-        p.AddVectorParameter("Fibre", "F", "Fibre direction projected into the inferred or supplied base plane", GH_ParamAccess.item);
-        p.AddPlaneParameter("Base Plane", "P", "Optional base plane: X is fibre, Z is thickness", GH_ParamAccess.item);
-        p.AddCurveParameter("Guide Curve", "C", "Optional smooth open centreline for bent timber", GH_ParamAccess.item);
-        p.AddTextParameter("Geometry Units", "U", "Source units of Geometry, Guide and Base Plane origin; Document by default", GH_ParamAccess.item);
+        p.AddGeometryParameter("Geometry", "G", "Mesh, Brep, Surface or Extrusion", GH_ParamAccess.item);
+        p.AddParameter(new SettingsParam(), "Settings", "TDS", "Material or Buildup settings. Default is CLT.", GH_ParamAccess.item);
+        p.AddVectorParameter("Fibre", "F", "Fibre direction in the base plane", GH_ParamAccess.item);
+        p.AddPlaneParameter("Base Plane", "P", "Optional base plane. X is fibre. Z is thickness.", GH_ParamAccess.item);
+        p.AddCurveParameter("Guide Curve", "C", "Optional open centreline for bent timber", GH_ParamAccess.item);
+        p.AddTextParameter("Geometry Units", "U", "Source units. Default is Document.", GH_ParamAccess.item);
         for (int i = 1; i <= 5; i++) p[i].Optional = true;
     }
     protected override void RegisterOutputParams(GH_OutputParamManager p)
     {
-        p.AddParameter(new StockParam(), "Stock Model", "Stock", "Stock model for Timber Cut and Timber Preview", GH_ParamAccess.item);
-        p.AddGeometryParameter("Geometry", "G", "Ordinary stock geometry in document units", GH_ParamAccess.item);
+        p.AddParameter(new StockParam(), "Stock Model", "Stock", "Stock Model for Cut and Preview", GH_ParamAccess.item);
+        p.AddGeometryParameter("Geometry", "G", "Stock geometry in document units", GH_ParamAccess.item);
     }
     protected override void SolveInstance(IGH_DataAccess da)
     {

@@ -4,7 +4,7 @@
 
 **Material Stock** wraps a Mesh/Brep/Surface/Extrusion plus Material or Buildup settings into a **Stock Model**. **Natural Stock** builds a tapered Log or hollow Moso bamboo culm from a straight Line (base→tip), with Diameter/Wall/Node Spacing/Bark/Taper/Variation in millimetres and Geometry Units for the line. Both output a Stock Model and ordinary geometry.
 
-Wire **Stock Model → Timber Cut → Stock Model** and **Stock Model → Timber Preview**. In Stock Model mode, Preview rejects simultaneous Geometry, Settings, Fibre, Base Plane, Guide and Stock Geometry overrides. Show still works. Legacy Geometry + Settings + optional Stock Geometry continues on the original ports. Cut appends a Stock Model output list while keeping Geometry, Stock and Section Outlines at their previous indices.
+Wire **Stock Model → Timber Cut → Stock Model → Timber Preview** (all Stock Model ports use nick **Stock**). In Stock Model mode, Preview rejects simultaneous Geometry, Settings, Fibre, Base Plane, Guide and Stock Geometry overrides. Show still works. Legacy path: Cut **Geometry** in / **Geometry** + **Stock Geometry** (`SG`) out → Preview Geometry + Stock Geometry. Cut keeps port order: Geometry, Cutting Plane, Keep Positive, Geometry Units, Stock Model in; Geometry, Stock Geometry, Section Outlines, Stock Model out.
 
 Engineered bamboo products `BambooLumber` (plain-pressed), `BambooLumberSide` and `BambooPanel` are available by name on Timber Display Settings. They are not in the Material product dropdown; strip width/thickness reuse Lamella Width / Veneer Thickness. BambooPanel uses Layer/Buildup with the usual exact-thickness and Fit to part rules. See [stock architecture](development/stock-architecture.md) and [natural-materials research](development/natural-materials-research.md).
 
@@ -18,9 +18,9 @@ These controls require **0.1.3**. They are under **Display → Woodie** and reta
 
 Exact thicknesses are checked against the original stock depth using document tolerance, with a minimum 0.01 mm physical tolerance. A mismatch reports both values. Enable **Fit to part** to scale the proportions explicitly. The schedule/diagram describe the reference thickness; Preview fits to its actual stock when Fit is enabled. An open surface uses the custom stack sum as virtual display depth and stays open. The selected product remains the appearance/palette family, while Preview labels an override **Custom buildup**. Changing a stack does not specify a manufactured or structural product.
 
-**Timber Cut** takes closed Brep, solid Extrusion or closed Mesh Stock, Cutting Plane, Keep Positive (default false) and optional Geometry Units (default Document). The plane origin uses the stock's source units; axes are directions. Outputs are capped remaining Geometry, the uncut Stock and Section Outlines, all in Rhino document units. A fully outside cut keeps everything or returns an empty result with a remark. Invalid stock or failed splitting/capping produces an error. Input geometry remains unchanged.
+**Timber Cut** prefers a **Stock Model** input. Legacy mode takes closed Brep, solid Extrusion or closed Mesh **Geometry**, Cutting Plane, Keep Positive (default false) and optional Geometry Units (default Document). The plane origin uses the geometry's source units; axes are directions. Outputs are capped remaining Geometry, uncut **Stock Geometry**, Section Outlines, and (when a Stock Model was supplied) cut **Stock Model** pieces—all in Rhino document units. A fully outside cut keeps everything or returns an empty result with a remark. Invalid geometry or failed splitting/capping produces an error. Input geometry remains unchanged.
 
-Connect **Cut Geometry → Preview Geometry** and **Cut Stock → Preview Stock Geometry**, leaving downstream Geometry Units at **Document**. Preview derives its mapping frame, full dimensions and layer positions from Stock, including any supplied guide. Moving the cut reveals the original field rather than resizing it. Its Aligned Box describes the displayed cut geometry; Frame describes the original material reference. Geometry outside the stock's mapped domain is rejected. Knots remain continuous within a board/veneer and independent across glue lines. A cap is sampled from the material volume; it is not a flat image pasted onto the end.
+Prefer **Cut Stock Model → Preview Stock**. Legacy: **Cut Geometry → Preview Geometry** and **Cut Stock Geometry → Preview Stock Geometry**, leaving downstream Geometry Units at **Document**. Preview derives its mapping frame, full dimensions and layer positions from the stock (model or Stock Geometry), including any supplied guide. Moving the cut reveals the original field rather than resizing it. Its Aligned Box describes the displayed cut geometry; Frame describes the original material reference. Geometry outside the stock's mapped domain is rejected. Knots remain continuous within a board/veneer and independent across glue lines. A cap is sampled from the material volume; it is not a flat image pasted onto the end.
 
 Open the single [Timber playground](../examples/Timber-preview.ghx). Its numbered Scribble sections cover movable cutting, knot transitions, a custom longitudinal/cross buildup with schedule, and the complete product library. The three demonstrations start visible; use each product card's Show toggle to inspect the library. Material panels start collapsed.
 
@@ -30,7 +30,7 @@ The angled cut exposes an interior face sampled from the original stock:
 
 ![Basic timber with an angled textured cap](images/basic-cutting.png)
 
-The stepped cutaway exposes one knot field across several depths. Its **Knot section (%)** slider moves a capped plane along the piece, revealing the same field on a cross-section. Cut Stock remains connected to Preview Stock Geometry, so downstream units are Document:
+The stepped cutaway exposes one knot field across several depths. Its **Knot section (%)** slider moves a capped plane along the piece, revealing the same field on a cross-section. Cut Stock Geometry remains connected to Preview Stock Geometry, so downstream units are Document:
 
 ![Moving capped section in Arctic mode](images/knot-section-arctic.gif)
 
@@ -150,14 +150,15 @@ Prepares render meshes, maps timber coordinates and supplies textured Rhino view
 
 | Input | Use |
 | --- | --- |
-| Geometry | Required mesh, Brep, surface or extrusion |
-| Settings | Optional Timber Material settings; defaults to CLT when omitted |
+| Geometry | Mesh, Brep, surface or extrusion; optional when Stock Model is connected |
+| Settings | Optional Timber Material settings; defaults to CLT when omitted (not used with Stock Model) |
 | Fibre | Optional world-space vector projected into the base plane; reversing it reverses grain X. Perpendicular vectors are rejected |
 | Base Plane | Optional reference plane; X guides fibre orientation and Z defines thickness/layer direction. Inferred when omitted |
 | Guide Curve | Optional smooth, open centreline for bent timber; takes precedence over automatic surface mapping. Curve direction sets grain X |
 | Show | Enables textured display and texture generation; default true |
 | Geometry Units (0.1.2+) | Source coordinate units: Document (default), Millimetres/mm, Centimetres/cm, Metres/m, Inches or Feet. Converts copies of geometry, guide and plane origins to Rhino units |
-| Stock Geometry (0.1.3+) | Original uncut geometry in the same source units; locks the material field while Geometry is cut. Omit for normal previews |
+| Stock Geometry (0.1.3+) | Nick **SG**. Original uncut geometry in the same source units; locks the material field while Geometry is cut. Omit for normal previews or Stock Model mode |
+| Stock Model (0.1.4+) | Nick **Stock**. Supplies geometry, settings and fixed material coordinates; do not also wire Geometry/Settings/Fibre/Plane/Guide/Stock Geometry |
 
 | Output | Use |
 | --- | --- |

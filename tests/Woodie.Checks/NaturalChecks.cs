@@ -153,6 +153,16 @@ internal static class NaturalChecks
         var archive = new GH_Archive(); Assert(archive.AppendObject(new StockGoo(culmStock), "Stock"), "Natural stock write");
         var copy = new StockGoo(); Assert(archive.ExtractObject(copy, "Stock") && copy.Value.Settings.NodeSpacing == 270 && copy.Value.Settings.Product == TimberProduct.Bamboo, "Natural stock archive");
         for (int i = 0; i < 30; i++) { double x = 10 + i * 97, y = 30 + i, z = 35; Assert(copy.Value.Definition.Sample(x, y, z) == culmStock.Definition.Sample(x, y, z), "Natural archive changed samples"); }
+        // Hollow culms must stay under the preview triangle cap with the natural mesh limits.
+        using var culmPart = PreparedPart.Create(culmStock.Geometry, culmStock.Settings.Duplicate(), 1, .001, culmStock.BasePlane, culmStock.Fibre, null, culmStock.OriginalGeometry);
+        Assert(culmPart.Mesh.Faces.Count > 0 && culmPart.Mesh.Faces.Count <= 200000, $"Bamboo culm preview mesh has {culmPart.Mesh.Faces.Count} triangles");
+        // Vertical half-cut through the culm must keep fixed stock mapping for Timber Preview.
+        var mid = culmStock.Geometry.GetBoundingBox(true).Center;
+        using var half = TimberCut.Create(culmStock.Geometry, new Plane(mid, Vector3d.XAxis), false, .001);
+        Assert(half.Geometry.Count == 1 && half.Outlines.Count > 0, "Bamboo vertical section should keep one capped piece with outlines");
+        using var cutStock = culmStock.WithGeometry(half.Geometry[0]);
+        using var cutPart = PreparedPart.Create(cutStock.Geometry, cutStock.Settings.Duplicate(), 1, .001, cutStock.BasePlane, cutStock.Fibre, null, cutStock.OriginalGeometry);
+        Assert(cutPart.Mesh.Faces.Count > 0 && cutPart.Mesh.Faces.Count <= 200000, $"Bamboo section preview mesh has {cutPart.Mesh.Faces.Count} triangles");
         // Stock Model preview path builds the natural definition and rasterises it.
         var stock = logStock; var settings = stock.Settings.Duplicate(); settings.Resolution = 8; settings.EdgeResolution = 8;
         using var part = PreparedPart.Create(stock.Geometry, settings, 1, .001, stock.BasePlane, stock.Fibre, null, stock.OriginalGeometry);

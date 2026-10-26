@@ -35,7 +35,7 @@ public sealed class TimberSettings
     public double EffectiveEdgeResolution => double.IsNaN(EdgeResolution) ? (Product == TimberProduct.KertoQ ? 0.25 : 0.5) : EdgeResolution;
     public double EffectiveKnotDensity => double.IsNaN(KnotDensity) ? (Look == TimberLook.CleanPale ? 0.25 : Product == TimberProduct.CLT ? 8 : 3) : KnotDensity;
     // Revolved natural stock needs far fewer facets than the 1° grid used for flat timber (200k triangle budget).
-    internal double GridAngle => IsNatural ? 5 * Math.PI / 180 : Math.PI / 180;
+    internal double GridAngle => IsNatural ? 15 * Math.PI / 180 : Math.PI / 180;
     public bool IsNatural => Product is TimberProduct.Log or TimberProduct.Bamboo;
     public bool IsEngineeredBamboo => Product is TimberProduct.BambooLumber or TimberProduct.BambooLumberSide or TimberProduct.BambooPanel;
     public double VirtualDepthMm => Layers != null ? Layers.Sum(l => l.Thickness) : Product switch

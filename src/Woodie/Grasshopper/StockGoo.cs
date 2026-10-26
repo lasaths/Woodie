@@ -13,7 +13,7 @@ public sealed class StockGoo : GH_Goo<WoodieStock>
     public StockGoo(WoodieStock value) { Value = value; }
     public override bool IsValid => Value?.Geometry != null && Value.OriginalGeometry != null && Value.Definition != null;
     public override string TypeName => "Woodie Stock Model";
-    public override string TypeDescription => "Current timber geometry with its original stock definition";
+    public override string TypeDescription => "Timber geometry with fixed stock material.";
     public override IGH_Goo Duplicate() => new StockGoo(Value?.Duplicate());
     public override string ToString() => Value == null ? "Null Woodie stock" : $"Woodie stock · {Value.Settings}";
     public override object ScriptVariable() => Value;
@@ -113,10 +113,10 @@ public sealed class StockGoo : GH_Goo<WoodieStock>
 
 public sealed class StockParam : GH_PersistentParam<StockGoo>
 {
-    public StockParam() : base("Stock Model", "Stock", "Woodie stock model with fixed material definition", "Display", "Woodie") { }
+    public StockParam() : base("Stock Model", "Stock", "Stock Model with fixed material", "Display", "Woodie") { }
     public override Guid ComponentGuid => new("a6c2e1f0-4b8d-4d91-9f3a-2c7e5b1d0842");
     public override GH_Exposure Exposure => GH_Exposure.hidden;
-    protected override Bitmap Icon => Icons.SettingsParameter;
+    protected override Bitmap Icon => Icons.Cube;
     protected override GH_GetterResult Prompt_Singular(ref StockGoo value) => GH_GetterResult.cancel;
     protected override GH_GetterResult Prompt_Plural(ref List<StockGoo> values) => GH_GetterResult.cancel;
 }

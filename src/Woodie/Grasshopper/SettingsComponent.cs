@@ -9,7 +9,9 @@ namespace Woodie.Grasshopper;
 
 public sealed class SettingsComponent : GH_Component
 {
-    public SettingsComponent() : base("Timber Material", "TimberMaterial", "Click the arrow beneath the icon to show or hide material controls. Choose a product and appearance; expand Advanced inputs for overrides. Resolution is in mm/pixel. " + ResearchCredit.Timber, "Display", "Woodie") { }
+    public SettingsComponent() : base("Timber Material", "TimberMaterial",
+        "Select product, look, seed and resolution. Open the arrow for controls. " + ResearchCredit.Timber,
+        "Display", "Woodie") { }
     public override Guid ComponentGuid => new("7a74fc91-6ed6-447b-adb6-2e2fcd425383");
     protected override Bitmap Icon => Icons.Sliders;
     public TimberProduct SelectedProduct { get; private set; } = TimberProduct.CLT;
@@ -24,28 +26,28 @@ public sealed class SettingsComponent : GH_Component
     protected override void RegisterInputParams(GH_InputParamManager p)
     {
         // Names and indices 0..12 remain the legacy contract. Product has no stored default in new instances.
-        p.AddTextParameter("Product", "P", "Optional product override (text or product list); controls the Product dropdown when supplied", GH_ParamAccess.item);
+        p.AddTextParameter("Product", "P", "Optional product name. Controls the Product dropdown when set.", GH_ParamAccess.item);
         p.AddIntegerParameter("Seed", "S", "Random seed", GH_ParamAccess.item, 0);
-        p.AddNumberParameter("Resolution", "R", "Large-face resolution in mm/pixel (smaller = finer)", GH_ParamAccess.item, 2);
+        p.AddNumberParameter("Resolution", "R", "Face resolution in mm per pixel", GH_ParamAccess.item, 2);
         for (int i = 0; i < p.ParamCount; i++) p[i].Optional = true;
     }
     protected override void RegisterOutputParams(GH_OutputParamManager p)
     {
-        p.AddParameter(new SettingsParam(), "Settings", "TDS", "Woodie timber material settings", GH_ParamAccess.item);
-        p.AddTextParameter("Product", "P", "Canonical product identifier", GH_ParamAccess.item);
+        p.AddParameter(new SettingsParam(), "Settings", "TDS", "Timber material settings", GH_ParamAccess.item);
+        p.AddTextParameter("Product", "P", "Product identifier", GH_ParamAccess.item);
     }
     static IGH_Param AdvancedParameter(int index) => index switch {
-        3 => Number("Edge Resolution", "ER", "Edge resolution in mm/pixel; product default 0.5, KertoQ 0.25"),
-        4 => Number("Knot Density", "KD", "Knots/metre (0–100); overrides the selected appearance"),
+        3 => Number("Edge Resolution", "ER", "Edge resolution in mm per pixel"),
+        4 => Number("Knot Density", "KD", "Knots per metre from 0 to 100"),
         5 => Number("Ring Spacing", "RS", "Annual ring spacing in mm"),
-        6 => Number("Lamella Width", "LW", "CLT / Three-layer panel board width in mm"),
-        7 => Number("Brightness", "B", "Brightness multiplier; default 1"),
+        6 => Number("Lamella Width", "LW", "Board width in mm for CLT or three-layer panel"),
+        7 => Number("Brightness", "B", "Brightness multiplier"),
         8 => Colour("Earlywood A", "E0"), 9 => Colour("Earlywood B", "E1"),
         10 => Colour("Latewood", "LC"), 11 => Colour("Knot", "KC"), 12 => Colour("Glue", "GC"),
-        13 => Number("Veneer Thickness", "VT", "Nominal veneer thickness in mm for Plywood (1.5) or parallel LVL (3); fitted to total depth"),
+        13 => Number("Veneer Thickness", "VT", "Veneer thickness in mm"),
         _ => null };
     static Param_Number Number(string name, string nick, string description) => new() { Name = name, NickName = nick, Description = description, Access = GH_ParamAccess.item, Optional = true };
-    static Param_Colour Colour(string name, string nick) => new() { Name = name, NickName = nick, Description = "Optional palette override", Access = GH_ParamAccess.item, Optional = true };
+    static Param_Colour Colour(string name, string nick) => new() { Name = name, NickName = nick, Description = "Optional palette colour", Access = GH_ParamAccess.item, Optional = true };
 
     void Change(string title, Action action)
     {
@@ -160,7 +162,7 @@ public sealed class SettingsComponent : GH_Component
         // Legacy archives restore all original ports, including IDs, wires and persistent data.
         if (legacy) { EnsureAdvanced(); AdvancedNotice = "Legacy advanced inputs retained to preserve wires and stored settings."; }
         if (Attributes == null) CreateAttributes();
-        if (Params.Output.Count == 1) Params.RegisterOutputParam(new Param_String { Name = "Product", NickName = "P", Description = "Canonical product identifier", Access = GH_ParamAccess.item });
+        if (Params.Output.Count == 1) Params.RegisterOutputParam(new Param_String { Name = "Product", NickName = "P", Description = "Product identifier", Access = GH_ParamAccess.item });
         Params.OnParametersChanged(); Attributes?.ExpireLayout(); return ok;
     }
 }
