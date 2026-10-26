@@ -6,7 +6,7 @@ namespace Woodie.Stock;
 public sealed class StockDefinition : IMaterialModel
 {
     StockDefinition(TimberSettings settings, double lengthMm, double widthMm, double depthMm,
-        IReadOnlyList<TimberLayer> layers, Construction construction)
+        IReadOnlyList<TimberLayer> layers, Construction construction, double toleranceMm)
     {
         Settings = settings;
         LengthMm = lengthMm;
@@ -14,12 +14,14 @@ public sealed class StockDefinition : IMaterialModel
         DepthMm = depthMm;
         Layers = layers;
         Construction = construction;
+        ToleranceMm = toleranceMm;
     }
 
     public TimberSettings Settings { get; }
     public double LengthMm { get; }
     public double WidthMm { get; }
     public double DepthMm { get; }
+    public double ToleranceMm { get; }
     public IReadOnlyList<TimberLayer> Layers { get; }
     public Construction Construction { get; }
 
@@ -30,26 +32,27 @@ public sealed class StockDefinition : IMaterialModel
         settings.Validate();
         if (!(lengthMm > 0) || !(widthMm > 0) || !(depthMm > 0) || !double.IsFinite(lengthMm + widthMm + depthMm))
             throw new ArgumentException("Stock dimensions must be finite and positive.");
-        if (settings.IsNatural) return FromNatural(settings, lengthMm, widthMm, depthMm, layers);
+        if (!(toleranceMm > 0) || !double.IsFinite(toleranceMm)) throw new ArgumentException("Stock tolerance must be positive.");
+        if (settings.IsNatural) return FromNatural(settings, lengthMm, widthMm, depthMm, toleranceMm, layers);
         if (settings.IsEngineeredBamboo) return FromBamboo(settings, lengthMm, widthMm, depthMm, toleranceMm, layers);
         layers ??= TimberLayups.Resolve(settings, depthMm, widthMm, toleranceMm);
         var panel = new TimberPanel(settings.Product, lengthMm, widthMm, depthMm, settings.Seed,
             settings.EffectiveKnotDensity, settings.Palette(), settings.LamellaWidth, settings.VeneerThickness, layers);
         var specimen = new SourceSpecimen(settings.Seed);
         var piece = new MaterialPiece(specimen, panel, 0, 0, 0, lengthMm, widthMm, depthMm);
-        return new StockDefinition(settings.Duplicate(), lengthMm, widthMm, depthMm, layers, new Construction(new[] { piece }));
+        return new StockDefinition(settings.Duplicate(), lengthMm, widthMm, depthMm, layers, new Construction(new[] { piece }), toleranceMm);
     }
 
     /// <summary>One natural Log or Bamboo piece; features resolve once from the settings' seed. Dimensions are the stock's mapped bounds in mm.</summary>
     public static StockDefinition FromNatural(TimberSettings settings, double lengthMm, double widthMm, double depthMm,
-        IReadOnlyList<TimberLayer> layers = null)
+        double toleranceMm = .01, IReadOnlyList<TimberLayer> layers = null)
     {
         var features = NaturalFeatures.Resolve(settings, lengthMm, widthMm, depthMm);
         var palette = settings.Palette();
         IMaterialModel model = features.Bamboo ? new BambooMaterialModel(features, palette, widthMm, depthMm) : new LogMaterialModel(features, palette, widthMm, depthMm);
         var piece = new MaterialPiece(new SourceSpecimen(settings.Seed, features), model, 0, 0, 0, lengthMm, widthMm, depthMm);
         layers ??= TimberLayups.Make(settings.Product, depthMm, widthMm);
-        return new StockDefinition(settings.Duplicate(), lengthMm, widthMm, depthMm, layers, new Construction(new[] { piece }));
+        return new StockDefinition(settings.Duplicate(), lengthMm, widthMm, depthMm, layers, new Construction(new[] { piece }), toleranceMm);
     }
 
     /// <summary>Laminated bamboo lumber or layered panel: many machined strips, each mapped into a source culm. Dimensions are stock mm.</summary>
@@ -58,7 +61,7 @@ public sealed class StockDefinition : IMaterialModel
     {
         layers ??= TimberLayups.Resolve(settings, depthMm, widthMm, toleranceMm);
         return new StockDefinition(settings.Duplicate(), lengthMm, widthMm, depthMm, layers,
-            BambooConstruction.Build(settings, lengthMm, widthMm, depthMm, layers));
+            BambooConstruction.Build(settings, lengthMm, widthMm, depthMm, layers), toleranceMm);
     }
 
     public int Sample(double x, double y, double z) => Sample(x, y, z, 0, 0, 0, false);

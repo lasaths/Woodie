@@ -30,6 +30,7 @@ public sealed class StockGoo : GH_Goo<WoodieStock>
         writer.SetDouble("LengthMm", Value.Definition.LengthMm);
         writer.SetDouble("WidthMm", Value.Definition.WidthMm);
         writer.SetDouble("DepthMm", Value.Definition.DepthMm);
+        writer.SetDouble("ToleranceMm", Value.Definition.ToleranceMm);
         new SettingsGoo(Value.Settings).Write(writer.CreateChunk("Settings"));
         WriteGeometry(writer.CreateChunk("Geometry"), Value.Geometry);
         WriteGeometry(writer.CreateChunk("Original"), Value.OriginalGeometry);
@@ -76,7 +77,9 @@ public sealed class StockGoo : GH_Goo<WoodieStock>
                 var pt = reader.GetPoint3D("Fibre");
                 fibre = new Vector3d(pt.x, pt.y, pt.z);
             }
-            var definition = StockDefinition.FromTimber(settingsGoo.Value, reader.GetDouble("LengthMm"), reader.GetDouble("WidthMm"), reader.GetDouble("DepthMm"));
+            double tolerance = reader.ItemExists("ToleranceMm") ? reader.GetDouble("ToleranceMm") : .01;
+            if (!(tolerance > 0) || !double.IsFinite(tolerance)) throw new ArgumentException("Archived stock tolerance is invalid.");
+            var definition = StockDefinition.FromTimber(settingsGoo.Value, reader.GetDouble("LengthMm"), reader.GetDouble("WidthMm"), reader.GetDouble("DepthMm"), tolerance);
             Value = new WoodieStock(geometry, definition, original, plane, fibre, guide);
             return true;
         }

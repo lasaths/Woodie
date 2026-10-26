@@ -10,7 +10,7 @@ Branch `codex/shared-stock-bamboo` against `main` (post-0.1.3). Package publicat
 - Native bake matrix for the eight engineered products was previously green on this machine; a dedicated natural-product bake visual pass was not repeated in this session.
 - Mac native checks: not run.
 - Example definition still ships the 0.1.3 timber playground; Natural/Material Stock and bamboo products are covered by components and checks, not yet a combined gallery section.
-- Limitations recorded in development notes: bark ovality, constant bamboo wall with wobble, strip machining window at Variation > 0, Lamella/Veneer reused for strip size, no scrimber/flattened culms/user manufacturing sequences, age/reuse deferred.
+- Limitations recorded in development notes: bark ovality, constant bamboo wall with wobble, Lamella/Veneer reused for strip size, no scrimber/flattened culms/user manufacturing sequences, age/reuse deferred. Strip machining windows now track Outer(x)/WallAt(x) along each culm.
 
 ## Native textured baking — 2026-10-25
 

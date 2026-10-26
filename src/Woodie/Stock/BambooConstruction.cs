@@ -14,7 +14,7 @@ namespace Woodie.Stock;
 /// Provenance: representative strip sizes (about 20 × 4 mm), glue lines and plain/side/layered constructions follow the laminated
 /// bamboo lumber study of Lorenzo et al. (https://discovery.ucl.ac.uk/10170654/3/Lorenzo_Size%20effect%20on%20the%20compressive%20strength%20of%20laminated%20bamboo%20lumber.pdf);
 /// the numbers are visual presets, not values transcribed from it. Colour and adhesive tone are appearance adaptations.
-/// shortcut: strips span the whole stock (no end joints), flat approximation of the split strip, one nominal wall window; upgrade with scarf/finger joints and per-culm wall tracking.
+/// shortcut: strips span the whole stock (no end joints) with a flat chord; upgrade with scarf/finger joints and curved strip surfaces.
 /// </summary>
 public static class BambooConstruction
 {
@@ -73,13 +73,10 @@ public static class BambooConstruction
             return culms[group];
         }
 
-        // Machining window (flat strip planed from the curved wall): outer corners stay inside the outer surface, inner face outside the cavity.
-        var first = Culm(0).Specimen.Features;
-        double outer = first.Outer(0) - SkinFraction * first.Wall, inner = first.Outer(0) - first.Wall + LiningMm;
-        double chord = Math.Sqrt(Math.Max(outer * outer - stripW * stripW / 4, 0));
-        if (chord - stripT - inner <= 0) throw new ArgumentException("Strip thickness and width do not fit the culm wall; use thinner or narrower strips or a thicker wall.");
-        double rho = (chord + inner) / 2;                                  // radial window centre
-        int ring = Math.Max(1, (int)Math.Floor(2 * Math.PI * rho / stripW));   // strips split from one culm
+        // Machining window from the tightest planed chord/inner along the whole culm (taper + Variation wobble), not a single station.
+        double rho0 = RadialWindow(Culm(0).Specimen.Features, stripW, stripT);
+        int ring = Math.Max(1, (int)Math.Floor(2 * Math.PI * rho0 / stripW));   // strips split from one culm
+        var rhoByCulm = new Dictionary<int, double> { [0] = rho0 };
 
         var pieces = new MaterialPiece[total];
         for (int gi = 0; gi < grids.Count; gi++)
@@ -88,8 +85,10 @@ public static class BambooConstruction
             for (int ir = 0; ir < g.NR; ir++)
                 for (int it = 0; it < g.NT; it++)
                 {
-                    int k = g.Start + ir * g.NT + it;
-                    var (specimen, model) = Culm(k / ring);
+                    int k = g.Start + ir * g.NT + it, group = k / ring;
+                    var (specimen, model) = Culm(group);
+                    if (!rhoByCulm.TryGetValue(group, out double rho))
+                        rhoByCulm[group] = rho = RadialWindow(specimen.Features, stripW, stripT);
                     double theta = 2 * Math.PI * (k % ring) / ring, c = Math.Cos(theta), sn = Math.Sin(theta);
                     var rnd = new Random(unchecked(settings.Seed * 7919 + k * 104729 + 17));
                     double offset = rnd.NextDouble() * spacing, sg = rnd.NextDouble() < .5 ? -1 : 1;   // axial stagger; strip turned 180° about its fibre
@@ -130,6 +129,25 @@ public static class BambooConstruction
     }
 
     static double Axis(double x, double y, double z, int axis) => axis == 0 ? x : axis == 1 ? y : z;
+
+    /// <summary>Radial centre of a flat strip that stays inside the planed wall for every station along the culm.</summary>
+    static double RadialWindow(NaturalFeatures features, double stripW, double stripT)
+    {
+        double minChord = double.PositiveInfinity, maxInner = double.NegativeInfinity;
+        int samples = Math.Max(8, (int)Math.Ceiling(features.Length / 40));
+        for (int i = 0; i <= samples; i++)
+        {
+            double x = features.Length * i / samples;
+            double planedOuter = features.Outer(x) - SkinFraction * features.WallAt(x);
+            double planedInner = features.Inner(x) + LiningMm;
+            double chord = Math.Sqrt(Math.Max(planedOuter * planedOuter - stripW * stripW / 4, 0));
+            if (chord < minChord) minChord = chord;
+            if (planedInner > maxInner) maxInner = planedInner;
+        }
+        if (!(minChord - stripT - maxInner > 0) || !double.IsFinite(minChord + maxInner))
+            throw new ArgumentException("Strip thickness and width do not fit the culm wall; use thinner or narrower strips or a thicker wall.");
+        return (minChord + maxInner) / 2;
+    }
 
     /// <summary>Culm anatomy for one strip, in source coordinates, plus adhesive on the faces shared with neighbouring strips.</summary>
     sealed class StripModel : IMaterialModel

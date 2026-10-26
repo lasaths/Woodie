@@ -29,6 +29,7 @@ internal static class StockChecks
     }
 
     static TimberSettings Bamboo(TimberProduct product, double variation = 0, int seed = 5) => new() { Product = product, Seed = seed, Variation = variation };
+    static double SkinMargin(NaturalFeatures f, double x) => Math.Max(.9, .14 * f.WallAt(x) - 1e-6);
     static (double Y, double Z) Cross(MaterialPiece p, double x, double y, double z) { p.ToSource(x, y, z, out _, out var sy, out var sz); return (sy, sz); }
     // Distinct adhesive bands along a line: samples that change when only the glue colour changes.
     static int GlueBands(TimberProduct product, double y0, double y1, double z, double x = 300)
@@ -63,13 +64,14 @@ internal static class StockChecks
                 Near(Math.Abs(radialAxis == 'z' ? alongZ : alongY), 1, 1e-9);                 // radial axis follows the culm radius
                 Near(Math.Abs(radialAxis == 'z' ? alongY : alongZ), 0, 1e-9);                 // the other stock axis is tangential
             }
-        // Machining + split: with nominal anatomy every strip corner lies inside the wall, away from skin and lining; source x stays in the culm.
-        foreach (var stock in new[] { plain, side })
+        // Machining + split: strip corners stay inside the planed wall for Variation 0 and the default 0.5 wobble.
+        foreach (var stock in new[] { plain, side, StockDefinition.FromTimber(Bamboo(TimberProduct.BambooLumber, .5), 2000, 100, 40), StockDefinition.FromTimber(Bamboo(TimberProduct.BambooLumberSide, .5), 2000, 100, 40) })
             foreach (var piece in stock.Construction.Pieces) {
                 var f = piece.Specimen.Features; double half = f.Diameter / 2;
                 foreach (double x in new[] { piece.MinX, piece.MaxX }) foreach (double y in new[] { piece.MinY, piece.MaxY }) foreach (double z in new[] { piece.MinZ, piece.MaxZ }) {
                     piece.ToSource(x, y, z, out double sx, out double sy, out double sz); double r = Math.Sqrt((sy - half) * (sy - half) + (sz - half) * (sz - half));
-                    Assert(sx >= 0 && sx <= f.Length && r > f.Inner(sx) + .4 && r < f.Outer(sx) - .9, $"Strip corner outside the machined wall: r {r:0.##} wall {f.Inner(sx):0.##}-{f.Outer(sx):0.##}");
+                    Assert(sx >= 0 && sx <= f.Length && r > f.Inner(sx) + .4 && r < f.Outer(sx) - SkinMargin(f, sx),
+                        $"Strip corner outside the machined wall: r {r:0.##} wall {f.Inner(sx):0.##}-{f.Outer(sx):0.##} var {f.Variation}");
                 }
             }
         // No skin (green-olive) ever reaches stock samples; nodes remain visible; strips from one culm share a specimen, other culms differ.
@@ -110,7 +112,7 @@ internal static class StockChecks
     {
         using var box = new Box(Plane.WorldXY, new Interval(0, 1200), new Interval(0, 300), new Interval(0, 120)).ToBrep();
         var settings = new TimberSettings { Product = TimberProduct.SolidTimber, Seed = 41 };
-        var definition = StockDefinition.FromTimber(settings, 1200, 300, 120);
+        var definition = StockDefinition.FromTimber(settings, 1200, 300, 120, .001);
         using var stock = new WoodieStock(box, definition, box, Plane.WorldXY, Vector3d.XAxis);
         var goo = new StockGoo(stock);
         var archive = new GH_Archive();
@@ -118,7 +120,43 @@ internal static class StockChecks
         var copy = new StockGoo();
         Assert(archive.ExtractObject(copy, "Stock") && copy.Value != null, "Stock archive failed to reload");
         Assert(copy.Value.Definition.LengthMm == 1200 && copy.Value.Settings.Seed == 41, "Stock archive lost definition");
+        Near(copy.Value.Definition.ToleranceMm, .001, 1e-12);
         Assert(copy.Value.BasePlane.HasValue && copy.Value.Fibre.HasValue, "Stock archive lost mapping");
         Assert(copy.Value.Definition.Sample(100, 50, 60) == stock.Definition.Sample(100, 50, 60), "Reload changed material samples");
+
+        // Custom buildup that only fits with the archived tight tolerance.
+        var custom = new TimberSettings {
+            Product = TimberProduct.CLT, Seed = 9, FitToPart = false,
+            Layers = new[] { new LayerDefinition(40), new LayerDefinition(40, false), new LayerDefinition(40) }
+        };
+        var tight = StockDefinition.FromTimber(custom, 900, 200, 120.005, .01);
+        using var customBox = new Box(Plane.WorldXY, new Interval(0, 900), new Interval(0, 200), new Interval(0, 120.005)).ToBrep();
+        using var customStock = new WoodieStock(customBox, tight, customBox);
+        var customGoo = new StockGoo(customStock);
+        var customArchive = new GH_Archive();
+        Assert(customArchive.AppendObject(customGoo, "Custom"), "Could not write custom buildup stock");
+        var customCopy = new StockGoo();
+        Assert(customArchive.ExtractObject(customCopy, "Custom") && customCopy.Value != null, "Custom buildup archive failed");
+        Near(customCopy.Value.Definition.ToleranceMm, .01, 1e-12);
+        Assert(customCopy.Value.Definition.Layers.Count == 3, "Custom layers lost on reload");
+        Assert(customCopy.Value.Definition.Sample(100, 50, 60) == tight.Sample(100, 50, 60), "Custom buildup samples changed");
+
+        // Multi-piece engineered bamboo: piece count, locate path and samples survive reopen.
+        using var lumber = new Box(Plane.WorldXY, new Interval(0, 600), new Interval(0, 100), new Interval(0, 40)).ToBrep();
+        var bambooDef = StockDefinition.FromTimber(Bamboo(TimberProduct.BambooLumber, .5), 600, 100, 40);
+        using var bambooStock = new WoodieStock(lumber, bambooDef, lumber, Plane.WorldXY, Vector3d.XAxis);
+        var bambooGoo = new StockGoo(bambooStock);
+        var bambooArchive = new GH_Archive();
+        Assert(bambooArchive.AppendObject(bambooGoo, "Bamboo"), "Could not write bamboo lumber stock");
+        var bambooCopy = new StockGoo();
+        Assert(bambooArchive.ExtractObject(bambooCopy, "Bamboo") && bambooCopy.Value != null, "Bamboo lumber archive failed");
+        Assert(bambooCopy.Value.Definition.Construction.Pieces.Count == bambooDef.Construction.Pieces.Count, "Bamboo strip count changed");
+        Assert(bambooCopy.Value.Settings.Product == TimberProduct.BambooLumber && Math.Abs(bambooCopy.Value.Settings.Variation - .5) < 1e-12, "Bamboo settings lost");
+        for (int i = 0; i < 30; i++) {
+            double x = 10 + i * 19, y = 5 + (i * 3) % 90, z = 2 + i % 35;
+            Assert(bambooCopy.Value.Definition.Sample(x, y, z) == bambooDef.Sample(x, y, z), "Bamboo lumber sample drifted after reload");
+            var before = bambooDef.Construction.PieceAt(x, y, z); var after = bambooCopy.Value.Definition.Construction.PieceAt(x, y, z);
+            Assert(Math.Abs(before.MinY - after.MinY) < 1e-9 && Math.Abs(before.MinZ - after.MinZ) < 1e-9, "Bamboo piece locate drifted");
+        }
     }
 }
