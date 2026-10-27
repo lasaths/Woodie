@@ -12,6 +12,9 @@ internal static class Icons
     static readonly Lazy<Bitmap> settingsParameter = new(() => Load("palette-bold.png"));
     static readonly Lazy<Bitmap> layerParameter = new(() => Load("list-dashes-bold.png"));
     static readonly Lazy<Bitmap> cut = new(() => Load("selection-slash-bold.png"));
+    static readonly Lazy<Bitmap> eye = new(() => Load("eye-bold.png"));
+    static readonly Lazy<Bitmap> package = new(() => Load("package-bold.png"));
+    static readonly Lazy<Bitmap> cube = new(() => Load("cube-bold.png"));
     public static Bitmap Tree => tree.Value;
     public static Bitmap Sliders => sliders.Value;
     public static Bitmap Presets => presets.Value;
@@ -20,6 +23,9 @@ internal static class Icons
     public static Bitmap SettingsParameter => settingsParameter.Value;
     public static Bitmap LayerParameter => layerParameter.Value;
     public static Bitmap Cut => cut.Value;
+    public static Bitmap Eye => eye.Value;
+    public static Bitmap Package => package.Value;
+    public static Bitmap Cube => cube.Value;
 
     static Bitmap Load(string name)
     {

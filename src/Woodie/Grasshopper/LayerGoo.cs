@@ -12,7 +12,7 @@ public sealed class LayerGoo : GH_Goo<LayerDefinition>
     public LayerGoo(LayerDefinition value) { Value = value; }
     public override bool IsValid { get { try { Value?.Validate(); return Value != null; } catch (ArgumentException) { return false; } } }
     public override string TypeName => "Woodie Timber Layer";
-    public override string TypeDescription => "Immutable physical timber layer, ordered bottom to top";
+    public override string TypeDescription => "Physical timber layer.";
     public override IGH_Goo Duplicate() => new LayerGoo(Value == null ? null : Value with { });
     public override object ScriptVariable() => Value;
     public override string ToString() => Value == null ? "Null layer" : $"{Value.Thickness:0.###} mm · {(Value.AlongX ? "Longitudinal" : "Cross")} · {Value.Construction}";
@@ -42,7 +42,7 @@ internal static class LayerArchive
 
 public sealed class LayerParam : GH_PersistentParam<LayerGoo>
 {
-    public LayerParam() : base("Timber Layer", "Layer", "Physical timber layer definition", "Display", "Woodie") { }
+    public LayerParam() : base("Timber Layer", "Layer", "Layer for Timber Buildup", "Display", "Woodie") { }
     public override Guid ComponentGuid => new("8f46bd7c-dd0e-4b29-9a07-86d21c6d2fb1");
     public override GH_Exposure Exposure => GH_Exposure.hidden;
     protected override Bitmap Icon => Icons.LayerParameter;

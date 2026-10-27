@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Woodie.Stock;
 
 namespace Woodie.Appearance
 {
@@ -36,12 +37,15 @@ public static class TimberLayups {
     new LayerDefinition(l.z1 - l.z0, l.alongX, l.veneer ? LayerConstruction.Veneer : l.continuous ? LayerConstruction.Solid : LayerConstruction.Boards,
       l.solidPith || l.fingersThroughDepth ? double.NaN : l.bw, l.veneer || l.continuous ? LayerJoints.None : l.fingers ? LayerJoints.Finger : l.continuousLength ? LayerJoints.None : LayerJoints.Butt,
       l.segMin, l.segMax, l.continuous, l.solidPith)).ToArray();
+  static bool BambooLength(TimberProduct p) => p is TimberProduct.BambooLumber or TimberProduct.BambooLumberSide or TimberProduct.BambooPanel;
   // thicknesses with orientation: true = along x (bold in drawing), false = cross
   public static List<TimberLayer> Make(TimberProduct p, double H, double W, double boardWidth = double.NaN, double veneerThickness = double.NaN) {
     if (!(H > 0) || !(W > 0)) throw new ArgumentException("Timber dimensions must be positive.");
     var t = new List<Tuple<double, bool>>(); double bw = 150; bool ven = false, fj = true;
     switch (p) {
       case TimberProduct.SolidTimber:
+      case TimberProduct.Log:      // natural stock: one unbroken layer; anatomy comes from the natural material model
+      case TimberProduct.Bamboo:
         t.Add(Tuple.Create(H, true)); bw = Math.Max(W, 1); fj = false; break;
       case TimberProduct.Plywood:
       case TimberProduct.ParallelLVL: {
@@ -52,6 +56,19 @@ public static class TimberLayups {
         int n = p == TimberProduct.Plywood ? Math.Max(3, 2 * (int)Math.Round((wanted - 1) / 2) + 1) : Math.Max(1, (int)Math.Round(wanted));
         for (int i = 0; i < n; i++) t.Add(Tuple.Create(H / n, p == TimberProduct.ParallelLVL || i % 2 == 0));
         ven = true; fj = false; break; }
+
+      // Engineered bamboo: layers are strip layers (bw = strip width mm, veneerThickness = strip thickness mm, defaults below).
+      // Lumber is one longitudinal stack of strips; a panel alternates 0°/90° strip layers (cross-oriented core) with odd count >= 3.
+      // Representative presets after the laminated-lumber study (Lorenzo et al.), see BambooConstruction; not manufacturer-specific.
+      case TimberProduct.BambooLumber:
+      case TimberProduct.BambooLumberSide:
+        t.Add(Tuple.Create(H, true)); bw = BambooConstruction.StripWidth(boardWidth); fj = false; break;
+      case TimberProduct.BambooPanel: {
+        double stripT = BambooConstruction.StripThickness(veneerThickness), wanted = H / stripT;
+        if (wanted > 4096) throw new ArgumentException("Strip thickness creates too many layers; increase Veneer Thickness.");
+        int n = Math.Max(3, 2 * (int)Math.Round((wanted - 1) / 2) + 1);
+        for (int i = 0; i < n; i++) t.Add(Tuple.Create(H / n, i % 2 == 0));
+        bw = BambooConstruction.StripWidth(boardWidth); fj = false; break; }
 
       case TimberProduct.CLT:    // A1 Hasslacher BSP 200 7ss: 30-30-30-20-30-30-30, bold = L -> L L C L C L L
         foreach (var e in new[] { 30, 30, 30, 20, 30, 30, 30 }.Zip(new[] { 1, 1, 0, 1, 0, 1, 1 }, (a, b) => Tuple.Create((double)a, b == 1))) t.Add(e); break;
@@ -71,10 +88,11 @@ public static class TimberLayups {
     foreach (var e in t) { var ly = new TimberLayer { z0 = z, z1 = z + e.Item1 * s, alongX = e.Item2, bw = bw, veneer = ven, fingers = fj }; z = ly.z1;
       if (p == TimberProduct.ThreeS) { ly.segMin = 1e5; ly.segMax = 1e5; if (!ly.alongX) { ly.segMin = 800; ly.segMax = 2500; } } // butt-jointed core
       if (ven) { ly.bw = 1200; ly.segMin = 1800; ly.segMax = 2000; }   // veneer sheet ~1.2 m clip x ~1.9 m log length, scarfed
-      if (p == TimberProduct.SolidTimber || p == TimberProduct.Plywood || p == TimberProduct.ParallelLVL) {
+      if (p == TimberProduct.SolidTimber || p == TimberProduct.Plywood || p == TimberProduct.ParallelLVL || p == TimberProduct.Log || p == TimberProduct.Bamboo) {
         ly.continuous = true; ly.bw = Math.Max(W, H) + 1; // no clip seams within a generic veneer sheet
       }
-      ly.solidPith = p == TimberProduct.GL || p == TimberProduct.KVH || p == TimberProduct.SolidTimber;
+      ly.continuousLength = BambooLength(p);   // strips span the stock; no end joints
+      ly.solidPith = p == TimberProduct.GL || p == TimberProduct.KVH || p == TimberProduct.SolidTimber || p == TimberProduct.Log || p == TimberProduct.Bamboo;
       ly.fingersThroughDepth = p == TimberProduct.GL || p == TimberProduct.KVH;
       L.Add(ly); }
     return L;

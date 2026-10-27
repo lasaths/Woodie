@@ -2,6 +2,7 @@
 using Rhino.Geometry;
 using Woodie.Appearance;
 using Woodie.Geometry;
+using Woodie.Stock;
 
 namespace Woodie.Rendering;
 
@@ -12,7 +13,7 @@ public sealed class AtlasPage : IDisposable
     public TimberProduct Product { get; internal init; }
     internal int Width, Height;
     internal List<TriangleTile> Tiles;
-    internal Lazy<TimberPanel> Panel;
+    internal Lazy<IMaterialModel> Panel;
     internal double L, W, H;
     public void Dispose() => Mesh?.Dispose();
 }
@@ -52,8 +53,7 @@ public static class TextureAtlas
             if (packed.Count <= MaxPages) break;
         }
         if (packed.Count > MaxPages) throw new ArgumentException("Mesh needs too many texture charts. Simplify the mesh.");
-        var panel = new Lazy<TimberPanel>(() => new TimberPanel(settings.Product, part.LengthMm, part.WidthMm, part.DepthMm,
-            settings.Seed, settings.EffectiveKnotDensity, settings.Palette(), settings.LamellaWidth, settings.VeneerThickness, layers));
+        var panel = new Lazy<IMaterialModel>(() => StockDefinition.FromTimber(settings, part.LengthMm, part.WidthMm, part.DepthMm, part.ToleranceMm, layers));
         string key = Key(part, settings, density);
         var result = new List<AtlasPage>();
         try
@@ -223,7 +223,7 @@ public static class TextureAtlas
                     double sum = a + b + c; a /= sum; b /= sum; c /= sum;
                     Point3d p = new Point3d(a * tile.A.X + b * tile.B.X + c * tile.C.X,
                         a * tile.A.Y + b * tile.B.Y + c * tile.C.Y, a * tile.A.Z + b * tile.B.Z + c * tile.C.Z);
-                    pixels[(tile.Y + y) * page.Width + tile.X + x] = panel.Col(Snap(p.X, page.L), Snap(p.Y, page.W), Snap(p.Z, page.H), normal.X, normal.Y, normal.Z);
+                    pixels[(tile.Y + y) * page.Width + tile.X + x] = panel.Sample(Snap(p.X, page.L), Snap(p.Y, page.W), Snap(p.Z, page.H), normal.X, normal.Y, normal.Z);
                 }
                 // Texture filtering can reach beyond the three-pixel border. Extend the edge colour
                 // across unused chart space without evaluating the expensive wood function again.
@@ -235,7 +235,7 @@ public static class TextureAtlas
                 }
                 else
                 {
-                    int tip = panel.Col(Snap(tile.C.X, page.L), Snap(tile.C.Y, page.W), Snap(tile.C.Z, page.H), normal.X, normal.Y, normal.Z);
+                    int tip = panel.Sample(Snap(tile.C.X, page.L), Snap(tile.C.Y, page.W), Snap(tile.C.Z, page.H), normal.X, normal.Y, normal.Z);
                     Array.Fill(pixels, tip, rowStart, tile.Width);
                 }
             }

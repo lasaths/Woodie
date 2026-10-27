@@ -1,5 +1,15 @@
 # Release validation
 
+## 0.1.4 — shared stock, natural materials and engineered bamboo — 2026-10-26
+
+Branch `codex/shared-stock-bamboo` against `main` (post-0.1.3).
+
+- Release builds of `Woodie.Checks` then `Woodie.gha`: PASS, zero warnings/errors.
+- Native `--rhino` with `--examples`: PASS, **37** checks including stock archive, natural geometry/cuts, culm preview mesh under the triangle cap, vertical bamboo half-cut stock mapping, component GUIDs, and regenerate/reopen of Timber-preview.ghx.
+- Combined example now includes sections **05 Rotated tower** and **06 Natural bamboo**; temporary live Cut/Preview probes were discarded and the ghx regenerated from `TimberExamples`.
+- Mac native checks: not run.
+- Limitations recorded in development notes: bark ovality, constant bamboo wall with wobble, Lamella/Veneer reused for strip size, no scrimber/flattened culms/user manufacturing sequences, age/reuse deferred. Strip machining windows track Outer(x)/WallAt(x) along each culm.
+
 ## Native textured baking — 2026-10-25
 
 Bake is integrated. Projection-based mapping failed the remesh gate; production uses Rhino packed surface UVs for Breps/surfaces, enclosing-cube box mapping for solid extrusions, and topology-preserving mesh charts. Headless suite: **40** integration checks and the full **88**-case bake matrix. Cassis inspected native Brep/extrusion/mesh proofs and the stepped knot section. Failed projection probes remain opt-in under `tests/Woodie.Checks/Diagnostics/`. See [feasibility](development/native-baking-feasibility.md), [bake usage](baking.md) and the [bake results](#native-textured-baking-2026-10-25) below. **0.1.3** is published with Mac and a fresh interactive Bake-menu session still outstanding, matching the 0.1.2 publication pattern.

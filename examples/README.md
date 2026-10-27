@@ -1,16 +1,16 @@
-# Timber playground — Woodie 0.1.3
+# Timber playground — Woodie 0.1.4
 
-Open **Timber-preview.ghx**. Everything is in this one self-contained definition: cutting, knot transitions, a custom buildup, and all eight products across eleven geometry cases. No external geometry or scripts are required.
+Open **Timber-preview.ghx** from this `examples/` folder (not an older Yak copy). Everything is in this one self-contained definition: cutting, knot transitions, a custom buildup, the eight-product library, a rotated tower, and a Natural Stock bamboo culm. No external geometry or scripts are required.
 
 ## Find your way around
 
-Numbered **Scribble** headings and subtle rectangular groups divide the canvas into four sections. The three demonstrations are across the top; the product library is below. Material panels start collapsed: click the small arrow under a Timber Material icon to open its controls. The only large Panel shows the live layer schedule.
+Numbered **Scribble** headings and subtle rectangular groups divide the canvas. Demonstrations sit across the top; the product library is below. Material panels start collapsed: click the small arrow under a Timber Material icon to open its controls. The only large Panel shows the live layer schedule.
 
 Scribbles and the schedule use **Consolas**. If it is unavailable on another machine, Grasshopper may substitute a font; check text spacing there.
 
-The opening view focuses on cutting. Pan right for the knot and buildup demonstrations, or down for the product library.
+The opening view focuses on cutting. Pan right for the knot, buildup, tower and bamboo demonstrations, or down for the product library.
 
-The viewport initially shows only the three demonstrations. Library **Show** toggles start off; enable one product at a time to inspect its eleven cases. Shared Settings, Show and Units wires appear when their inputs are selected. Input geometry stays hidden so it does not overlay the timber textures.
+The viewport initially shows only the open demonstrations. Library **Show** toggles start off; enable one product at a time to inspect its eleven cases. Shared Settings, Show and Units wires appear when their inputs are selected. Input geometry stays hidden so it does not overlay the timber textures.
 
 ## 01 / Cut through the stock
 
@@ -44,12 +44,20 @@ Eight product cards each contain a compact Material, a **Show** toggle, source u
 | 10 | Bowed extrusion with guide |
 | 11 | Bowed mesh with guide |
 
+## 05 / Rotated tower
+
+Sixteen solid-timber slats between two rings. The top ring is twisted so the generators form a hyperboloid waist. Each slat is item-matched through Preview; fibre follows the long axis.
+
+## 06 / Natural bamboo
+
+**Natural Stock** with Kind=Bamboo builds a hollow Moso culm on a Line from base to tip (Ø 80 · wall 7 · 1500 mm). Natural Stock alone shows the culm solid. Wire Stock Model to Timber Preview Stock when you want texture.
+
 ## Units and appearance
 
 The definition works in millimetre, metre and inch Rhino documents. All embedded coordinates are authored in millimetres. Timber Cut declares **Millimetres** and outputs document units, so its downstream Preview uses **Document**. The other previews declare **Millimetres** directly. Do not scale the geometry or change document units to use the example.
 
-Face resolution is **1 mm/pixel**. Smaller values provide finer close views at greater texture cost; allow background refinement to finish. Open surfaces remain open. The guide sets grain coordinates and does not predict physical bending. Custom stacks and presets are visual approximations, not structural specifications; see the [material limitations](https://github.com/lasaths/Woodie/blob/main/docs/material-realism-audit.md).
+Face resolution is **1 mm/pixel** in the library; denser demos may use coarser settings to stay under the preview triangle cap. Smaller values provide finer close views at greater texture cost; allow background refinement to finish. Open surfaces remain open. The guide sets grain coordinates and does not predict physical bending. Custom stacks and presets are visual approximations, not structural specifications; see the [material limitations](https://github.com/lasaths/Woodie/blob/main/docs/material-realism-audit.md).
 
 The appearance is inspired by Maria Larsson et al., [Procedural Texturing of Solid Wood with Knots](https://doi.org/10.1145/3528223.3530081), SIGGRAPH 2022. Credits and MIT notices accompany Woodie.
 
-Bake the remaining cut or any library object by right-clicking its **Timber Preview → Bake** (0.1.3). This creates native textured Rhino geometry; enable **Save textures** when saving the model. Shape changes require rebaking.
+Bake by right-clicking **Timber Preview → Bake**. This creates native textured Rhino geometry; enable **Save textures** when saving the model. Shape changes require rebaking.

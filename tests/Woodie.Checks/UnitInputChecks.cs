@@ -35,7 +35,7 @@ internal static class UnitInputChecks
                 rhino.ModelUnitSystem = units;
                 using var doc = new GH_Document { Enabled = true };
                 var preview = Make(doc);
-                Assert(preview.Params.Input.Count == 8, "Missing optional Geometry Units / Stock Geometry inputs");
+                Assert(preview.Params.Input.Count == 9, "Missing optional Geometry Units / Stock Geometry inputs");
                 ((Param_String)preview.Params.Input[6]).SetPersistentData("Millimetres");
                 doc.NewSolution(false);
                 Assert(!preview.RuntimeMessages(GH_RuntimeMessageLevel.Error).Any(), string.Join("; ", preview.RuntimeMessages(GH_RuntimeMessageLevel.Error)));
@@ -70,6 +70,7 @@ internal static class UnitInputChecks
 
         using var doc = new GH_Document { Enabled=true };
         var old = Make(doc);
+        old.Params.UnregisterInputParameter(old.Params.Input[8], true);
         old.Params.UnregisterInputParameter(old.Params.Input[7], true);
         old.Params.UnregisterInputParameter(old.Params.Input[6], true);
         old.Params.OnParametersChanged();
@@ -77,7 +78,7 @@ internal static class UnitInputChecks
         Assert(archive.AppendObject(old, "Preview"), "Legacy preview serialization failed");
         var restored = new PreviewComponent();
         Assert(archive.ExtractObject(restored, "Preview"), "Legacy six-input preview did not restore");
-        Assert(restored.Params.Input.Count == 8 && restored.Params.Input[6].Name == "Geometry Units" && restored.Params.Input[7].Optional, "Legacy preview must gain optional units and stock inputs");
+        Assert(restored.Params.Input.Count == 9 && restored.Params.Input[6].Name == "Geometry Units" && restored.Params.Input[7].Optional, "Legacy preview must gain optional units and stock inputs");
         Assert(((Param_String)restored.Params.Input[6]).PersistentDataCount == 0, "Legacy geometry must retain Document units");
     }
 

@@ -8,24 +8,26 @@ namespace Woodie.Grasshopper;
 
 public sealed class BuildupComponent : GH_Component
 {
-    public BuildupComponent() : base("Timber Buildup", "TimberBuildup", "Apply an ordered physical layer stack to Timber Material settings. First layer starts at the stock minimum Z. " + ResearchCredit.Timber, "Display", "Woodie") { }
+    public BuildupComponent() : base("Timber Buildup", "TimberBuildup",
+        "Set physical layers on Timber Material settings. " + ResearchCredit.Timber,
+        "Display", "Woodie") { }
     public override Guid ComponentGuid => new("bd7ed564-700b-499c-a377-1515f17ee464");
     protected override Bitmap Icon => Icons.Buildup;
     protected override void RegisterInputParams(GH_InputParamManager p)
     {
-        p.AddParameter(new SettingsParam(), "Settings", "TDS", "Appearance family from Timber Material; default CLT", GH_ParamAccess.item); p[0].Optional = true;
-        p.AddParameter(new LayerParam(), "Layers", "L", "Ordered layers, bottom to top. If absent, expand the incoming product preset.", GH_ParamAccess.list); p[1].Optional = true;
-        p.AddNumberParameter("Reference Thickness", "T", "Schedule/diagram depth in mm. Default: custom layer sum or product virtual depth.", GH_ParamAccess.item); p[2].Optional = true;
-        p.AddBooleanParameter("Fit to part", "Fit", "Explicitly scale layer proportions to the stock's measured thickness. False requires exact thicknesses.", GH_ParamAccess.item, false);
-        p.AddPlaneParameter("Diagram Plane", "P", "Section diagram placement in Rhino document units; default World XY", GH_ParamAccess.item); p[4].Optional = true;
+        p.AddParameter(new SettingsParam(), "Settings", "TDS", "Settings from Timber Material. Default is CLT.", GH_ParamAccess.item); p[0].Optional = true;
+        p.AddParameter(new LayerParam(), "Layers", "L", "Layers from bottom to top. Empty uses the product preset.", GH_ParamAccess.list); p[1].Optional = true;
+        p.AddNumberParameter("Reference Thickness", "T", "Schedule depth in mm", GH_ParamAccess.item); p[2].Optional = true;
+        p.AddBooleanParameter("Fit to part", "Fit", "Scale layers to the measured stock thickness", GH_ParamAccess.item, false);
+        p.AddPlaneParameter("Diagram Plane", "P", "Section diagram plane. Default is World XY.", GH_ParamAccess.item); p[4].Optional = true;
     }
     protected override void RegisterOutputParams(GH_OutputParamManager p)
     {
-        p.AddParameter(new SettingsParam(), "Settings", "TDS", "Custom buildup plus unchanged appearance settings; connect to Timber Preview", GH_ParamAccess.item);
-        p.AddParameter(new LayerParam(), "Layers", "L", "Resolved layer recipes at the reference thickness", GH_ParamAccess.list);
+        p.AddParameter(new SettingsParam(), "Settings", "TDS", "Settings with custom buildup", GH_ParamAccess.item);
+        p.AddParameter(new LayerParam(), "Layers", "L", "Resolved layers", GH_ParamAccess.list);
         p.AddNumberParameter("Thickness", "T", "Total reference thickness in mm", GH_ParamAccess.item);
-        p.AddTextParameter("Schedule", "S", "Bottom-to-top physical layer schedule at the reference thickness", GH_ParamAccess.list);
-        p.AddCurveParameter("Section Diagram", "D", "200 mm wide layer rectangles in document units; appearance schematic, not manufactured geometry", GH_ParamAccess.list);
+        p.AddTextParameter("Schedule", "S", "Layer schedule from bottom to top", GH_ParamAccess.list);
+        p.AddCurveParameter("Section Diagram", "D", "Schematic layer rectangles, 200 mm wide", GH_ParamAccess.list);
     }
     protected override void SolveInstance(IGH_DataAccess da)
     {

@@ -58,5 +58,19 @@ internal sealed class GeometryUnits : IDisposable
         "Check Geometry Units before changing appearance settings. If these coordinates were modelled in millimetres, set Geometry Units to Millimetres; otherwise use the correct source units. " +
         "For a correctly sized part, increase Lamella Width, reduce Knot Density, or split the part.";
 
+    /// <summary>Scale a plane origin into document units without touching other geometry.</summary>
+    public static Plane ConvertPlane(Plane plane, string source, UnitSystem document)
+    {
+        if (document is UnitSystem.None or UnitSystem.Unset or UnitSystem.CustomUnits)
+            throw new ArgumentException("Set physical Rhino document units before cutting timber.");
+        var from = Parse(source) ?? document;
+        double scale = RhinoMath.UnitScale(from, document);
+        if (!(scale > 0) || !double.IsFinite(scale)) throw new ArgumentException("Geometry Units must have a valid physical scale.");
+        if (Math.Abs(scale - 1) <= 1e-12) return plane;
+        var converted = plane;
+        if (!converted.Transform(Transform.Scale(Point3d.Origin, scale))) throw new ArgumentException("Could not convert the cutting plane to Rhino document units.");
+        return converted;
+    }
+
     public void Dispose() { if (owns) { Geometry?.Dispose(); Guide?.Dispose(); Stock?.Dispose(); } }
 }

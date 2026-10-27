@@ -7,24 +7,26 @@ namespace Woodie.Grasshopper;
 
 public sealed class LayerComponent : GH_Component
 {
-    public LayerComponent() : base("Timber Layer", "TimberLayer", "Define one physical layer for Timber Buildup. Thicknesses and board widths are millimetres. " + ResearchCredit.Timber, "Display", "Woodie") { }
+    public LayerComponent() : base("Timber Layer", "TimberLayer",
+        "Define one layer for Timber Buildup. " + ResearchCredit.Timber,
+        "Display", "Woodie") { }
     public override Guid ComponentGuid => new("64bfcb66-86a8-40cf-81b2-6495c79b6b7a");
     protected override Bitmap Icon => Icons.Layer;
     protected override void RegisterInputParams(GH_InputParamManager p)
     {
         p.AddNumberParameter("Thickness", "T", "Layer thickness in mm", GH_ParamAccess.item, 30);
-        p.AddIntegerParameter("Direction", "D", "Right-click: longitudinal (0°) or cross (90°), relative to the resolved stock fibre", GH_ParamAccess.item, 0);
+        p.AddIntegerParameter("Direction", "D", "Longitudinal (0°) or cross (90°) to stock fibre", GH_ParamAccess.item, 0);
         ((Param_Integer)p[1]).AddNamedValue("Longitudinal", 0); ((Param_Integer)p[1]).AddNamedValue("Cross", 1);
-        p.AddIntegerParameter("Construction", "C", "Right-click to choose solid, boards or continuous veneer", GH_ParamAccess.item, 1);
+        p.AddIntegerParameter("Construction", "C", "Solid, boards or continuous veneer", GH_ParamAccess.item, 1);
         foreach (var type in Enum.GetValues<LayerConstruction>()) ((Param_Integer)p[2]).AddNamedValue(type.ToString(), (int)type);
-        p.AddNumberParameter("Board Width", "W", "Width of boards in mm; ignored for solid and continuous veneer", GH_ParamAccess.item, 150);
-        p.AddIntegerParameter("End Joints", "J", "Board end joints; None keeps each board unbroken along its length. Solid and veneer layers require None.", GH_ParamAccess.item, 0);
+        p.AddNumberParameter("Board Width", "W", "Board width in mm", GH_ParamAccess.item, 150);
+        p.AddIntegerParameter("End Joints", "J", "Board end joints. Solid and veneer need None.", GH_ParamAccess.item, 0);
         foreach (var type in Enum.GetValues<LayerJoints>()) ((Param_Integer)p[4]).AddNamedValue(type.ToString(), (int)type);
     }
     protected override void RegisterOutputParams(GH_OutputParamManager p)
     {
-        p.AddParameter(new LayerParam(), "Layer", "L", "Connect an ordered layer list to Timber Buildup", GH_ParamAccess.item);
-        p.AddTextParameter("Description", "D", "Physical layer description", GH_ParamAccess.item);
+        p.AddParameter(new LayerParam(), "Layer", "L", "Layer for Timber Buildup", GH_ParamAccess.item);
+        p.AddTextParameter("Description", "D", "Layer description", GH_ParamAccess.item);
     }
     protected override void SolveInstance(IGH_DataAccess da)
     {

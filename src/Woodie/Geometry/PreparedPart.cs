@@ -1,4 +1,4 @@
-﻿using Rhino.Geometry;
+using Rhino.Geometry;
 using Woodie.Appearance;
 
 namespace Woodie.Geometry;
@@ -20,7 +20,6 @@ public sealed class PreparedPart : IDisposable
     public double UnitToMm { get; private init; }
     public double ToleranceMm { get; private init; }
     public IReadOnlyList<string> Remarks { get; private init; }
-    public IReadOnlyList<TimberLayer> Layers { get; private init; }
 
     public static PreparedPart Create(GeometryBase geometry, TimberSettings settings, double unitToMm,
         double tolerance, Plane? basePlane = null, Vector3d? fibre = null, Curve guide = null, GeometryBase stock = null)
@@ -30,10 +29,12 @@ public sealed class PreparedPart : IDisposable
         if (stock != null && !stock.IsValid) throw new ArgumentException("Stock Geometry is invalid.");
         if (!double.IsFinite(unitToMm) || unitToMm <= 0) throw new ArgumentException("Document units must have a valid physical scale.");
         var remarks = new List<string>();
-        Mesh mesh = MakeMesh(geometry);
+        // Natural revolved solids (esp. hollow bamboo) explode under the flat-timber 1° grid; cap edge length in document units.
+        double maxEdge = settings.IsNatural ? Math.Max(10 / unitToMm, tolerance * 20) : 0;
+        Mesh mesh = MakeMesh(geometry, settings.GridAngle, maxEdge);
         try
         {
-            using var stockMesh = stock == null ? null : MakeMesh(stock);
+            using var stockMesh = stock == null ? null : MakeMesh(stock, settings.GridAngle, maxEdge);
             mesh.Faces.ConvertQuadsToTriangles();
             mesh.Faces.CullDegenerateFaces();
             mesh.Compact();
@@ -53,7 +54,9 @@ public sealed class PreparedPart : IDisposable
             Point3d[] coords = mesh.Vertices.ToPoint3dArray().Select(mapper.Map).ToArray();
             var bounds = new BoundingBox(stockMesh == null ? coords : stockMesh.Vertices.ToPoint3dArray().Select(mapper.Map));
             if (stock != null) {
-                var domain = bounds; domain.Inflate(tolerance);
+                // Meshed stock can sit inside the true solid; cut faces may land outside that mesh AABB.
+                var domain = bounds;
+                domain.Inflate(Math.Max(tolerance, maxEdge > 0 ? maxEdge : tolerance));
                 if (coords.Any(c => !domain.Contains(c))) throw new ArgumentException("Geometry extends outside the mapped Stock Geometry. Supply the original uncut stock and matching guide/plane.");
             }
             double l = (bounds.Max.X - bounds.Min.X) * unitToMm, w = (bounds.Max.Y - bounds.Min.Y) * unitToMm;
@@ -61,18 +64,17 @@ public sealed class PreparedPart : IDisposable
             bool virtualDepth = mapper is SurfaceMap || h <= tolerance * unitToMm;
             if (virtualDepth) { h = settings.VirtualDepthMm; remarks.Add($"Appearance only: using virtual timber depth {h:0.###} mm."); }
             if (l < 0.01 || w < 0.01 || !double.IsFinite(l + w + h)) throw new ArgumentException("Mapped geometry is degenerate. Change the base plane or guide direction.");
-            var layers = TimberLayups.Resolve(settings, h, w, tolerance * unitToMm);
             for (int i = 0; i < coords.Length; i++)
                 coords[i] = new Point3d((coords[i].X - bounds.Min.X) * unitToMm, (coords[i].Y - bounds.Min.Y) * unitToMm,
                     virtualDepth ? h : (coords[i].Z - bounds.Min.Z) * unitToMm);
             mesh.Normals.ComputeNormals();
             return new PreparedPart(mapper,bounds.Min,virtualDepth) { Mesh = mesh, Coordinates = coords, Alignment = alignment, LengthMm = l, WidthMm = w,
-                DepthMm = h, Mapping = mapper.Description + (stock == null ? "" : " · fixed stock"), UnitToMm = unitToMm, ToleranceMm = tolerance * unitToMm, Remarks = remarks, Layers = layers };
+                DepthMm = h, Mapping = mapper.Description + (stock == null ? "" : " · fixed stock"), UnitToMm = unitToMm, ToleranceMm = tolerance * unitToMm, Remarks = remarks };
         }
         catch { mesh.Dispose(); throw; }
     }
 
-    static Mesh MakeMesh(GeometryBase geometry)
+    static Mesh MakeMesh(GeometryBase geometry, double gridAngle, double maxEdgeDocument = 0)
     {
         if (geometry is Mesh mesh) return mesh.DuplicateMesh();
         Brep brep;
@@ -86,8 +88,10 @@ public sealed class PreparedPart : IDisposable
         }
         try
         {
-            Mesh[] pieces = Mesh.CreateFromBrep(brep, new MeshingParameters(MeshingParameters.Default)
-            { RefineGrid = true, GridAngle = Math.PI / 180, MinimumEdgeLength = 0 });
+            var parameters = new MeshingParameters(MeshingParameters.Default)
+            { RefineGrid = maxEdgeDocument <= 0, GridAngle = gridAngle, MinimumEdgeLength = 0 };
+            if (maxEdgeDocument > 0) parameters.MaximumEdgeLength = maxEdgeDocument;
+            Mesh[] pieces = Mesh.CreateFromBrep(brep, parameters);
             if (pieces == null || pieces.Length == 0) throw new ArgumentException("Rhino could not mesh the geometry.");
             var result = new Mesh();
             foreach (var piece in pieces) { result.Append(piece); piece.Dispose(); }

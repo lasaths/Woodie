@@ -115,6 +115,67 @@ internal static class TimberExamples
             foreach(var c in doc.Objects.Skip(start).OfType<GH_Component>().Where(c=>c!=preview)) c.Hidden=true;
         }
         Group(doc,"02 / Knot cutaway",start,DemoColour);
+        AddRotatedTower(doc);
+        AddBambooCulm(doc);
+    }
+    static void AddRotatedTower(GH_Document doc)
+    {
+        int start=doc.Objects.Count;
+        Text(doc,"05 / ROTATED TOWER",5200,270,20,true);
+        Text(doc,"Straight timber slats between two rings; the top ring is twisted so the generators form a hyperboloid waist.\nEach slat is item-matched through Preview; fibre follows the long axis. See 06 for natural bamboo. Right-click Preview > Bake for native textured geometry.",5200,325,12);
+        Text(doc,"16 slats · 100 × 40 mm · Solid timber",5200,420,12);
+        var material=Material(doc,ReviewedKnotSeed(),5350,520); material.NickName="Tower material";
+        Number(material,2,8); // many slats — stay under the preview triangle cap
+        var slats=RotatedTower(height:2000, radiusBottom:800, radiusTop:650, width:100, thickness:40);
+        Assert(slats.Length==16 && slats.All(b=>b.IsSolid),"Rotated tower slats must be closed solids");
+        // Duplicate into GH_Brep so the archive keeps geometry after the working slats are disposed.
+        var goo=slats.Select(b=> (IGH_GeometricGoo)new GH_Brep(b.DuplicateBrep())).ToArray();
+        foreach(var b in slats) b.Dispose();
+        var input=Add(doc,new Param_Geometry { Name="Tower slats (mm)",NickName="Slats",Hidden=true },5550,520);
+        input.SetPersistentData((IEnumerable<IGH_GeometricGoo>)goo);
+        var preview=Add(doc,new PreviewComponent { NickName="Tower preview" },5800,520);
+        preview.Params.Input[0].AddSource(input); preview.Params.Input[1].AddSource(material.Params.Output[0]);
+        ((Param_String)preview.Params.Input[6]).SetPersistentData("Millimetres");
+        foreach(var c in doc.Objects.Skip(start).OfType<GH_Component>().Where(c=>c!=preview)) c.Hidden=true;
+        Group(doc,"05 / Rotated tower",start,DemoColour);
+    }
+    static void AddBambooCulm(GH_Document doc)
+    {
+        int start=doc.Objects.Count;
+        Text(doc,"06 / NATURAL BAMBOO",6600,270,20,true);
+        Text(doc,"Natural Stock with Kind=Bamboo builds a hollow Moso culm on a Line from base to tip (Ø 80 · wall 7 · 1500 mm).\nWire Stock Model to Timber Preview Stock for texture. Natural Stock alone shows the culm solid.",6600,325,12);
+        var material=Material(doc,ReviewedKnotSeed(),6750,520); material.NickName="Culm material";
+        Number(material,2,8);
+        var natural=Add(doc,new NaturalStockComponent { NickName="Bamboo culm" },6950,520);
+        ((Param_Line)natural.Params.Input[0]).SetPersistentData(new Line(new Point3d(2800,4500,0),new Point3d(2800,4500,1500)));
+        ((Param_String)natural.Params.Input[1]).PersistentData.Clear();
+        ((Param_String)natural.Params.Input[1]).SetPersistentData("Bamboo");
+        ((Param_String)natural.Params.Input[9]).SetPersistentData("Millimetres");
+        natural.Params.Input[2].AddSource(material.Params.Output[0]);
+        var geometry=Add(doc,new Param_Geometry { NickName="Culm geometry",Hidden=true },7200,520);
+        geometry.AddSource(natural.Params.Output[1]);
+        material.Hidden=true; // keep Natural Stock previewable so the culm shows without Timber Preview
+        Group(doc,"06 / Natural bamboo",start,DemoColour);
+    }
+    // Straight generators between bottom/top circles; twist creates the cooling-tower waist.
+    internal static Brep[] RotatedTower(int count=16, double height=3600, double radiusBottom=1100, double radiusTop=900, double twistDegrees=55, double width=90, double thickness=35, Point3d? origin=null)
+    {
+        var o = origin ?? new Point3d(0, 2800, 0);
+        double twist = twistDegrees * Math.PI / 180;
+        var slats = new Brep[count];
+        for (int i = 0; i < count; i++)
+        {
+            double a0 = 2 * Math.PI * i / count, a1 = a0 + twist;
+            var p0 = o + new Vector3d(radiusBottom * Math.Cos(a0), radiusBottom * Math.Sin(a0), 0);
+            var p1 = o + new Vector3d(radiusTop * Math.Cos(a1), radiusTop * Math.Sin(a1), height);
+            var x = p1 - p0; double length = x.Length; x.Unitize();
+            var mid = (p0 + p1) * .5;
+            var z = Vector3d.CrossProduct(x, Vector3d.ZAxis); if (z.IsTiny()) z = Vector3d.CrossProduct(x, Vector3d.YAxis); z.Unitize();
+            var y = Vector3d.CrossProduct(z, x); y.Unitize();
+            var box = new Box(new Plane(mid, x, y), new Interval(-length * .5, length * .5), new Interval(-width * .5, width * .5), new Interval(-thickness * .5, thickness * .5));
+            slats[i] = Brep.CreateFromBox(box) ?? throw new Exception("Tower slat box failed");
+        }
+        return slats;
     }
     internal static Brep Cutaway()
     {
@@ -149,6 +210,7 @@ internal static class TimberExamples
     }
     public static void Verify(string directory)
     {
+        IsolatedHost.LoadWoodie(typeof(PreviewComponent).Assembly.Location);
         IsolatedHost.LoadExampleBuiltIns(); ReviewedKnotSeed();
         var rhino=RhinoDoc.ActiveDoc; var previous=rhino.ModelUnitSystem; double tolerance=rhino.ModelAbsoluteTolerance;
         try { foreach(var units in new[]{UnitSystem.Millimeters,UnitSystem.Meters,UnitSystem.Inches}) {
@@ -159,7 +221,13 @@ internal static class TimberExamples
             foreach(var p in doc.Objects.OfType<PreviewComponent>()) p.Hidden=true;
             doc.NewSolution(false);
             var demos=doc.Objects.OfType<PreviewComponent>().Where(p=>!ExampleDefinitions.IsLibrary(p)).ToArray();
-            Assert(demos.Length==3 && demos.All(p=>p.Params.Output[0].VolatileDataCount>0),"Combined demonstrations must all solve");
+            Assert(demos.Length==4 && demos.All(p=>p.Params.Output[0].VolatileDataCount>0),"Combined demonstrations must all solve");
+            var tower=demos.Single(p=>p.NickName=="Tower preview");
+            Assert(tower.Params.Output[0].VolatileDataCount==16,"Rotated tower needs one preview mesh per slat");
+            var culm=doc.Objects.OfType<NaturalStockComponent>().Single(c=>c.NickName=="Bamboo culm");
+            Assert(!culm.RuntimeMessages(GH_RuntimeMessageLevel.Error).Any(),"Bamboo culm Natural Stock failed");
+            var culmStock=culm.Params.Output[0].VolatileData.AllData(true).OfType<StockGoo>().Single().Value;
+            Assert(culmStock.Settings.Product==TimberProduct.Bamboo && culmStock.Geometry is Brep { IsSolid: true },"Bamboo culm stock must be a solid Bamboo model");
             foreach(var c in doc.Objects.OfType<GH_Component>()) Assert(!c.RuntimeMessages(GH_RuntimeMessageLevel.Error).Any(),c.Name+": "+string.Join(";",c.RuntimeMessages(GH_RuntimeMessageLevel.Error)));
             var sliders=doc.Objects.OfType<GH_NumberSlider>().ToArray();
             Assert(sliders.All(s=>!s.IsExpression),"Percentage and degree sliders must display their labelled raw units");
@@ -188,7 +256,7 @@ internal static class TimberExamples
                 initialFrame ??= frames[0];
                 Assert(frames.All(f=>f.Equals(initialFrame.Value)),"Stepped section changed its material reference frame");
             }
-            Console.WriteLine("  Combined cutting, knot and buildup demos solve in "+units);
+            Console.WriteLine("  Combined cutting, knot, buildup and tower demos solve in "+units);
         } } finally { rhino.ModelUnitSystem=previous; rhino.ModelAbsoluteTolerance=tolerance; }
     }
 }

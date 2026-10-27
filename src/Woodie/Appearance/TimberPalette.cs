@@ -28,6 +28,14 @@ public class TimberPalette {
       case TimberProduct.KertoQ:                                                         // colour: half the Metsa-ref vs CLT-target p50 ratio (1.00, 0.976, 0.85) -> slightly yellower
         c.GG = 0.99; c.GB = 0.93; c.Cap = 234; c.LateK = 0.25;                     // structure: peeled-veneer figure needs a bit more latewood
         c.Glue = new double[] { 95, 62, 38 }; c.GlueW = 0.35; c.GlueK = 0.75; break;   // phenolic PF glue lines are physically dark brown
+      case TimberProduct.Log: c.RS = 4; c.TintSpread = 0.06; break;                       // whole softwood stem: wider rings, per-stem tint
+      case TimberProduct.Bamboo:                                                         // Moso culm: E0 parenchyma, E1 lining/diaphragm, Late vascular bundles, Knot node band
+      case TimberProduct.BambooLumber:
+      case TimberProduct.BambooLumberSide:
+      case TimberProduct.BambooPanel:
+        c.E0 = new double[] { 226, 205, 140 }; c.E1 = new double[] { 236, 222, 172 }; c.Late = new double[] { 150, 112, 60 }; c.Knot = new double[] { 176, 156, 96 };
+        if (p != TimberProduct.Bamboo) { c.Glue = new double[] { 120, 84, 44 }; c.GlueW = 0.3; c.GlueK = 0.55; }   // thin brown adhesive lines between strips (visual estimate)
+        break;
     }
     return c;
   }

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.4 — 2026-10-26
+
+- Add a shared stock framework (`WoodieStock`, `StockDefinition`, `Construction`, `MaterialPiece`, `SourceSpecimen`, `IMaterialModel`) so cutting keeps the original material definition.
+- Route atlas and native bake sampling through stock definitions while preserving the eight engineered-product appearance fixtures.
+- Add Material Stock and Natural Stock components; append optional Stock Model ports on Timber Cut and Timber Preview without moving existing parameters.
+- Generate tapered natural Logs and hollow Moso bamboo culms from a Line, with Seed/Variation-stable features and shell-wise hollow cuts.
+- Add engineered bamboo plain-pressed lumber, side-pressed lumber and layered BambooPanel recipes built from machined culm strips.
+- Cap natural-stock preview meshing and soften Stock-only Preview overrides so hollow culms stay under the triangle limit.
+- Shorten Grasshopper component and parameter descriptions while keeping the Larsson DOI research credit.
+- Extend the combined example with a rotated tower and a Natural Stock bamboo culm section.
+
 ## 0.1.3 — 2026-10-25
 
 - Add native textured baking through Timber Preview's standard Bake action, with owned solved snapshots, persistent content-addressed PNGs and one native object per item.

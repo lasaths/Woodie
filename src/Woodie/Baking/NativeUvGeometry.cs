@@ -10,7 +10,7 @@ internal sealed class NativeUvGeometry : IDisposable
     internal MeshingParameters Meshing { get; }
     internal TextureMapping Mapping { get; }
     NativeUvGeometry(GeometryBase geometry, Mesh samples, TextureMapping mapping, MeshingParameters meshing = null) { Geometry = geometry; Samples = samples; Mapping = mapping; Meshing = meshing; }
-    internal static NativeUvGeometry Create(GeometryBase source, UnitSystem units, double paddingMm, CancellationToken ct)
+    internal static NativeUvGeometry Create(GeometryBase source, UnitSystem units, double paddingMm, CancellationToken ct, double gridAngle = Math.PI / 180)
     {
         ct.ThrowIfCancellationRequested();
         if (source is Mesh original)
@@ -50,7 +50,7 @@ internal sealed class NativeUvGeometry : IDisposable
                 var projection = typeof(TextureMapping).GetProperty("Projection"); projection.SetValue(mapping, Enum.Parse(projection.PropertyType, "ClosestPoint"));
             }
             if (mapping == null || obj.SetTextureMapping(1, mapping) == 0) throw new ArgumentException("Could not prepare the native texture mapping.");
-            var parameters = new MeshingParameters(MeshingParameters.Default) { TextureRange = MeshingParameterTextureRange.PackedScaledNormalized, RefineGrid = true, GridAngle = Math.PI / 180, MinimumEdgeLength = 0, MaximumEdgeLength = 30 / RhinoMath.UnitScale(units, UnitSystem.Millimeters), SimplePlanes = false };
+            var parameters = new MeshingParameters(MeshingParameters.Default) { TextureRange = MeshingParameterTextureRange.PackedScaledNormalized, RefineGrid = true, GridAngle = gridAngle, MinimumEdgeLength = 0, MaximumEdgeLength = 30 / RhinoMath.UnitScale(units, UnitSystem.Millimeters), SimplePlanes = false };
             obj.SetRenderMeshParameters(parameters);
             if (obj.CreateMeshes(MeshType.Render, parameters, false) == 0) throw new ArgumentException("Rhino could not create native render UVs.");
             var samples = new Mesh();
@@ -73,7 +73,7 @@ internal sealed class NativeUvGeometry : IDisposable
         var frame = new Plane(plane.Origin, axis, Vector3d.CrossProduct(plane.ZAxis, axis));
         return new Box(frame, extrusion.GetBoundingBox(frame));
     }
-    static bool MeshCharts(Mesh mesh, double unitToMm, double paddingMm, CancellationToken ct)
+    static bool MeshCharts(Mesh mesh, double unitToMm, double paddingMm, CancellationToken ct, double gridAngle = Math.PI / 180)
     {
         int count = mesh.Vertices.Count; var used = new bool[count]; foreach (var face in mesh.Faces) foreach (int id in face.IsQuad ? new[] { face.A, face.B, face.C, face.D } : new[] { face.A, face.B, face.C }) used[id] = true; var roots = Enumerable.Range(0, count).ToArray();
         int Root(int i) { while (roots[i] != i) { roots[i] = roots[roots[i]]; i = roots[i]; } return i; }

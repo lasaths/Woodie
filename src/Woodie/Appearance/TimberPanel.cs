@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Woodie.Stock;
 
 namespace Woodie.Appearance
 {
 // Independent C# implementation inspired by Larsson et al. 2022, "Procedural Texturing of Solid Wood with Knots" (ACM TOG 41(4)); noise after Perlin 2002, "Improving Noise". See README.md and docs/appearance.md.
 // Cut-aware detail is an independent
 // adaptation informed by Larsson et al. 2024 and Mokume 2025. See docs/appearance.md.
-public class TimberPanel {
+public class TimberPanel : IMaterialModel {
   // Colours and growth samples are values: no allocation for every texel.
   struct Rgb {
     double r, g, b;
@@ -64,6 +65,8 @@ public class TimberPanel {
 
   // Layup query: point -> board/segment, local fibre coords (u along fibre, v across in-plane, w across thickness), glue flag
   public int Col(double x, double y, double z) => Colour(x, y, z, -1, -1);
+  public int Sample(double x, double y, double z) => Col(x, y, z);
+  public int Sample(double x, double y, double z, double nx, double ny, double nz) => Col(x, y, z, nx, ny, nz);
 
   /// <summary>Sample using a geometric cut normal in panel material coordinates (not a lighting normal).</summary>
   /// <remarks>Normal length and winding do not affect colour. Invalid/zero normals use the position-only fallback.</remarks>
@@ -179,7 +182,7 @@ public class TimberPanel {
   static int[] MakePerm() { var r = new Random(1337); var p = Enumerable.Range(0, 256).OrderBy(i => r.Next()).ToArray(); return p.Concat(p).ToArray(); }
   static double Fade(double t) { return t * t * t * (t * (t * 6 - 15) + 10); }
   static double Grad(int h, double x, double y, double z) { h &= 15; double u = h < 8 ? x : y, v = h < 4 ? y : (h == 12 || h == 14 ? x : z); return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v); }
-  static double Perlin(double x, double y, double z) {
+  internal static double Perlin(double x, double y, double z) {
     if (double.IsNaN(x + y + z) || Math.Abs(x) + Math.Abs(y) + Math.Abs(z) > 1e8) return 0;
     int X = (int)((long)Math.Floor(x) & 255), Y = (int)((long)Math.Floor(y) & 255), Z = (int)((long)Math.Floor(z) & 255);
     x -= Math.Floor(x); y -= Math.Floor(y); z -= Math.Floor(z);
@@ -188,8 +191,8 @@ public class TimberPanel {
     return Lerp(Lerp(Lerp(Grad(Pm[AA], x, y, z), Grad(Pm[BA], x - 1, y, z), u), Lerp(Grad(Pm[AB], x, y - 1, z), Grad(Pm[BB], x - 1, y - 1, z), u), v),
                 Lerp(Lerp(Grad(Pm[AA + 1], x, y, z - 1), Grad(Pm[BA + 1], x - 1, y, z - 1), u), Lerp(Grad(Pm[AB + 1], x, y - 1, z - 1), Grad(Pm[BB + 1], x - 1, y - 1, z - 1), u), v), w);
   }
-  static double SmoothStep(double a, double b, double x) { double t = Math.Max(0, Math.Min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
-  static double Lerp(double a, double b, double t) { return a + (b - a) * t; }
+  internal static double SmoothStep(double a, double b, double x) { double t = Math.Max(0, Math.Min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+  internal static double Lerp(double a, double b, double t) { return a + (b - a) * t; }
   static int Cl(double v) { return double.IsNaN(v) ? 255 : (int)Math.Max(0, Math.Min(255, v)); }
 }
 }
