@@ -2,13 +2,14 @@
 
 ## 0.1.4 — shared stock, natural materials and engineered bamboo — 2026-10-26
 
-Branch `codex/shared-stock-bamboo` against `main` (post-0.1.3).
+Branch `codex/shared-stock-bamboo` merged to `main` via PR #2.
 
 - Release builds of `Woodie.Checks` then `Woodie.gha`: PASS, zero warnings/errors.
 - Native `--rhino` with `--examples`: PASS, **37** checks including stock archive, natural geometry/cuts, culm preview mesh under the triangle cap, vertical bamboo half-cut stock mapping, component GUIDs, and regenerate/reopen of Timber-preview.ghx.
 - Combined example now includes sections **05 Rotated tower** and **06 Natural bamboo**; temporary live Cut/Preview probes were discarded and the ghx regenerated from `TimberExamples`.
 - Mac native checks: not run.
 - Limitations recorded in development notes: bark ovality, constant bamboo wall with wobble, Lamella/Veneer reused for strip size, no scrimber/flattened culms/user manufacturing sequences, age/reuse deferred. Strip machining windows track Outer(x)/WallAt(x) along each culm.
+- Publication (2026-10-27): verified GHA SHA-256 `0C7AC71D85D7E48EEC8BF2C24C6F628977CB3F41DA5597CB93579E3FF5A7A2D6`; Yak `woodie-0.1.4-rh8_20-any.yak` SHA-256 `e22007ae31e492b539221f62b7400279274988ba7c073d3334d7c1e6eae6cc15`. Test-server push to `https://test.yak.rhino3d.com/` succeeded; production push of `woodie` / `0.1.4` succeeded. GitHub release: https://github.com/lasaths/Woodie/releases/tag/v0.1.4.
 
 ## Native textured baking — 2026-10-25
 
