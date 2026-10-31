@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Globalization;
+using Woodie.Stock;
 
 namespace Woodie.Appearance;
 
@@ -29,13 +30,14 @@ public sealed class TimberSettings
     public double BarkThickness { get; set; } = double.NaN;  // Log; 0 = debarked
     public double WallThickness { get; set; } = double.NaN;  // Bamboo
     public double NodeSpacing { get; set; } = double.NaN;    // Bamboo
-    public double Variation { get; set; } = 0.5;             // Natural Variation 0..1
+    public double Variation { get; set; } = 0.8;             // Natural Variation 0..1 (specimen/species spread)
+    public BambooSpeciesId Species { get; set; }             // Natural Bamboo culm preset; ignored for Log / engineered
 
     public TimberSettings Duplicate() { var copy = (TimberSettings)MemberwiseClone(); copy.Layers = Layers; return copy; }
     public double EffectiveEdgeResolution => double.IsNaN(EdgeResolution) ? (Product == TimberProduct.KertoQ ? 0.25 : 0.5) : EdgeResolution;
     public double EffectiveKnotDensity => double.IsNaN(KnotDensity) ? (Look == TimberLook.CleanPale ? 0.25 : Product == TimberProduct.CLT ? 8 : 3) : KnotDensity;
     // Revolved natural stock needs far fewer facets than the 1° grid used for flat timber (200k triangle budget).
-    internal double GridAngle => IsNatural ? 15 * Math.PI / 180 : Math.PI / 180;
+    internal double GridAngle => IsNatural ? 5 * Math.PI / 180 : Math.PI / 180;
     public bool IsNatural => Product is TimberProduct.Log or TimberProduct.Bamboo;
     public bool IsEngineeredBamboo => Product is TimberProduct.BambooLumber or TimberProduct.BambooLumberSide or TimberProduct.BambooPanel;
     public double VirtualDepthMm => Layers != null ? Layers.Sum(l => l.Thickness) : Product switch
@@ -58,6 +60,7 @@ public sealed class TimberSettings
         if (Product == TimberProduct.BambooLumberSide && Layers != null) throw new ArgumentException("Side-pressed bamboo lumber does not use buildup layers; use Layered bamboo panel.");
         if (IsNatural || IsEngineeredBamboo) {   // engineered bamboo strips come from internally generated Moso culms
             if (!double.IsFinite(Variation) || Variation < 0 || Variation > 1) throw new ArgumentException("Natural variation must be between 0 and 1.");
+            if (!Enum.IsDefined(typeof(BambooSpeciesId), Species)) throw new ArgumentException("Unknown bamboo species.");
             OptionalPositive(Diameter, "Diameter"); OptionalPositive(WallThickness, "Wall thickness");
             if (!double.IsNaN(NodeSpacing) && (!double.IsFinite(NodeSpacing) || NodeSpacing < 20)) throw new ArgumentException("Node spacing must be at least 20 mm.");
             if (!double.IsNaN(Taper) && !double.IsFinite(Taper)) throw new ArgumentException("Taper must be finite.");
@@ -106,7 +109,9 @@ public sealed class TimberSettings
         F(RingSpacing), F(LamellaWidth), F(Brightness), EarlywoodA?.ToArgb(), EarlywoodB?.ToArgb(),
         Latewood?.ToArgb(), Knot?.ToArgb(), Glue?.ToArgb()) + (Layers == null ? "" : "|custom|" + FitToPart + "|" + string.Join(";", Layers.Select(l =>
             string.Join(",", F(l.Thickness), l.AlongX, (int)l.Construction, F(l.BoardWidth), (int)l.Joints, F(l.SegmentMin), F(l.SegmentMax), l.ContinuousSheet, l.NearPith))))
-        + (IsNatural || IsEngineeredBamboo ? "|natural|" + string.Join(",", F(Diameter), F(Taper), F(BarkThickness), F(WallThickness), F(NodeSpacing), F(Variation)) : "");
+        + (IsNatural || IsEngineeredBamboo ? "|natural|" + string.Join(",", F(Diameter), F(Taper), F(BarkThickness), F(WallThickness), F(NodeSpacing), F(Variation), (int)Species) : "");
     static string F(double v) => v.ToString("R", CultureInfo.InvariantCulture);
-    public override string ToString() => $"Woodie {(Layers == null ? Product.ToString() : "Custom buildup (" + Product + " palette)")}, seed {Seed}, {Resolution:0.##} mm/px";
+    public override string ToString() => Product == TimberProduct.Bamboo
+        ? $"Woodie Bamboo ({BambooSpecies.For(Species).Name}), seed {Seed}, {Resolution:0.##} mm/px"
+        : $"Woodie {(Layers == null ? Product.ToString() : "Custom buildup (" + Product + " palette)")}, seed {Seed}, {Resolution:0.##} mm/px";
 }

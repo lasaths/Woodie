@@ -28,10 +28,12 @@ internal static class NaturalChecks
         var a = Resolve(Bamboo()); var b = Resolve(Bamboo()); var other = Resolve(Bamboo(8));
         Assert(a.Nodes.SequenceEqual(b.Nodes) && a.Ovality == b.Ovality, "Seed must identify one specimen");
         Assert(!a.Nodes.SequenceEqual(other.Nodes), "Different seeds should differ in node stations");
-        // Variation 0: nominal taper and regular nodes whatever the seed.
+        // Variation 0: nominal taper and deterministic basal RIN–RCIL nodes (not equal spacing), seed-independent.
         var nominal = Resolve(Bamboo(3, 0)); var nominal2 = Resolve(Bamboo(4, 0));
-        Assert(nominal.Nodes.Count == 11 && nominal.Nodes.SequenceEqual(nominal2.Nodes), "Nominal bamboo should have eleven regular nodes in 3 m");
-        for (int k = 0; k < nominal.Nodes.Count; k++) Near(nominal.Nodes[k], 270.0 * (k + 1), 1e-9);
+        Assert(nominal.Nodes.Count >= 8 && nominal.Nodes.Count <= 12 && nominal.Nodes.SequenceEqual(nominal2.Nodes), "Nominal bamboo should share a deterministic basal node set in 3 m");
+        var gaps = InternodeLengths(nominal);
+        Assert(gaps[0] < gaps[^1] && gaps[^1] > gaps[gaps.Length / 2] * 0.9, "Basal stock window must lengthen internodes away from the base (RIN–RCIL)");
+        Assert(gaps.Max() / gaps.Min() > 1.2, "Internode lengths must vary along the culm");
         for (double x = 0; x <= 3000; x += 125) { Near(nominal.Outer(x), 40 - 5 * x / 2000, 1e-9); Near(nominal2.Outer(x), nominal.Outer(x), 1e-12); }
         Assert(nominal.Ovality == 0 && Resolve(Log(3, 0)).KnotCount == 0, "Variation 0 must have no ovality or knots");
         // Bounded variation.
@@ -45,11 +47,12 @@ internal static class NaturalChecks
         var withKnots = Resolve(knots); var withoutKnots = Resolve(bare);
         Assert(withKnots.KnotCount > 0 && withoutKnots.KnotCount == 0 && withKnots.Ovality == withoutKnots.Ovality && withKnots.Outer(1234) == withoutKnots.Outer(1234), "Geometry and appearance streams are not separate");
         // Hollow internodes, solid diaphragms, annular ends.
-        var culm = Resolve(Bamboo(3, 0)); double wallInner = culm.Inner(135);
-        Assert(!culm.Solid(135, 0) && !culm.Solid(0, 0) && !culm.Solid(3000, 0), "Internodes and ends must be hollow");
-        Assert(culm.Solid(270, 0) && culm.Solid(270 + culm.Diaphragm / 2 - .01, 0) && !culm.Solid(270 + culm.Diaphragm / 2 + .01, 0), "Diaphragm should span ±half its thickness");
-        Assert(culm.Solid(135, wallInner + .1) && !culm.Solid(135, culm.Outer(135) + .1) && culm.Solid(270, culm.Outer(270) + culm.Ridge(270) - .01), "Wall and ridge extents");
-        Assert(culm.Ridge(270) > 1 && culm.Ridge(135) == 0, "Nodes carry an external ridge");
+        var culm = Resolve(Bamboo(3, 0)); double n0 = culm.Nodes[0], midGap = (culm.Nodes[0] + (culm.Nodes.Count > 1 ? culm.Nodes[1] : 3000)) / 2;
+        double wallInner = culm.Inner(midGap);
+        Assert(!culm.Solid(midGap, 0) && !culm.Solid(0, 0) && !culm.Solid(3000, 0), "Internodes and ends must be hollow");
+        Assert(culm.Solid(n0, 0) && culm.Solid(n0 + culm.Diaphragm / 2 - .01, 0) && !culm.Solid(n0 + culm.Diaphragm / 2 + .01, 0), "Diaphragm should span ±half its thickness");
+        Assert(culm.Solid(midGap, wallInner + .1) && !culm.Solid(midGap, culm.Outer(midGap) + .1) && culm.Solid(n0, culm.Outer(n0) + culm.Ridge(n0) - .01), "Wall and ridge extents");
+        Assert(culm.Ridge(n0) > 1 && culm.Ridge(midGap) == 0, "Nodes carry an external ridge");
         var profile = culm.Profile();
         Assert(profile.Count == 3 + 3 * culm.Nodes.Count + 1, "Bamboo profile should have rims, outer face, cavity walls and two diaphragm faces per node");
         Assert(Resolve(Log(1)).Profile().Count == 3, "Log profile is two end discs and one stem face");
@@ -58,6 +61,14 @@ internal static class NaturalChecks
         Reject(() => Resolve(new TimberSettings { Product = TimberProduct.Bamboo, Diameter = 80, WallThickness = 7, NodeSpacing = 20 }), "100 nodes");
         Reject(() => Resolve(new TimberSettings { Product = TimberProduct.Bamboo, Diameter = 80, WallThickness = 40 }), "hollow");
         Reject(() => Resolve(new TimberSettings { Product = TimberProduct.Log, Diameter = 100, BarkThickness = 60 }, 1000), "Bark");
+    }
+
+    static double[] InternodeLengths(NaturalFeatures f)
+    {
+        var xs = new List<double> { 0 }; xs.AddRange(f.Nodes); xs.Add(f.Length);
+        var gaps = new double[xs.Count - 1];
+        for (int i = 0; i < gaps.Length; i++) gaps[i] = xs[i + 1] - xs[i];
+        return gaps;
     }
 
     public static void Appearance()
@@ -88,11 +99,12 @@ internal static class NaturalChecks
         Assert(differs, "Variation above 0 should make specimens differ");
         // Bamboo: skin vs wall vs node band vs diaphragm.
         var culm = Bamboo(3, 0); var bf = Resolve(culm, 3000); var cs = StockDefinition.FromNatural(culm, 3000, 80, 80);
-        double ro = bf.Outer(135), ri = bf.Inner(135);
-        int skin = cs.Sample(135, 40 + ro - .05, 40), inner = cs.Sample(135, 40 + ri + .3, 40), node = cs.Sample(270, 40 + (ri + ro) / 2, 40), mid = cs.Sample(135, 40 + (ri + ro) / 2, 40);
-        Assert(Green(skin) > Red(skin) && Red(inner) > Green(inner), "Bamboo skin should be green-olive and wall interior warm");
+        double n0 = bf.Nodes[0], gap = (bf.Nodes[0] + (bf.Nodes.Count > 1 ? bf.Nodes[1] : 3000)) / 2;
+        double ro = bf.Outer(gap), ri = bf.Inner(gap);
+        int skin = cs.Sample(gap, 40 + ro - .05, 40), inner = cs.Sample(gap, 40 + ri + .3, 40), node = cs.Sample(n0, 40 + (ri + ro) / 2, 40), mid = cs.Sample(gap, 40 + (ri + ro) / 2, 40);
+        Assert(Red(skin) > Green(skin) && Red(inner) > Green(inner), "Cured bamboo skin and wall interior should read warm, not living green");
         Assert(node != mid, "Node fibre appearance should differ from an internode wall");
-        Assert(Luma(cs.Sample(270, 40, 40)) > 150 && Luma(cs.Sample(135, 40 + ri - 1, 40)) > 150, "Diaphragm and lining should be pale");
+        Assert(Luma(cs.Sample(n0, 40, 40)) > 150 && Luma(cs.Sample(gap, 40 + ri - 1, 40)) > 150, "Diaphragm and lining should be pale");
         var definition = StockDefinition.FromTimber(culm, 3000, 80, 80);
         Assert(definition.Sample(135, 40 + ro, 40) == cs.Sample(135, 40 + ro, 40) && definition.Construction.Pieces.Single().Specimen.Features != null && definition.Construction.Pieces[0].Specimen.Seed == 3, "FromTimber must dispatch natural products");
         // Unset diameter wraps the cross-section bounds (legacy Product=Log on a user Brep).
@@ -135,45 +147,69 @@ internal static class NaturalChecks
 
     public static void Component()
     {
-        IsolatedHost.LoadWoodie(typeof(NaturalStockComponent).Assembly.Location); GH_Document.EnableSolutions = true;
+        IsolatedHost.LoadWoodie(typeof(LogStockComponent).Assembly.Location); GH_Document.EnableSolutions = true;
         using var doc = new GH_Document { Enabled = true };
-        var natural = new NaturalStockComponent(); natural.CreateAttributes(); doc.AddObject(natural, false);
-        var bamboo = new NaturalStockComponent(); bamboo.CreateAttributes(); doc.AddObject(bamboo, false);
-        ((Param_Line)natural.Params.Input[0]).SetPersistentData(new Line(Point3d.Origin, new Point3d(2400, 0, 0)));
+        var log = new LogStockComponent(); log.CreateAttributes(); doc.AddObject(log, false);
+        var bamboo = new BambooStockComponent(); bamboo.CreateAttributes(); doc.AddObject(bamboo, false);
+        ((Param_Line)log.Params.Input[0]).SetPersistentData(new Line(Point3d.Origin, new Point3d(2400, 0, 0)));
         ((Param_Line)bamboo.Params.Input[0]).SetPersistentData(new Line(new Point3d(0, 500, 0), new Point3d(0, 500, 3000)));
-        ((Param_String)bamboo.Params.Input[1]).PersistentData.Clear(); ((Param_String)bamboo.Params.Input[1]).SetPersistentData("Bamboo");
         doc.NewSolution(false);
-        foreach (var c in new[] { natural, bamboo }) Assert(!c.RuntimeMessages(GH_RuntimeMessageLevel.Error).Any(), c.Name + ": " + string.Join(";", c.RuntimeMessages(GH_RuntimeMessageLevel.Error)));
-        var logStock = natural.Params.Output[0].VolatileData.AllData(true).OfType<StockGoo>().Single().Value;
+        foreach (var c in new GH_Component[] { log, bamboo }) Assert(!c.RuntimeMessages(GH_RuntimeMessageLevel.Error).Any(), c.Name + ": " + string.Join(";", c.RuntimeMessages(GH_RuntimeMessageLevel.Error)));
+        var logStock = log.Params.Output[0].VolatileData.AllData(true).OfType<StockGoo>().Single().Value;
         var culmStock = bamboo.Params.Output[0].VolatileData.AllData(true).OfType<StockGoo>().Single().Value;
+        Assert(log.ComponentGuid == new Guid("5d7f3c1e-8a42-4b6f-9e0d-1c3a7b9f2e64"), "Log Stock keeps Natural Stock GUID");
+        Assert(bamboo.ComponentGuid == new Guid("d65cfaa6-137e-4547-91b5-33e5960ea8ca"), "Bamboo Stock GUID");
+        Assert(bamboo.Attributes is BambooStockAttributes && bamboo.PanelExpanded && bamboo.SelectedSpecies == BambooSpeciesId.Moso && !bamboo.SpeciesControlled, "Bamboo species panel defaults");
         Assert(logStock.Settings.Product == TimberProduct.Log && logStock.Settings.Diameter == 200 && logStock.Settings.BarkThickness == 5, "Log defaults");
-        Assert(culmStock.Settings.Product == TimberProduct.Bamboo && culmStock.Settings.Diameter == 80 && culmStock.Settings.WallThickness == 7 && culmStock.Settings.NodeSpacing == 270, "Bamboo defaults");
-        Near(culmStock.Definition.LengthMm, 3000, .01); Assert(culmStock.BasePlane.HasValue && culmStock.Fibre.HasValue && culmStock.Geometry is Brep { IsSolid: true }, "Natural stock mapping");
-        // Archive keeps the natural definition.
-        var archive = new GH_Archive(); Assert(archive.AppendObject(new StockGoo(culmStock), "Stock"), "Natural stock write");
-        var copy = new StockGoo(); Assert(archive.ExtractObject(copy, "Stock") && copy.Value.Settings.NodeSpacing == 270 && copy.Value.Settings.Product == TimberProduct.Bamboo, "Natural stock archive");
-        for (int i = 0; i < 30; i++) { double x = 10 + i * 97, y = 30 + i, z = 35; Assert(copy.Value.Definition.Sample(x, y, z) == culmStock.Definition.Sample(x, y, z), "Natural archive changed samples"); }
-        // Hollow culms must stay under the preview triangle cap with the natural mesh limits.
-        using var culmPart = PreparedPart.Create(culmStock.Geometry, culmStock.Settings.Duplicate(), 1, .001, culmStock.BasePlane, culmStock.Fibre, null, culmStock.OriginalGeometry);
-        Assert(culmPart.Mesh.Faces.Count > 0 && culmPart.Mesh.Faces.Count <= 200000, $"Bamboo culm preview mesh has {culmPart.Mesh.Faces.Count} triangles");
-        // Vertical half-cut through the culm must keep fixed stock mapping for Timber Preview.
-        var mid = culmStock.Geometry.GetBoundingBox(true).Center;
-        using var half = TimberCut.Create(culmStock.Geometry, new Plane(mid, Vector3d.XAxis), false, .001);
+        Assert(culmStock.Settings.Product == TimberProduct.Bamboo && culmStock.Settings.Species == BambooSpeciesId.Moso && culmStock.Settings.Diameter == 80 && culmStock.Settings.WallThickness == 7 && culmStock.Settings.NodeSpacing == 270 && culmStock.Settings.Variation == .8, "Bamboo defaults");
+        Near(culmStock.Definition.LengthMm, 3000, .01); Assert(culmStock.BasePlane.HasValue && culmStock.Fibre.HasValue && culmStock.Geometry is Brep { IsSolid: true }, "Bamboo stock mapping");
+        Assert(BambooSpecies.All.Length == 3 && !BambooSpecies.TryParse("nigra", out _), "Library is construction species only");
+        Assert(BambooSpecies.TryParse("Guadua bamboo", out var phrase) && phrase.Id == BambooSpeciesId.Guadua, "Species phrase parse");
+        Assert(BambooSpecies.TryParse("moso", out var mosoAlias) && mosoAlias.Id == BambooSpeciesId.Moso
+            && BambooSpecies.TryParse("Asper", out var asperName) && asperName.Id == BambooSpeciesId.Asper, "Species alias and name parse");
+        // Panel selection without a Species wire.
+        bamboo.SelectSpecies(BambooSpeciesId.Asper); doc.NewSolution(false);
+        Assert(bamboo.SelectedSpecies == BambooSpeciesId.Asper && bamboo.Params.Output[0].VolatileData.AllData(true).OfType<StockGoo>().Single().Value.Settings.Diameter == 140, "Panel Asper selection");
+        var guadua = new BambooStockComponent(); guadua.CreateAttributes(); doc.AddObject(guadua, false);
+        ((Param_Line)guadua.Params.Input[0]).SetPersistentData(new Line(new Point3d(0, 1000, 0), new Point3d(0, 1000, 2000)));
+        ((Param_String)guadua.Params.Input[1]).PersistentData.Clear(); ((Param_String)guadua.Params.Input[1]).SetPersistentData("Guadua");
+        doc.NewSolution(false);
+        Assert(!guadua.RuntimeMessages(GH_RuntimeMessageLevel.Error).Any(), "Guadua Bamboo Stock failed");
+        Assert(guadua.SpeciesControlled && guadua.SelectedSpecies == BambooSpeciesId.Guadua, "Stored Species input controls the panel");
+        var guaduaStock = guadua.Params.Output[0].VolatileData.AllData(true).OfType<StockGoo>().Single().Value;
+        Assert(guaduaStock.Settings.Species == BambooSpeciesId.Guadua && guaduaStock.Settings.Diameter == 120 && guaduaStock.Settings.WallThickness == 12 && guaduaStock.Settings.NodeSpacing == 310, "Guadua defaults");
+        // Species archive round trip.
+        var speciesArchive = new GH_Archive(); Assert(speciesArchive.AppendObject(bamboo, "Bamboo"), "Bamboo component write");
+        var restoredBamboo = new BambooStockComponent(); Assert(speciesArchive.ExtractObject(restoredBamboo, "Bamboo") && restoredBamboo.SelectedSpecies == BambooSpeciesId.Asper, "Bamboo species archive");
+        var mosoSkin = Resolve(culmStock.Settings).Skin; var guaduaSkin = Resolve(guaduaStock.Settings).Skin;
+        Assert(mosoSkin[1] < mosoSkin[0] && guaduaSkin[1] < guaduaSkin[0], "Cured skins must read warm, not living green");
+        Assert(mosoSkin[0] != guaduaSkin[0] || mosoSkin[1] != guaduaSkin[1], "Species skins should differ");
+        var archive = new GH_Archive(); Assert(archive.AppendObject(new StockGoo(culmStock), "Stock"), "Bamboo stock write");
+        var copy = new StockGoo(); Assert(archive.ExtractObject(copy, "Stock") && copy.Value.Settings.NodeSpacing == 270 && copy.Value.Settings.Product == TimberProduct.Bamboo, "Bamboo stock archive");
+        for (int i = 0; i < 30; i++) { double x = 10 + i * 97, y = 30 + i, z = 35; Assert(copy.Value.Definition.Sample(x, y, z) == culmStock.Definition.Sample(x, y, z), "Bamboo archive changed samples"); }
+        // Preview mesh budget at 5° grid: use a 1.5 m Moso specimen, not the 3 m Asper panel pick.
+        var preview = new BambooStockComponent(); preview.CreateAttributes(); doc.AddObject(preview, false);
+        ((Param_Line)preview.Params.Input[0]).SetPersistentData(new Line(new Point3d(0, 1500, 0), new Point3d(0, 1500, 1500)));
+        doc.NewSolution(false);
+        Assert(!preview.RuntimeMessages(GH_RuntimeMessageLevel.Error).Any(), "Preview Bamboo Stock failed");
+        var previewStock = preview.Params.Output[0].VolatileData.AllData(true).OfType<StockGoo>().Single().Value;
+        using var culmPart = PreparedPart.Create(previewStock.Geometry, previewStock.Settings.Duplicate(), 1, .001, previewStock.BasePlane, previewStock.Fibre, null, previewStock.OriginalGeometry);
+        Assert(culmPart.Mesh.Faces.Count > 8000 && culmPart.Mesh.Faces.Count <= 200000, $"Bamboo culm preview mesh has {culmPart.Mesh.Faces.Count} triangles");
+        var mid = previewStock.Geometry.GetBoundingBox(true).Center;
+        using var half = TimberCut.Create(previewStock.Geometry, new Plane(mid, Vector3d.XAxis), false, .001);
         Assert(half.Geometry.Count == 1 && half.Outlines.Count > 0, "Bamboo vertical section should keep one capped piece with outlines");
-        using var cutStock = culmStock.WithGeometry(half.Geometry[0]);
+        using var cutStock = previewStock.WithGeometry(half.Geometry[0]);
         using var cutPart = PreparedPart.Create(cutStock.Geometry, cutStock.Settings.Duplicate(), 1, .001, cutStock.BasePlane, cutStock.Fibre, null, cutStock.OriginalGeometry);
         Assert(cutPart.Mesh.Faces.Count > 0 && cutPart.Mesh.Faces.Count <= 200000, $"Bamboo section preview mesh has {cutPart.Mesh.Faces.Count} triangles");
-        // Stock Model preview path builds the natural definition and rasterises it.
         var stock = logStock; var settings = stock.Settings.Duplicate(); settings.Resolution = 8; settings.EdgeResolution = 8;
         using var part = PreparedPart.Create(stock.Geometry, settings, 1, .001, stock.BasePlane, stock.Fibre, null, stock.OriginalGeometry);
         Near(part.LengthMm, 2400, .05);
         var pages = TextureAtlas.Prepare(part, settings, .25, Path.Combine(Output, "natural-atlas"));
         try {
-            Assert(pages.Count > 0 && pages[0].Panel.Value is StockDefinition d && d.Construction.Pieces[0].Specimen.Features != null, "Preview did not build the natural stock definition");
+            Assert(pages.Count > 0 && pages[0].Panel.Value is StockDefinition d && d.Construction.Pieces[0].Specimen.Features != null, "Preview did not build the log stock definition");
             var pixels = TextureAtlas.Rasterize(pages[0], CancellationToken.None);
             Assert(pixels.Select(p => p & 0xffffff).Distinct().Count() > 20 && pixels.Any(p => Luma(p) < 110) && pixels.Any(p => Luma(p) > 120), "Log texture lacks bark and timber");
         } finally { foreach (var page in pages) page.Dispose(); }
-        // Legacy Settings on a user Brep wrap the stock's bounds.
         using var user = new Box(Plane.WorldXY, new Interval(0, 1000), new Interval(0, 200), new Interval(0, 200)).ToBrep();
         using var legacy = PreparedPart.Create(user, new TimberSettings { Product = TimberProduct.Log, Variation = 0 }, 1, .001, Plane.WorldXY);
         var legacyPages = TextureAtlas.Prepare(legacy, new TimberSettings { Product = TimberProduct.Log, Variation = 0 }, .1, Path.Combine(Output, "natural-atlas"));

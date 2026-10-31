@@ -24,6 +24,7 @@ public abstract class NaturalModel : IMaterialModel
 
     public int Sample(double x, double y, double z) => Sample(x, y, z, 0, 0, 0, false);
     public int Sample(double x, double y, double z, double nx, double ny, double nz) => Sample(x, y, z, nx, ny, nz, true);
+    public double KnotInfluence(double x, double y, double z) => 0;
 
     int Sample(double x, double y, double z, double nx, double ny, double nz, bool oriented)
     {
@@ -89,13 +90,11 @@ public sealed class LogMaterialModel : NaturalModel
 }
 
 /// <summary>
-/// Moso culm: hollow internodes, a graded vascular-bundle wall, external node ridges and solid diaphragms. Node positions
-/// come from <see cref="NaturalFeatures"/>, shared with the geometry. Node banding and colour are appearance adaptations.
+/// Bamboo culm: hollow internodes, a graded vascular-bundle wall, external node ridges and solid diaphragms. Node positions
+/// come from <see cref="NaturalFeatures"/>, shared with the geometry. Skin colour follows the species preset; node banding is an appearance adaptation.
 /// </summary>
 public sealed class BambooMaterialModel : NaturalModel
 {
-    static readonly double[] Skin = { 112, 128, 74 };
-
     public BambooMaterialModel(NaturalFeatures features, TimberPalette palette, double widthMm, double depthMm) : base(features, palette, widthMm, depthMm) { }
 
     protected override (double R, double G, double B) Shade(double x, double r, double dy, double dz, double end)
@@ -124,7 +123,7 @@ public sealed class BambooMaterialModel : NaturalModel
             if (skin > 0)
             {
                 double streak = 1 + v * 0.1 * Perlin(dy * 0.05 + ox, dz * 0.05, x * 0.002);
-                var sk = Lerp3(Skin, Pal.Knot, 0.6 * nodeW);
+                var sk = Lerp3(F.Skin, Pal.Knot, 0.6 * nodeW);
                 c = Lerp3(c, new[] { sk[0] * streak, sk[1] * streak, sk[2] * streak }, skin);
             }
         }

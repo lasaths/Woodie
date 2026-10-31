@@ -2,7 +2,7 @@
 
 ## Stock models (0.1.4+)
 
-**Material Stock** wraps a Mesh/Brep/Surface/Extrusion plus Material or Buildup settings into a **Stock Model**. **Natural Stock** builds a tapered Log or hollow Moso bamboo culm from a straight Line (base→tip), with Diameter/Wall/Node Spacing/Bark/Taper/Variation in millimetres and Geometry Units for the line. Both output a Stock Model and ordinary geometry.
+**Material Stock** wraps a Mesh/Brep/Surface/Extrusion plus Material or Buildup settings into a **Stock Model**. **Log Stock** builds a tapered softwood log from a straight Line (base→tip), with Diameter/Bark/Taper/Variation in millimetres. **Bamboo Stock** builds a hollow construction culm from a Line. Open the panel arrow under Bamboo Stock to pick Species (Moso / Guadua / Asper). Each row shows name, starting Ø/wall, and a cured skin chip. A Species wire or stored value takes control of the list. Diameter/Wall/Node Spacing/Taper/Variation still override the preset when set. Older definitions that used **Natural Stock** reopen as Log Stock (same GUID); bamboo culms need a Bamboo Stock component.
 
 Wire **Stock Model → Timber Cut → Stock Model → Timber Preview** (all Stock Model ports use nick **Stock**). In Stock Model mode, Preview rejects simultaneous Geometry, Settings, Fibre, Base Plane, Guide and Stock Geometry overrides. Show still works. Legacy path: Cut **Geometry** in / **Geometry** + **Stock Geometry** (`SG`) out → Preview Geometry + Stock Geometry. Cut keeps port order: Geometry, Cutting Plane, Keep Positive, Geometry Units, Stock Model in; Geometry, Stock Geometry, Section Outlines, Stock Model out.
 

@@ -36,9 +36,9 @@ The helper calls the CLI package's styling and PNG export functions with its loc
 
 ## Material controls and archives
 
-MaterialAttributes draws in canvas coordinates using GH_FontServer fonts. Dropdown lists are rendered inside the component bounds; no Forms dialog, Oasys or Arup assembly is needed. Its only reflection reads the host mouse-button enum, avoiding a Windows Forms target dependency. Interaction records undo and schedules recomputation through GH_Document. Product overrides are resolved through standard item access.
+MaterialAttributes draws in canvas coordinates using GH_FontServer fonts. Dropdown lists are rendered inside the component bounds; no Forms dialog, Oasys or Arup assembly is needed. Mouse hits use the panel and disclosure rectangles directly because `GH_ComponentAttributes.Render` can clip `Bounds` through the viewport. Interaction records undo and schedules recomputation through GH_Document. Product overrides are resolved through standard item access.
 
-SettingsComponent stores its selections and input expansion before base serialization. Read recreates the correct port count before restoring IDs, sources and persistent values. It intentionally uses the normal component archive format, matching legacy definitions; a variable-parameter archive would lose the old fixed-port data. Legacy ports are retained and the veneer input is appended. SettingsGoo writes version 2 and accepts version 1 as Natural.
+SettingsComponent stores its selections and input expansion before base serialization. Read recreates the correct port count before restoring IDs, sources and persistent values. It intentionally uses the normal component archive format, matching legacy definitions; a variable-parameter archive would lose the old fixed-port data. Legacy ports are retained and the veneer input is appended. SettingsGoo writes version 4 (Species for Bamboo Stock) and accepts versions 1–4; older archives without Species default to Moso.
 
 The canvas layout pattern is informed by [Arup custom GH attributes](https://github.com/arup-archive/Custom-Grasshopper-UI-Components). Woodie implements its controls independently.
 

@@ -12,7 +12,7 @@ namespace Woodie.Grasshopper;
 public sealed class MaterialStockComponent : GH_Component
 {
     public MaterialStockComponent() : base("Material Stock", "MaterialStock",
-        "Build a Stock Model from geometry and settings. " + ResearchCredit.Timber,
+        "Build a Stock Model from geometry and timber settings. " + ResearchCredit.Timber,
         "Display", "Woodie") { }
     public override Guid ComponentGuid => new("c4e8a912-6f3b-4a1d-9c57-8e2d0b4f1a63");
     protected override Bitmap Icon => Icons.Package;

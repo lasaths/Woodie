@@ -11,7 +11,7 @@ namespace Woodie.Grasshopper;
 public sealed class CutComponent : GH_Component
 {
     public CutComponent() : base("Timber Cut", "TimberCut",
-        "Cut timber on a plane and cap the cut face. Prefer Stock Model. " + ResearchCredit.Timber,
+        "Cut timber on a plane and cap the cut face. Prefer a Stock Model. " + ResearchCredit.Timber,
         "Display", "Woodie") { }
     public override Guid ComponentGuid => new("3df0b43b-bbb6-4850-a7e8-f06f8567269e");
     protected override Bitmap Icon => Icons.Cut;

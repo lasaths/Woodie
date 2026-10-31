@@ -5,6 +5,7 @@ namespace Woodie.Grasshopper;
 internal static class Icons
 {
     static readonly Lazy<Bitmap> tree = new(() => Load("tree-evergreen-bold.png"));
+    static readonly Lazy<Bitmap> plant = new(() => Load("plant-bold.png"));
     static readonly Lazy<Bitmap> sliders = new(() => Load("sliders-horizontal-bold.png"));
     static readonly Lazy<Bitmap> buildup = new(() => Load("stack-bold.png"));
     static readonly Lazy<Bitmap> layer = new(() => Load("rectangle-bold.png"));
@@ -16,6 +17,7 @@ internal static class Icons
     static readonly Lazy<Bitmap> package = new(() => Load("package-bold.png"));
     static readonly Lazy<Bitmap> cube = new(() => Load("cube-bold.png"));
     public static Bitmap Tree => tree.Value;
+    public static Bitmap Plant => plant.Value;
     public static Bitmap Sliders => sliders.Value;
     public static Bitmap Presets => presets.Value;
     public static Bitmap Buildup => buildup.Value;

@@ -3,13 +3,14 @@ using Woodie.Appearance;
 namespace Woodie.Stock;
 
 /// <summary>
-/// Resolved anatomy of one natural Log or Moso bamboo specimen, in stock millimetres with X along the axis (base → tip).
+/// Resolved anatomy of one natural Log or bamboo specimen, in stock millimetres with X along the axis (base → tip).
 /// Geometry (radius, ovality, node stations) and appearance (knots, noise phase, tint) draw from separate seeded streams
-/// and are resolved once; Variation 0 leaves nominal taper, nodes and rings only.
+/// and are resolved once; Variation 0 leaves nominal taper, nodes and rings only. Species presets supply starting dimensions and skin.
 /// </summary>
 public sealed class NaturalFeatures
 {
-    const double Wobble = 0.05, OvalMax = 0.05, NodeJitter = 0.3;
+    // NodeJitter: residual multiplicative noise at Variation=1, kept under the ~12% among-culm IL CV ceiling (Li et al. 2025).
+    const double Wobble = 0.05, OvalMax = 0.05, NodeJitter = 0.08, RcilSteepness = 8;
     readonly double a1, a2, a3, b1, b2, b3, wallPhase;
     readonly double[] ridge, knotX, knotAngle, knotSize;
 
@@ -18,6 +19,8 @@ public sealed class NaturalFeatures
         Bamboo = s.Product == TimberProduct.Bamboo; Seed = s.Seed; Length = lengthMm; Diameter = diameterMm; Variation = s.Variation;
         Taper = double.IsNaN(s.Taper) ? 0 : s.Taper;
         Bark = Bamboo || double.IsNaN(s.BarkThickness) ? 0 : s.BarkThickness;
+        var species = Bamboo ? BambooSpecies.For(s.Species) : BambooSpecies.Default;
+        Skin = species.Skin;
         var g = Stream(Seed, 1);   // geometry
         a1 = g.NextDouble() * 2 * Math.PI; a2 = g.NextDouble() * 2 * Math.PI; a3 = g.NextDouble() * 2 * Math.PI; wallPhase = g.NextDouble() * 2 * Math.PI;
         b1 = lengthMm * (0.5 + g.NextDouble()); b2 = lengthMm * (0.15 + 0.15 * g.NextDouble()); b3 = lengthMm * (0.25 + 0.2 * g.NextDouble());
@@ -27,26 +30,18 @@ public sealed class NaturalFeatures
         var nodes = new List<double>(); var heights = new List<double>();
         if (Bamboo)
         {
-            Wall = double.IsNaN(s.WallThickness) ? Math.Min(7, 0.2 * diameterMm / 2) : s.WallThickness;
-            Spacing = double.IsNaN(s.NodeSpacing) ? 270 : s.NodeSpacing;
+            Wall = double.IsNaN(s.WallThickness) ? Math.Min(species.Wall, 0.2 * diameterMm / 2) : s.WallThickness;
+            Spacing = double.IsNaN(s.NodeSpacing) ? species.Spacing : s.NodeSpacing;
             Diaphragm = Math.Clamp(0.5 * Wall, 1, 6);
             RidgeHalfWidth = Math.Clamp(0.03 * Spacing, 2, 15);
             if (Wall <= 0 || Wall >= 0.4 * Math.Min(Outer(0), Outer(lengthMm)) * (1 - Wobble * Variation))
                 throw new ArgumentException("Wall thickness must leave a hollow: it must be well under the culm radius.");
-            double margin = Diaphragm / 2 + RidgeHalfWidth + 1, x = 0;
-            while (true)
-            {
-                double jitter = (g.NextDouble() * 2 - 1) * NodeJitter * Variation, rise = g.NextDouble() * 2 - 1;
-                x += Spacing * (1 + jitter);
-                if (x > lengthMm - margin) break;
-                nodes.Add(x); heights.Add(0.035 * (1 + 0.4 * Variation * rise));
-                if (nodes.Count > 100) throw new ArgumentException("Bamboo would have more than 100 nodes. Increase Node Spacing or shorten the culm.");
-            }
+            PlaceBambooNodes(nodes, heights, g, species, lengthMm);
         }
         Nodes = nodes.ToArray(); ridge = heights.ToArray();
         var a = Stream(Seed, 2);   // appearance
         OffsetX = a.NextDouble() * 256; OffsetY = a.NextDouble() * 256;
-        Tint = 1 + Variation * 0.04 * (a.NextDouble() * 2 - 1);
+        Tint = 1 + Variation * 0.1 * (a.NextDouble() * 2 - 1);
         int count = Bamboo ? 0 : (int)Math.Round(s.EffectiveKnotDensity * lengthMm / 1000 * 2 * Variation);
         knotX = new double[count]; knotAngle = new double[count]; knotSize = new double[count];
         for (int i = 0; i < count; i++) { knotX[i] = a.NextDouble() * lengthMm; knotAngle[i] = a.NextDouble() * 2 * Math.PI; knotSize[i] = 4 + 14 * a.NextDouble() * a.NextDouble(); }
@@ -69,6 +64,8 @@ public sealed class NaturalFeatures
     public double OffsetX { get; }
     public double OffsetY { get; }
     public double Tint { get; }
+    /// <summary>Exterior culm skin RGB from the bamboo species preset; unused for Log.</summary>
+    public double[] Skin { get; }
     public int KnotCount => knotX.Length;
     public (double X, double Angle, double Size) Knot(int i) => (knotX[i], knotAngle[i], knotSize[i]);
 
@@ -87,6 +84,46 @@ public sealed class NaturalFeatures
 
     // Independent deterministic streams: geometry never consumes appearance draws, nor the reverse.
     static Random Stream(int seed, int salt) => new(unchecked(seed * 16777619 ^ salt * 40503 ^ 0x5bd1e995));
+
+    /// <summary>
+    /// Place nodes from a size-independent RIN–RCIL logistic (Inoue / Tan family): Spacing sets mean segment count,
+    /// CulmInternodes windows the stock onto a full culm, PeakRin sets the longest-internode locus.
+    /// Variation 0 uses a basal window (typical structural pole); Variation &gt; 0 picks a seeded window and soft IL jitter.
+    /// </summary>
+    void PlaceBambooNodes(List<double> nodes, List<double> heights, Random g, BambooSpeciesPreset species, double lengthMm)
+    {
+        int segments = Math.Max(2, (int)Math.Round(lengthMm / Spacing));
+        if (segments - 1 > 100) throw new ArgumentException("Bamboo would have more than 100 nodes. Increase Node Spacing or shorten the culm.");
+        int full = Math.Max(segments, species.CulmInternodes);
+        // Near-full stocks use the whole culm curve; shorter poles are a contiguous RIN window.
+        int start = segments >= (int)(0.85 * full) ? 0
+            : Variation <= 0 ? 0                                                  // basal fragment (Lorenzo et al. lower sections)
+            : (int)(g.NextDouble() * (full - segments + 1));
+        double peak = Math.Clamp(species.PeakRin, 0.35, 0.65), sum = 0;
+        var weights = new double[segments];
+        for (int j = 0; j < segments; j++)
+        {
+            double w = Rcil((start + j + 1) / (double)full, peak) - Rcil((start + j) / (double)full, peak);
+            if (Variation > 0) w *= 1 + (g.NextDouble() * 2 - 1) * NodeJitter * Variation;
+            weights[j] = Math.Max(w, 1e-9); sum += weights[j];
+        }
+        double margin = Diaphragm / 2 + RidgeHalfWidth + 1, x = 0;
+        for (int j = 0; j < segments - 1; j++)
+        {
+            x += lengthMm * weights[j] / sum;
+            double rise = Variation <= 0 ? 0 : g.NextDouble() * 2 - 1;
+            if (x < margin || x > lengthMm - margin) continue;
+            nodes.Add(x); heights.Add(0.035 * (1 + 0.4 * Variation * rise));
+        }
+        if (nodes.Count == 0) throw new ArgumentException("Bamboo node spacing left no room for nodes. Increase Length or reduce Node Spacing.");
+    }
+
+    /// <summary>Normalised logistic RCIL at relative internode number u (inflection at peak). Cite: Inoue et al. 2012/2017; Tan et al. 2024 (logistic family; MBE omitted without published per-stage coeffs).</summary>
+    static double Rcil(double u, double peak)
+    {
+        double S(double x) => 1 / (1 + Math.Exp(-RcilSteepness * (x - peak)));
+        return (S(u) - S(0)) / (S(1) - S(0));
+    }
 
     double Sway(double x) => 0.6 * Math.Sin(2 * Math.PI * x / b1 + a1) + 0.4 * Math.Sin(2 * Math.PI * x / b2 + a2);
 

@@ -36,8 +36,9 @@ internal static class RhinoChecks
         Check("Atlas winding, UVs, bounded pages, cache and PNG", Atlas);
         Check("Settings archive round trip", Serialization);
         Check("Stock model archive round trip", StockChecks.ArchiveRoundTrip);
+        Check("Preview Force flow display mode archive round trip", StockChecks.PreviewDisplayModeArchive);
         Check("Natural Log and Bamboo geometry: solids, volume, cuts", NaturalChecks.Geometry);
-        if (integration) Check("Natural Stock component, archive, preview atlas and legacy wrap", NaturalChecks.Component);
+        if (integration) Check("Log Stock and Bamboo Stock components, archive, preview atlas and legacy wrap", NaturalChecks.Component);
         Check("Component GUIDs and item matching interface", Interface);
         Check("All timber presets solve and retain selection in archives", Presets);
         if (integration) Check("Material dropdowns, precedence, undo, migration and serialization", MaterialChecks.Interface);
@@ -245,7 +246,7 @@ internal static class RhinoChecks
         Assert(new PresetsComponent().Icon_24x24.Width == 24, "Missing Phosphor preset icon");
         var icons = new IGH_DocumentObject[] {
             component, new SettingsComponent(), new LayerComponent(), new BuildupComponent(), new CutComponent(), new PresetsComponent(),
-            new SettingsParam(), new LayerParam(), new NaturalStockComponent(), new MaterialStockComponent(), new StockParam() };
+            new SettingsParam(), new LayerParam(), new LogStockComponent(), new BambooStockComponent(), new MaterialStockComponent(), new StockParam() };
         var fingerprints = icons.Select(o => string.Join(",", Enumerable.Range(0,24*24).Select(i => o.Icon_24x24.GetPixel(i%24,i/24).ToArgb()))).ToArray();
         Assert(fingerprints.Distinct().Count()==icons.Length,"Every Woodie component and parameter needs a unique Phosphor icon");
     }

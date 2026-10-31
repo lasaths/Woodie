@@ -33,48 +33,45 @@ internal static class ExampleDefinitions
         AddCustomBuildup(doc);
         int libraryStart=doc.Objects.Count;
         ExampleCanvas.Text(doc,"04 / PRODUCT LIBRARY",40,1490,24,true);
-        ExampleCanvas.Text(doc,"Eight products × eleven geometry cases. Use each card's Show toggle to reveal it in the viewport.\nTurn one product on at a time for close inspection; the numbered demonstrations stay visible. Shared input wires appear when selected.",40,1550,12);
+        ExampleCanvas.Text(doc,"Eleven geometry cases on one Material. Change Product on Timber Material to switch appearance.\nShow starts off. Shared Settings / Show / Units wires appear when selected.",40,1550,12);
         using var referenceGuide=GeometryGallery.Bow(); double length=referenceGuide.GetLength();
         string[] labels={"01 Solid Brep","02 Extrusion","03 Surface","04 Closed mesh","05 Open mesh","06 Trimmed + hole","07 Bowed surface","08 Bowed Brep","09 Guided solid","10 Guided extrusion","11 Guided mesh"};
-        int productIndex=0;
-        foreach(var product in TimberProducts.MenuOrder) {
-            int start=doc.Objects.Count;
-            float x=40+(productIndex%4)*1450, y=1770+(productIndex/4)*1450;
-            double depth=new TimberSettings { Product=product }.VirtualDepthMm;
-            ExampleCanvas.Text(doc,product.Label(),x+20,y,20,true);
-            ExampleCanvas.Text(doc,$"{depth:0.#} mm · Clean/Pale · 1 mm/pixel",x+20,y+45,12);
-            ExampleCanvas.Text(doc,"Material",x+20,y+120,12);
-            var material=ExampleCanvas.Add(doc,new SettingsComponent { NickName="Library · "+product.Label() },x+110,y+210);
-            material.SelectProduct(product); material.SelectLook(TimberLook.CleanPale); material.SetPanelExpanded(false);
-            var resolution=(Param_Number)material.Params.Input[2]; resolution.PersistentData.Clear(); resolution.SetPersistentData(1d);
-            var show=ExampleCanvas.Add(doc,new GH_BooleanToggle { NickName="Show "+product.Label(),Value=false },x+20,y+340);
-            ExampleCanvas.Text(doc,"Source coordinates",x+20,y+420,12);
-            var units=ExampleCanvas.Add(doc,new Param_String { Name="Source coordinate units",NickName="Millimetres" },x+110,y+480); units.SetPersistentData("Millimetres");
-            var fixtures=GeometryGallery.Fixtures(depth); fixtures[0].Dispose();
-            fixtures[0]=new GeometryGallery.Fixture("01 Flat solid Brep (matched length)",new Box(Plane.WorldXY,new Interval(0,length),new Interval(0,500),new Interval(0,depth)).ToBrep(),"Straight");
-            try {
-                for(int i=0;i<fixtures.Count;i++) {
-                    var fixture=fixtures[i]; int slot=i==0?0:i==8?1:i<8?i+1:i;
-                    var move=Transform.Translation(4000+slot*2600,productIndex*1400,0); fixture.Geometry.Transform(move); fixture.Guide?.Transform(move);
-                    float cx=x+340+(i%3)*350, cy=y+150+(i/3)*270;
-                    ExampleCanvas.Text(doc,labels[i],cx,cy,12,true);
-                    IGH_GeometricGoo goo=fixture.Geometry switch {
-                        Extrusion e=>new GH_Extrusion((Extrusion)e.Duplicate()), Brep b=>new GH_Brep(b.DuplicateBrep()),
-                        Surface s=>new GH_Surface((Surface)s.Duplicate()), Mesh m=>new GH_Mesh(m.DuplicateMesh()), _=>throw new Exception("Unsupported gallery fixture")
-                    };
-                    var input=ExampleCanvas.Add(doc,new Param_Geometry { Name=product.Label()+" / "+fixture.Name,NickName="Geometry",Hidden=true },cx+30,cy+80); input.SetPersistentData(goo);
-                    var preview=ExampleCanvas.Add(doc,new PreviewComponent { NickName=product.Label()+" / "+fixture.Name },cx+230,cy+130);
-                    preview.Params.Input[0].AddSource(input); preview.Params.Input[1].AddSource(material.Params.Output[0]);
-                    preview.Params.Input[5].AddSource(show); preview.Params.Input[6].AddSource(units); ExampleCanvas.Shared(preview,1,5,6);
-                    if(fixture.Guide!=null) {
-                        var guide=ExampleCanvas.Add(doc,new Param_Curve { Name=product.Label()+" / "+fixture.Name+" guide",NickName="Guide",Hidden=true },cx+30,cy+185);
-                        guide.SetPersistentData(new GH_Curve(fixture.Guide.DuplicateCurve())); preview.Params.Input[4].AddSource(guide);
-                        ((Param_Plane)preview.Params.Input[3]).SetPersistentData(Plane.WorldXY);
-                    }
+        // One card: switching Product on Settings re-textures the same eleven cases (depths stay this product's virtual depth).
+        var product=TimberProduct.SolidTimber;
+        float x=40, y=1770;
+        double depth=new TimberSettings { Product=product }.VirtualDepthMm;
+        ExampleCanvas.Text(doc,"All engineered products",x+20,y,20,true);
+        ExampleCanvas.Text(doc,$"Start as {product.Label()} · {depth:0.#} mm · Clean/Pale · 1 mm/pixel · switch Product on Material",x+20,y+45,12);
+        ExampleCanvas.Text(doc,"Material",x+20,y+120,12);
+        var material=ExampleCanvas.Add(doc,new SettingsComponent { NickName="Library · Preview" },x+110,y+210);
+        material.SelectProduct(product); material.SelectLook(TimberLook.CleanPale); material.SetPanelExpanded(false);
+        var resolution=(Param_Number)material.Params.Input[2]; resolution.PersistentData.Clear(); resolution.SetPersistentData(1d);
+        var show=ExampleCanvas.Add(doc,new GH_BooleanToggle { NickName="Show library",Value=false },x+20,y+340);
+        ExampleCanvas.Text(doc,"Source coordinates",x+20,y+420,12);
+        var units=ExampleCanvas.Add(doc,new Param_String { Name="Source coordinate units",NickName="Millimetres" },x+110,y+480); units.SetPersistentData("Millimetres");
+        var fixtures=GeometryGallery.Fixtures(depth); fixtures[0].Dispose();
+        fixtures[0]=new GeometryGallery.Fixture("01 Flat solid Brep (matched length)",new Box(Plane.WorldXY,new Interval(0,length),new Interval(0,500),new Interval(0,depth)).ToBrep(),"Straight");
+        try {
+            for(int i=0;i<fixtures.Count;i++) {
+                var fixture=fixtures[i]; int slot=i==0?0:i==8?1:i<8?i+1:i;
+                var move=Transform.Translation(4000+slot*2600,0,0); fixture.Geometry.Transform(move); fixture.Guide?.Transform(move);
+                float cx=x+340+(i%3)*350, cy=y+150+(i/3)*270;
+                ExampleCanvas.Text(doc,labels[i],cx,cy,12,true);
+                IGH_GeometricGoo goo=fixture.Geometry switch {
+                    Extrusion e=>new GH_Extrusion((Extrusion)e.Duplicate()), Brep b=>new GH_Brep(b.DuplicateBrep()),
+                    Surface s=>new GH_Surface((Surface)s.Duplicate()), Mesh m=>new GH_Mesh(m.DuplicateMesh()), _=>throw new Exception("Unsupported gallery fixture")
+                };
+                var input=ExampleCanvas.Add(doc,new Param_Geometry { Name=product.Label()+" / "+fixture.Name,NickName="Geometry",Hidden=true },cx+30,cy+80); input.SetPersistentData(goo);
+                var preview=ExampleCanvas.Add(doc,new PreviewComponent { NickName=product.Label()+" / "+fixture.Name },cx+230,cy+130);
+                preview.Params.Input[0].AddSource(input); preview.Params.Input[1].AddSource(material.Params.Output[0]);
+                preview.Params.Input[5].AddSource(show); preview.Params.Input[6].AddSource(units); ExampleCanvas.Shared(preview,1,5,6);
+                if(fixture.Guide!=null) {
+                    var guide=ExampleCanvas.Add(doc,new Param_Curve { Name=product.Label()+" / "+fixture.Name+" guide",NickName="Guide",Hidden=true },cx+30,cy+185);
+                    guide.SetPersistentData(new GH_Curve(fixture.Guide.DuplicateCurve())); preview.Params.Input[4].AddSource(guide);
+                    ((Param_Plane)preview.Params.Input[3]).SetPersistentData(Plane.WorldXY);
                 }
-            } finally { foreach(var fixture in fixtures) fixture.Dispose(); }
-            ExampleCanvas.Group(doc,"Library / "+product.Label(),start,ExampleCanvas.LibraryColour); productIndex++;
-        }
+            }
+        } finally { foreach(var fixture in fixtures) fixture.Dispose(); }
         ExampleCanvas.Group(doc,"04 / Product library",libraryStart,ExampleCanvas.LibraryColour);
         var archive=new GH_Archive(); Assert(archive.AppendObject(doc,"Definition"),"Example serialization failed");
         string path=Path.Combine(directory,"Timber-preview.ghx"); Assert(archive.WriteToFile(path,true,false),"Could not write combined example");
@@ -92,25 +89,24 @@ internal static class ExampleDefinitions
             rhino.ModelUnitSystem=units; double toMm=RhinoMath.UnitScale(units,UnitSystem.Millimeters); rhino.ModelAbsoluteTolerance=.001/toMm;
             using var doc=new GH_Document { Enabled=true }; var archive=new GH_Archive();
             Assert(archive.ReadFromFile(path) && archive.ExtractObject(doc,"Definition"),"Combined example did not reopen");
-            Assert(LibraryMaterials(doc).Count()==8,"Library needs eight materials");
+            Assert(LibraryMaterials(doc).Count()==1,"Library needs one shared material");
             Assert(!doc.Objects.OfType<PresetsComponent>().Any(),"Legacy presets are not release examples");
-            Assert(doc.Objects.OfType<GH_Scribble>().Count()>=100,"Example needs native Scribble headings and case labels");
-            Assert(doc.Objects.OfType<GH_Group>().Count()>=12,"Example sections and product cards must be grouped");
-            var inputs=doc.Objects.OfType<Param_Geometry>().Where(p=>TimberProducts.MenuOrder.Any(product=>p.Name.StartsWith(product.Label()+" / "))).ToArray();
-            Assert(inputs.Length==88 && inputs.SelectMany(p=>p.PersistentData.AllData(true)).All(g=>g.IsValid),"Missing or invalid library geometry");
-            var previews=doc.Objects.OfType<PreviewComponent>().Where(IsLibrary).ToArray(); Assert(previews.Length==88,"Library needs 88 previews");
+            Assert(doc.Objects.OfType<GH_Scribble>().Count()>=20,"Example needs native Scribble headings and case labels");
+            Assert(doc.Objects.OfType<GH_Group>().Count()>=6,"Example sections must be grouped");
+            var libraryProduct=LibraryMaterials(doc).Single().SelectedProduct;
+            var inputs=doc.Objects.OfType<Param_Geometry>().Where(p=>p.Name.StartsWith(libraryProduct.Label()+" / ")).ToArray();
+            Assert(inputs.Length==11 && inputs.SelectMany(p=>p.PersistentData.AllData(true)).All(g=>g.IsValid),"Missing or invalid library geometry");
+            var previews=doc.Objects.OfType<PreviewComponent>().Where(IsLibrary).ToArray(); Assert(previews.Length==11,"Library needs eleven previews");
             var toggles=doc.Objects.OfType<GH_BooleanToggle>().Where(t=>t.NickName.StartsWith("Show ")).ToArray();
-            Assert(toggles.Length==8 && toggles.All(t=>!t.Value),"Product library must start off to keep the viewport uncluttered");
-            Assert(doc.Objects.OfType<PreviewComponent>().Count(p=>!IsLibrary(p) && !p.Hidden)==4,"Initial view needs the four visible demonstrations (bamboo culm starts hidden)");
+            Assert(toggles.Length==1 && toggles.All(t=>!t.Value),"Product library must start off to keep the viewport uncluttered");
+            Assert(doc.Objects.OfType<PreviewComponent>().Count(p=>!IsLibrary(p) && !p.Hidden)==6,"Initial view needs six visible demonstrations including log blanks, tower and bamboo section");
             Assert(doc.Objects.OfType<SettingsComponent>().All(m=>!m.PanelExpanded),"Example material panels should start compact");
             foreach(var preview in doc.Objects.OfType<PreviewComponent>()) preview.Hidden=true;
             foreach(var toggle in toggles) { toggle.Value=true; toggle.ExpireSolution(false); }
-            foreach(var product in TimberProducts.MenuOrder) {
-                var flat=inputs.Single(p=>p.Name==product.Label()+" / 01 Flat solid Brep (matched length)");
-                var bowed=inputs.Single(p=>p.Name==product.Label()+" / 09 Bowed solid Brep - guide");
-                var a=((GH_Brep)flat.PersistentData.AllData(true).Single()).Value; var b=((GH_Brep)bowed.PersistentData.AllData(true).Single()).Value;
-                using var guide=GeometryGallery.Bow(); Near(a.GetBoundingBox(true).Diagonal.X,guide.GetLength(),.02); Near(a.GetVolume(),b.GetVolume(),Math.Max(1,a.GetVolume()*.00001));
-            }
+            var flat=inputs.Single(p=>p.Name==libraryProduct.Label()+" / 01 Flat solid Brep (matched length)");
+            var bowed=inputs.Single(p=>p.Name==libraryProduct.Label()+" / 09 Bowed solid Brep - guide");
+            var a=((GH_Brep)flat.PersistentData.AllData(true).Single()).Value; var b=((GH_Brep)bowed.PersistentData.AllData(true).Single()).Value;
+            using var guide=GeometryGallery.Bow(); Near(a.GetBoundingBox(true).Diagonal.X,guide.GetLength(),.02); Near(a.GetVolume(),b.GetVolume(),Math.Max(1,a.GetVolume()*.00001));
             doc.NewSolution(false);
             foreach(var c in doc.Objects.OfType<GH_Component>()) Assert(!c.RuntimeMessages(GH_RuntimeMessageLevel.Error).Any(),c.Name+": "+string.Join(";",c.RuntimeMessages(GH_RuntimeMessageLevel.Error)));
             foreach(var preview in previews) {
@@ -122,7 +118,14 @@ internal static class ExampleDefinitions
                 else for(int axis=0;axis<3;axis++) Near(actual[axis],dimensions[preview.NickName][axis],.7);
                 foreach(var mesh in preview.Params.Output[0].VolatileData.AllData(true).OfType<GH_Mesh>()) Assert(mesh.Value.IsValid && mesh.Value.TextureCoordinates.Count==mesh.Value.Vertices.Count,"Invalid library mesh/UVs");
             }
-            Console.WriteLine("  Combined library: 88 cases solve in "+units);
+            // Switching Product on the shared material must still texture every case.
+            var shared=LibraryMaterials(doc).Single();
+            foreach(var next in TimberProducts.MenuOrder) {
+                shared.SelectProduct(next); shared.ExpireSolution(false); doc.NewSolution(false);
+                Assert(!shared.RuntimeMessages(GH_RuntimeMessageLevel.Error).Any(),"Library product switch failed: "+next);
+                Assert(previews.All(p=>p.Params.Output[0].VolatileDataCount>0),"Library empty after switching to "+next);
+            }
+            Console.WriteLine("  Combined library: 11 cases × 8 products solve in "+units);
         } } finally { rhino.ModelUnitSystem=previous; rhino.ModelAbsoluteTolerance=tolerance; }
     }
     internal static void SurfaceResolution()
@@ -132,14 +135,14 @@ internal static class ExampleDefinitions
         var archive = new GH_Archive();
         string path = Path.GetFullPath(Path.Combine(Output, "../../examples/Timber-preview.ghx"));
         Assert(archive.ReadFromFile(path) && archive.ExtractObject(doc, "Definition"), "Gallery did not reopen");
-        Assert(LibraryMaterials(doc).Count() == 8, "Gallery needs all eight materials");
+        var material = LibraryMaterials(doc).Single();
+        double resolution = ((Param_Number)material.Params.Input[2]).PersistentData.AllData(true).OfType<GH_Number>().Single().Value;
+        var source = doc.Objects.OfType<Param_Geometry>().Single(p => p.Name.EndsWith(" / 06 Trimmed surface with hole") && IsLibraryName(p.Name));
+        var geometry = (GeometryBase)source.PersistentData.AllData(true).Single().ScriptVariable();
         var coarse = new List<string>();
-        foreach (var material in LibraryMaterials(doc)) {
-            double resolution = ((Param_Number)material.Params.Input[2]).PersistentData.AllData(true).OfType<GH_Number>().Single().Value;
-            var settings = new TimberSettings { Product = material.SelectedProduct, Look = material.SelectedLook, Resolution = resolution };
-            var source = doc.Objects.OfType<Param_Geometry>().Single(p => p.Name == settings.Product.Label() + " / 06 Trimmed surface with hole");
-            var geometry = (GeometryBase)source.PersistentData.AllData(true).Single().ScriptVariable();
-            using var part = PreparedPart.Create(geometry, settings, 1, .001);
+        foreach (var product in TimberProducts.MenuOrder) {
+            var settings = new TimberSettings { Product = product, Look = material.SelectedLook, Resolution = resolution };
+            using var part = PreparedPart.Create(geometry.Duplicate(), settings, 1, .001);
             var pages = TextureAtlas.Prepare(part, settings);
             try {
                 double pitch = pages.SelectMany(p => p.Tiles).Max(t => t.A.DistanceTo(t.B) / t.Bx);
@@ -149,6 +152,7 @@ internal static class ExampleDefinitions
         }
         Assert(coarse.Count == 0, "Gallery surface textures exceed 1 mm/pixel: " + string.Join(", ", coarse));
     }
+    static bool IsLibraryName(string name) => TimberProducts.MenuOrder.Any(product => name.StartsWith(product.Label() + " / "));
 
     static void AddCustomBuildup(GH_Document doc)
     {

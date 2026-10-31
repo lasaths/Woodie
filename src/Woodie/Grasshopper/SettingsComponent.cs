@@ -10,7 +10,7 @@ namespace Woodie.Grasshopper;
 public sealed class SettingsComponent : GH_Component
 {
     public SettingsComponent() : base("Timber Material", "TimberMaterial",
-        "Select product, look, seed and resolution. Open the arrow for controls. " + ResearchCredit.Timber,
+        "Select product, look, seed and resolution. Open the panel arrow for more controls. " + ResearchCredit.Timber,
         "Display", "Woodie") { }
     public override Guid ComponentGuid => new("7a74fc91-6ed6-447b-adb6-2e2fcd425383");
     protected override Bitmap Icon => Icons.Sliders;

@@ -10,6 +10,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { applySvgOptions, svgToPngBuffer } = await import(pathToFileURL(path.join(checkout, 'dist/icon-service.js')));
 for (const [name, target, size] of [
   ['tree-evergreen', 'src/Woodie/Resources/tree-evergreen-bold.png', 24],
+  ['plant', 'src/Woodie/Resources/plant-bold.png', 24],
   ['sliders-horizontal', 'src/Woodie/Resources/sliders-horizontal-bold.png', 24],
   ['stack', 'src/Woodie/Resources/stack-bold.png', 24],
   ['rectangle', 'src/Woodie/Resources/rectangle-bold.png', 24],

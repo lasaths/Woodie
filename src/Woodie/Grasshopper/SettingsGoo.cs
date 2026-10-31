@@ -3,6 +3,7 @@ using GH_IO.Serialization;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Types;
 using Woodie.Appearance;
+using Woodie.Stock;
 
 namespace Woodie.Grasshopper;
 
@@ -25,7 +26,8 @@ public sealed class SettingsGoo : GH_Goo<TimberSettings>
     {
         writer.SetBoolean("HasValue", Value != null);
         if (Value == null) return true;
-        writer.SetInt32("Version", 3); writer.SetInt32("Look", (int)Value.Look); writer.SetInt32("Product", (int)Value.Product); writer.SetInt32("Seed", Value.Seed);
+        writer.SetInt32("Version", 4); writer.SetInt32("Look", (int)Value.Look); writer.SetInt32("Product", (int)Value.Product); writer.SetInt32("Seed", Value.Seed);
+        writer.SetInt32("Species", (int)Value.Species);
         writer.SetBoolean("FitToPart", Value.FitToPart);
         writer.SetInt32("LayerCount", Value.Layers?.Count ?? 0);
         if (Value.Layers != null) for (int i = 0; i < Value.Layers.Count; i++) LayerArchive.Write(writer.CreateChunk("Layer", i), Value.Layers[i]);
@@ -39,9 +41,10 @@ public sealed class SettingsGoo : GH_Goo<TimberSettings>
     {
         Value = null;
         if (!reader.ItemExists("HasValue") || !reader.GetBoolean("HasValue")) return true;
-        if (!reader.ItemExists("Version") || (reader.GetInt32("Version") < 1 || reader.GetInt32("Version") > 3)) return false;
+        if (!reader.ItemExists("Version") || (reader.GetInt32("Version") < 1 || reader.GetInt32("Version") > 4)) return false;
         var value = new TimberSettings { Product = (TimberProduct)reader.GetInt32("Product"), Seed = reader.GetInt32("Seed") };
         if (reader.ItemExists("Look")) value.Look = (TimberLook)reader.GetInt32("Look");
+        if (reader.ItemExists("Species")) value.Species = (BambooSpeciesId)reader.GetInt32("Species");
         if (reader.GetInt32("Version") >= 3) {
             value.FitToPart = reader.GetBoolean("FitToPart");
             int count = reader.GetInt32("LayerCount");

@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Windows.Forms;
 using Grasshopper;
 using Grasshopper.GUI;
 using Grasshopper.GUI.Canvas;
@@ -23,7 +24,6 @@ internal sealed class MaterialAttributes : GH_ComponentAttributes
     static readonly Color InkMuted = Color.FromArgb(100, 100, 94);
     static readonly Color LabelInk = Color.FromArgb(72, 70, 62);
 
-    static readonly System.Reflection.PropertyInfo button = typeof(GH_CanvasMouseEvent).GetProperty("Button");
     readonly SettingsComponent material;
     RectangleF panel, product, look, advanced, disclosure;
     readonly List<RectangleF> options = new();
@@ -61,6 +61,8 @@ internal sealed class MaterialAttributes : GH_ComponentAttributes
     protected override void Render(GH_Canvas canvas, Graphics graphics, GH_CanvasChannel channel)
     {
         base.Render(canvas, graphics, channel);
+        // base.Render may clip Bounds through viewport.IsVisible; keep the full control layout for picking.
+        Bounds = UnionControls(Bounds);
         if (channel != GH_CanvasChannel.Objects) return;
         using (var fill = new SolidBrush(PanelFill))
         using (var outline = new Pen(Selected ? Accent : PanelLine))
@@ -122,11 +124,19 @@ internal sealed class MaterialAttributes : GH_ComponentAttributes
         if (open != 0) { open = 0; ExpireLayout(); return true; }
         return false;
     }
+    // GH_ComponentAttributes.IsPickRegion follows Bounds; after Render those may be viewport-clipped.
+    public override bool IsPickRegion(PointF point) =>
+        base.IsPickRegion(point) || disclosure.Contains(point) || (!panel.IsEmpty && panel.Contains(point));
     public override GH_ObjectResponse RespondToMouseDown(GH_Canvas sender, GH_CanvasMouseEvent e)
     {
-        // Read the host button enum without adding a Windows Forms target/runtime dependency.
-        if (button.GetValue(e)?.ToString() == "Left" && Click(e.CanvasLocation)) { Instances.RedrawCanvas(); return GH_ObjectResponse.Handled; }
+        if (e.Button == MouseButtons.Left && Click(e.CanvasLocation)) { Instances.RedrawCanvas(); return GH_ObjectResponse.Handled; }
         return base.RespondToMouseDown(sender, e);
+    }
+    RectangleF UnionControls(RectangleF box)
+    {
+        if (!disclosure.IsEmpty) box = RectangleF.Union(box, disclosure);
+        if (!panel.IsEmpty) box = RectangleF.Union(box, panel);
+        return box;
     }
     internal RectangleF DisclosureBounds => disclosure;
     internal RectangleF ProductBounds => product;

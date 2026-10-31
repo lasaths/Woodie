@@ -90,6 +90,7 @@ internal static class MaterialChecks
         var ui = (MaterialAttributes)c.Attributes; c.Attributes.PerformLayout();
         static PointF Centre(RectangleF r) => new(r.X + r.Width / 2, r.Y + r.Height / 2);
         Assert(ui.Click(Centre(ui.ProductBounds)), "Dropdown hit failed"); ui.PerformLayout(); Assert(ui.OptionBounds.Count == 8, "Missing product choices");
+        Assert(ui.IsPickRegion(Centre(ui.OptionBounds[5])), "Open product list is outside the pick region");
         ui.Click(Centre(ui.OptionBounds[5])); ui.PerformLayout(); Assert(c.SelectedProduct == TimberProduct.Plywood, "Product dropdown selection failed");
         ui.Click(Centre(ui.LookBounds)); ui.PerformLayout(); ui.Click(Centre(ui.OptionBounds[1])); ui.PerformLayout();
         doc.NewSolution(false); Assert(Result(c).Value.Product == TimberProduct.Plywood && Result(c).Value.Look == TimberLook.CleanPale, "Dropdown solve");

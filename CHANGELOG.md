@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- Split Natural Stock into **Log Stock** (kept GUID `5d7f3c1e-…`) and **Bamboo Stock** (GUID `d65cfaa6-…`). Bamboo Species: Moso / Guadua / Asper with cured skins. Old Natural Stock nodes reopen as Log Stock; replace bamboo culms with Bamboo Stock.
+- Bamboo Stock: on-canvas Species list (name · Ø · wall + skin chip + summary). Matches Timber Material light chrome. Species wire still overrides the panel.
+
+## 0.1.5 — 2026-10-27
+
+- Align the Natural Stock bamboo culm with the other demos. Ship a vertical section Preview only.
+- Replace the lone tower card with a same-log story. Exploded blanks sit in a log envelope. Placement lines run to each tower slat. A Larsson-style knot-influence end-face mesh uses shared seed 3.
+- Collapse the eight product-library cards into one Material, one Show toggle, and eleven cases. Switch Product on Timber Material.
+- Expose `TimberPanel.KnotInfluence` / `IMaterialModel.KnotInfluence` for volumetric knot weight sampling.
+- Timber Preview right-click modes on engineered timber: **Textured**, **Gradient** (dense influence false-colour), **Force flow** (same influence shell plus coloured streamlines). Bake stays textured. Natural stock stays Textured.
+- Same-log tower: each blank and slat carries log Stock Geometry plus fibre and base plane, so cylinder end-caps do not steal the fibre. Use 1 mm/pixel. Blanks and tower start Textured so cut grain reads. The knot-influence disk uses the log-sized field.
+- Texture cache namespace is `woodie-10` after natural tint and mesh changes.
+
 ## 0.1.4 — 2026-10-26
 
 - Add a shared stock framework (`WoodieStock`, `StockDefinition`, `Construction`, `MaterialPiece`, `SourceSpecimen`, `IMaterialModel`) so cutting keeps the original material definition.

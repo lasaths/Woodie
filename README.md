@@ -119,7 +119,7 @@ Open the single **[Timber-preview.ghx](examples/Timber-preview.ghx)** definition
 1. **Cut through the stock:** one rectangular piece with position/angle sliders and a textured interior cap.
 2. **Follow a knot:** a stepped cutaway with a **Knot section (%)** slider and capped exposed face. It reveals the same automatic knot field through its depth.
 3. **Build your own stack:** longitudinal/cross layers, a live schedule and a section diagram.
-4. **Product library:** all eight products × eleven geometry cases, with a Show toggle on each product card.
+4. **Product library:** eleven geometry cases on one Material; change Product to switch appearance.
 
 The three demonstrations are visible at first. Library previews start off to keep the viewport clean. Material controls start collapsed. All geometry is embedded and source units are declared. The definition works in millimetre, metre and inch Rhino documents. Faces use **1 mm/pixel**. See the [example guide](examples/README.md). For the published 0.1.2 plugin, use its [matching gallery](https://raw.githubusercontent.com/lasaths/Woodie/v0.1.2/examples/Timber-preview.ghx).
 

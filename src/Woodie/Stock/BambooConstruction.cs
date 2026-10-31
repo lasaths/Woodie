@@ -168,6 +168,9 @@ public static class BambooConstruction
         public int Sample(double x, double y, double z) =>
             x - xLo < 1e-3 || xHi - x < 1e-3 ? Glue(inner.Sample(x, y, z, 1, 0, 0), y, z) : Glue(inner.Sample(x, y, z), y, z);
         public int Sample(double x, double y, double z, double nx, double ny, double nz) => Glue(inner.Sample(x, y, z, nx, ny, nz), y, z);
+        public double KnotInfluence(double x, double y, double z) => inner.KnotInfluence(x, y, z);
+        public bool TryFibreDirection(double x, double y, double z, out double dx, out double dy, out double dz) =>
+            inner.TryFibreDirection(x, y, z, out dx, out dy, out dz);
 
         int Glue(int argb, double sy, double sz)
         {

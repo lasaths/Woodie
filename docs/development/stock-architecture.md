@@ -65,12 +65,12 @@ Existing engineered timber products use one identity `MaterialPiece` whose `IMat
 
 ## Natural stock
 
-`Natural Stock` (Log / Moso Bamboo) turns a base→tip Line into a native Brep plus a `WoodieStock`. `TimberSettings` carry Diameter, Taper, Bark, Wall, Node Spacing and Variation, so `StockDefinition.FromTimber` dispatches to `StockDefinition.FromNatural` for `Log`/`Bamboo` and Preview, bake and atlas paths need no special case. `FromNatural` builds one `MaterialPiece` whose `SourceSpecimen` holds immutable `NaturalFeatures`, resolved once from the seed with separate geometry and appearance streams; Variation 0 gives nominal taper and nodes only.
+`Log Stock` and `Bamboo Stock` each turn a base→tip Line into a native Brep plus a `WoodieStock`. They share `NaturalFeatures` / `NaturalGeometry`; Grasshopper faces stay separate (wood stem vs reed culm). `TimberSettings` carry Diameter, Taper, Bark, Wall, Node Spacing, Variation and bamboo `Species`, so `StockDefinition.FromTimber` dispatches to `StockDefinition.FromNatural` for `Log`/`Bamboo` and Preview, bake and atlas paths need no special case. `FromNatural` builds one `MaterialPiece` whose `SourceSpecimen` holds immutable `NaturalFeatures`, resolved once from the seed with separate geometry and appearance streams; Variation 0 gives nominal taper and nodes only. Log Stock keeps the former Natural Stock GUID; Bamboo Stock is a new component.
 
 - Geometry and appearance read the same resolved node stations (bamboo ridges, diaphragms and node fibre/colour bands). Node and colour behaviour are appearance adaptations, not measured anatomy.
 - Hollow stock cuts shell by shell (`Brep.Trim` drops closed void shells) with one annular cap.
 - Natural meshes use a 5° grid angle (`TimberSettings.GridAngle`) to stay inside triangle budgets.
-- `Product=Log/Bamboo` on a user Brep via Material Stock wraps the stock axis-aligned bounds with cylindrical sampling; Natural Stock is the path that generates geometry.
+- `Product=Log/Bamboo` on a user Brep via Material Stock wraps the stock axis-aligned bounds with cylindrical sampling; Log/Bamboo Stock are the paths that generate geometry.
 - `Log`/`Bamboo` are appended to `TimberProduct` but not to `MenuOrder`, so engineered-product tests and hashes are unchanged.
 
 ## Engineered bamboo

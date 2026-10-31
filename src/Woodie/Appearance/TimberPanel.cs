@@ -68,6 +68,126 @@ public class TimberPanel : IMaterialModel {
   public int Sample(double x, double y, double z) => Col(x, y, z);
   public int Sample(double x, double y, double z, double nx, double ny, double nz) => Col(x, y, z, nx, ny, nz);
 
+  /// <summary>Soft volumetric knot proximity in 0..1 (halo around knots; not the hard body mask).</summary>
+  public double KnotInfluence(double x, double y, double z) => SampleGrowth(x, y, z)?.Influence ?? 0;
+
+  /// <summary>Unit fibre direction in material millimetres (stem along the board, diverted around knots).</summary>
+  public bool TryFibreDirection(double x, double y, double z, out double dx, out double dy, out double dz)
+  {
+    dx = dy = dz = 0;
+    if (!Locate(x, y, z, out var ly, out var lm, out var s, out double u, out double v, out double w, out bool ax)) return false;
+    if (ly.veneer) { if (ax) { dx = 1; dy = 0; } else { dx = 0; dy = 1; } dz = 0; return true; }
+    double dv = v - s.pv - s.tv * (u - s.u0), dw = w - s.pw - s.tw * (u - s.u0);
+    double r = Math.Sqrt(dv * dv + dw * dw), ang = Math.Atan2(dw, dv);
+    double fu = 1, fv = 0, fw = 0;
+    for (int k = 0; k < s.ku.Length; k++) {
+      double du = u - (s.ku[k] + 0.35 * r);
+      double dt = Math.IEEERemainder(ang - s.ka[k], Math.PI * 2) * r;
+      double kr = s.ks[k] * Math.Min(14, 2 + 0.03 * r), d = Math.Sqrt(du * du + dt * dt);
+      if (d > 12 * kr) continue;
+      // Soft wrap around the knot strand: divert in the cross-section, stronger beside the knot body.
+      double soft = Math.Exp(-d / Math.Max(kr, 1e-6));
+      double beside = dt / Math.Max(d, 1e-6);
+      double ca = Math.Cos(s.ka[k]), sa = Math.Sin(s.ka[k]);
+      fv += soft * beside * (-sa) * 2.2;
+      fw += soft * beside * ca * 2.2;
+      fu -= soft * 0.25;
+    }
+    double len = Math.Sqrt(fu * fu + fv * fv + fw * fw); if (len < 1e-9) return false;
+    fu /= len; fv /= len; fw /= len;
+    // (u,v,w) → material (x,y,z); v is across the lamella in the board plane.
+    if (ax) { dx = fu; dy = fv; dz = fw; }
+    else { dx = fv; dy = fu; dz = fw; }
+    return true;
+  }
+
+  /// <summary>Fibre streamlines in material millimetres, clipped to an axis-aligned box (cut geometry, not full stock).</summary>
+  public List<List<(double X, double Y, double Z)>> TraceFibreFlow(double x0, double x1, double y0, double y1, double z0, double z1, int across = 10, int through = 8, double stepMm = 8)
+  {
+    var flow = new List<List<(double X, double Y, double Z)>>();
+    if (layers == null || layers.Count == 0 || !(stepMm > 0)) return flow;
+    if (x1 - x0 < stepMm || y1 - y0 < 1 || z1 - z0 < 1) return flow;
+    across = Math.Max(2, across); through = Math.Max(2, through);
+    int maxSteps = Math.Max(8, (int)((x1 - x0) / stepMm) + 4);
+    for (int iy = 0; iy < across; iy++) for (int iz = 0; iz < through; iz++) {
+      double y = y0 + (iy + 0.5) * (y1 - y0) / across, z = z0 + (iz + 0.5) * (z1 - z0) / through;
+      foreach (double sign in new[] { 1.0, -1.0 }) {
+        var poly = new List<(double X, double Y, double Z)>();
+        double x = sign > 0 ? x0 + stepMm * 0.5 : x1 - stepMm * 0.5;
+        for (int n = 0; n < maxSteps; n++) {
+          if (x < x0 || x > x1 || y < y0 || y > y1 || z < z0 || z > z1) break;
+          poly.Add((x, y, z));
+          if (!TryFibreDirection(x, y, z, out double dx, out double dy, out double dz)) break;
+          x += sign * dx * stepMm; y += sign * dy * stepMm; z += sign * dz * stepMm;
+        }
+        if (poly.Count >= 3) flow.Add(poly);
+      }
+    }
+    return flow;
+  }
+
+  /// <summary>Stem/knot skeleton plus board-domain fibre seeds (legacy helpers / checks).</summary>
+  public (List<List<(double X, double Y, double Z)>> Skeleton, List<List<(double X, double Y, double Z)>> Flow) TraceFibreStrands(int across = 7, int through = 5, double stepMm = 12)
+  {
+    var skeleton = new List<List<(double X, double Y, double Z)>>();
+    var flow = TraceFibreFlow(0, L, 0, W, 0, H, across, through, stepMm);
+    if (layers == null || layers.Count == 0 || !(L > stepMm && W > 1 && H > 1)) return (skeleton, flow);
+    for (int li = 0; li < layers.Count; li++) {
+      var ly = layers[li]; bool ax = ly.alongX; double midW = 0.5 * (ly.z0 + ly.z1);
+      foreach (var lm in lams[li]) {
+        double midC = 0.5 * (lm.c0 + lm.c1);
+        foreach (var s in lm.segs) {
+          var pith = new List<(double X, double Y, double Z)>();
+          for (double u = s.u0; u <= s.u1; u += stepMm) pith.Add(FromLocal(ax, u, midC + s.pv, midW + s.pw));
+          pith.Add(FromLocal(ax, s.u1, midC + s.pv, midW + s.pw));
+          if (pith.Count >= 2) skeleton.Add(pith);
+          for (int k = 0; k < s.ku.Length; k++) {
+            var knot = new List<(double X, double Y, double Z)>();
+            double ca = Math.Cos(s.ka[k]), sa = Math.Sin(s.ka[k]);
+            double reach = Math.Min(180, 40 + 80 * s.ks[k]);
+            for (double rad = 0; rad <= reach; rad += stepMm * 0.75) {
+              double u = s.ku[k] + 0.35 * rad;
+              knot.Add(FromLocal(ax, u, midC + s.pv + rad * ca, midW + s.pw + rad * sa));
+            }
+            if (knot.Count >= 2) skeleton.Add(knot);
+          }
+        }
+      }
+    }
+    return (skeleton, flow);
+  }
+
+  static (double X, double Y, double Z) FromLocal(bool alongX, double u, double c, double w) => alongX ? (u, c, w) : (c, u, w);
+
+  bool Locate(double x, double y, double z, out TimberLayer ly, out Lam lm, out Seg s, out double u, out double v, out double w, out bool ax)
+  {
+    ly = default; lm = null; s = null; u = v = w = 0; ax = true;
+    if (layers == null || layers.Count == 0) return false;
+    int li = 0; while (li < layers.Count - 1 && z >= layers[li].z1) li++;
+    ly = layers[li]; ax = ly.alongX; double c = ax ? y : x; u = ax ? x : y;
+    var lay = lams[li]; if (lay.Count == 0) return false;
+    int j = 0; while (j < lay.Count - 1 && c >= lay[j].c1) j++; lm = lay[j];
+    v = c - 0.5 * (lm.c0 + lm.c1); w = z - 0.5 * (ly.z0 + ly.z1);
+    double fc = ly.fingersThroughDepth ? z : c;
+    double tri = ly.fingers ? Math.Abs(((fc / 6.0) % 1.0 + 1) % 1.0 - 0.5) * 2 - 0.5 : 0, uj = u - tri * 20;
+    if (ly.veneer) uj = u - (w / 1.5) * 12;
+    if (lm.segs.Count == 0) return false;
+    int si = 0; while (si < lm.segs.Count - 1 && uj >= lm.segs[si].u1) si++; s = lm.segs[si];
+    return true;
+  }
+
+  GrowthSample? SampleGrowth(double x, double y, double z)
+  {
+    if (!Locate(x, y, z, out var ly, out var lm, out var s, out double u, out double v, out double w, out _)) return null;
+    if (ly.veneer) {
+      double ox = s.seed % 97;
+      double r = s.R0 + w + 2 * RS * Perlin(u * 0.0002, v * 0.01, ox) + 1.0 * RS * Perlin(u * 0.0005, v * 0.04, ox + 5) + u * 0.0015;
+      return Growth(s, u, r, v / s.R0, v, w);
+    }
+    double dv = v - s.pv - s.tv * (u - s.u0), dw = w - s.pw - s.tw * (u - s.u0);
+    return Growth(s, u, Math.Sqrt(dv * dv + dw * dw), Math.Atan2(dw, dv), v, w);
+  }
+
   /// <summary>Sample using a geometric cut normal in panel material coordinates (not a lighting normal).</summary>
   /// <remarks>Normal length and winding do not affect colour. Invalid/zero normals use the position-only fallback.</remarks>
   public int Col(double x, double y, double z, double nx, double ny, double nz) {
@@ -126,28 +246,30 @@ public class TimberPanel : IMaterialModel {
   // Growth is volumetric and independent of the cut. Colour synthesis consumes the
   // same phase on every face, with orientation affecting contrast/detail only.
   readonly struct GrowthSample {
-    public readonly double Phase, Earlywood, Fibre, Knot, KnotRing;
-    public GrowthSample(double phase, double earlywood, double fibre, double knot, double knotRing) {
-      Phase = phase; Earlywood = earlywood; Fibre = fibre; Knot = knot; KnotRing = knotRing;
+    public readonly double Phase, Earlywood, Fibre, Knot, KnotRing, Influence;
+    public GrowthSample(double phase, double earlywood, double fibre, double knot, double knotRing, double influence) {
+      Phase = phase; Earlywood = earlywood; Fibre = fibre; Knot = knot; KnotRing = knotRing; Influence = influence;
     }
   }
 
   GrowthSample Growth(Seg s, double u, double r, double ang, double v, double w) {
     double ox = s.seed % 101, ca = Math.Cos(ang), sa = Math.Sin(ang);
     double n = (Perlin(u * 0.004, ca * 1.2 + ox, sa * 1.2) * 4 + Perlin(u * 0.01, ca * 4 + ox, sa * 4 + r * 0.02) * 1.5) * Pal.NoiseK;
-    double kn = 0, kring = 0;
+    double kn = 0, kring = 0, influence = 0;
     for (int k = 0; k < s.ku.Length; k++) {
       double du = u - (s.ku[k] + 0.35 * r);
       if (Math.Abs(du) > 168 * s.ks[k]) continue;   // speed: d > 12 kr (kr <= 14 ks) -> knot influence < 1.5 kr e^-11, invisible
       double dt = Math.Abs(Math.IEEERemainder(ang - s.ka[k], Math.PI * 2)) * r;
       double kr = s.ks[k] * Math.Min(14, 2 + 0.03 * r), d = Math.Sqrt(du * du + dt * dt);
+      // Soft influence area: Exp falloff around each knot centre (wider than the hard body).
+      influence = Math.Max(influence, Math.Exp(-d / Math.Max(3.5 * kr, 1e-6)));
       if (d < kr) { kn = Math.Max(kn, 1 - d / kr); kring = Math.Max(kring, SmoothStep(0.75, 1.0, d / kr)); }
       else n -= 1.5 * kr * Math.Exp(-(d - kr) / kr);
     }
     double rr = (r + n) / (RS * (1 + 0.25 * Perlin(r * 0.03, ox * 0.37, 0.5))), f = rr - Math.Floor(rr);
 
     double fib = (Perlin(u * 0.08, v * 2, w * 2) * 0.5 + 0.5) * 0.08, ew = Perlin((r + n) / 14.0, u * 0.002, ox) * 0.5 + 0.5;
-    return new GrowthSample(f, ew, fib, kn, kring);
+    return new GrowthSample(f, ew, fib, kn, kring, influence);
   }
 
   Rgb Wood(Seg s, double u, double r, double ang, double v, double w, double endg) =>

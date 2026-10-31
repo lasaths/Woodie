@@ -34,25 +34,26 @@ public sealed class AppearanceBudgetException : ArgumentException
 
 public static class TextureAtlas
 {
-    public const string EngineVersion = "woodie-9";
+    public const string EngineVersion = "woodie-10";
     internal const int Side = 2048, Gutter = 3, MaxPages = 16;
     public static string CacheDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Woodie", "Textures", EngineVersion);
 
-    public static List<AtlasPage> Prepare(PreparedPart part, TimberSettings settings, double quality = 1, string cacheDirectory = null)
+    public static List<AtlasPage> Prepare(PreparedPart part, TimberSettings settings, double quality = 1, string cacheDirectory = null, int pageLimit = MaxPages)
     {
         settings.Validate();
         var layers = TimberLayups.Resolve(settings, part.DepthMm, part.WidthMm, part.ToleranceMm);
         ValidateAppearanceBudget(part, settings, layers);
         if (!(quality > 0 && quality <= 1)) throw new ArgumentOutOfRangeException(nameof(quality));
+        if (pageLimit < 1 || pageLimit > MaxPages) throw new ArgumentOutOfRangeException(nameof(pageLimit));
         List<List<TriangleTile>> packed = null;
         double density = quality;
         // Bound memory even on heavily tessellated input. Reduce density rather than silently dropping faces.
         for (int attempt = 0; attempt < 12; attempt++, density *= 0.6)
         {
             packed = Pack(MakeTiles(part, settings, density));
-            if (packed.Count <= MaxPages) break;
+            if (packed.Count <= pageLimit) break;
         }
-        if (packed.Count > MaxPages) throw new ArgumentException("Mesh needs too many texture charts. Simplify the mesh.");
+        if (packed.Count > pageLimit) throw new ArgumentException("Mesh needs too many texture charts. Simplify the mesh.");
         var panel = new Lazy<IMaterialModel>(() => StockDefinition.FromTimber(settings, part.LengthMm, part.WidthMm, part.DepthMm, part.ToleranceMm, layers));
         string key = Key(part, settings, density);
         var result = new List<AtlasPage>();

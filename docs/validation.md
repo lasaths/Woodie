@@ -1,5 +1,14 @@
 # Release validation
 
+## 0.1.5 — playground layout (same-log tower + bamboo section) — 2026-10-27
+
+- Release builds of `Woodie.Checks` then `Woodie.gha`: PASS, zero warnings/errors.
+- Native `--rhino` with `--examples`: PASS, **37** checks including same-log blanks/placement lines/knot-influence disk, bamboo section-only Preview, one shared product-library Material (11 cases × product switch), and regenerate/reopen of Timber-preview.ghx.
+- Preview display modes on engineered timber: Textured / Gradient / Force flow. Force flow draws the same influence false-colour shell as Gradient under streamlines. Natural stock hides those modes. Texture cache `woodie-10` after natural tint and mesh changes.
+- Same-log tower: Textured defaults. Diversity check uses fibre, plane and Stock Geometry. End-face disk samples the log-AABB field. Mode archive round-trip covers Force flow.
+- Cassis live (installed GHA `725C9BE9…`): Timber-preview reopened; Tower and Log blanks Preview solve 16 SolidTimber meshes each (seed 3, fibre/plane/SG wired, no errors/warnings). Perspective Shaded captures show the hyperboloid tower with textured grain. Scene mixed with an existing Rhino model; close check of cut-to-cut grain difference is easier in an empty .3dm.
+- Not yet published; local install overwrites Libraries + Yak `0.1.4` package until `0.1.5` is packed.
+
 ## 0.1.4 — shared stock, natural materials and engineered bamboo — 2026-10-26
 
 Branch `codex/shared-stock-bamboo` merged to `main` via PR #2.

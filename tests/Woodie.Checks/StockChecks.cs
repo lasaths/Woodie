@@ -24,8 +24,42 @@ internal static class StockChecks
                 double x = 20 + i * 43, y = 10 + i * 11, z = h * ((i % 5) + .5) / 5;
                 Assert(panel.Col(x, y, z) == stock.Sample(x, y, z), "Position sample drifted: " + product);
                 Assert(panel.Col(x, y, z, 1, 0, 1) == stock.Sample(x, y, z, 1, 0, 1), "Oriented sample drifted: " + product);
+                Assert(panel.KnotInfluence(x, y, z) == stock.KnotInfluence(x, y, z), "Knot influence drifted: " + product);
             }
         }
+        var knotted = new TimberSettings { Product = TimberProduct.SolidTimber, Seed = 3 };
+        var knottedPanel = new TimberPanel(TimberProduct.SolidTimber, 1200, 300, 120, 3, knotted.EffectiveKnotDensity, knotted.Palette());
+        var knottedStock = StockDefinition.FromTimber(knotted, 1200, 300, 120);
+        double knotMax = 0; double uMax = 0, vMax = 0, wMax = 0;
+        for (double u = 50; u < 1150; u += 20) for (double v = 10; v < 290; v += 20) for (double w = 10; w < 110; w += 20) {
+            double k = knottedStock.KnotInfluence(u, v, w);
+            if (k > knotMax) { knotMax = k; uMax = u; vMax = v; wMax = w; }
+            Assert(knottedPanel.KnotInfluence(u, v, w) == k, "Knot influence drifted on seed 3 stock");
+        }
+        Assert(knotMax > 0.2, $"Seed 3 must expose a soft knot-influence field (max {knotMax} at {uMax},{vMax},{wMax})");
+        // Soft falloff reaches beyond the hard knot body (Larsson-style halo, not a binary mask).
+        double halo = 0;
+        for (double t = 0; t < Math.PI * 2; t += Math.PI / 6)
+            halo = Math.Max(halo, knottedPanel.KnotInfluence(uMax + 25 * Math.Cos(t), vMax + 25 * Math.Sin(t), wMax));
+        Assert(halo > 0.08 && halo < knotMax, $"Seed 3 soft influence needs a halo around the peak (halo {halo}, peak {knotMax})");
+        Assert(knottedPanel.TryFibreDirection(uMax, vMax, wMax, out var fdx, out var fdy, out var fdz), "Seed 3 needs a fibre direction at the knot peak");
+        Assert(knottedPanel.TryFibreDirection(100, 20, 20, out var cx, out var cy, out var cz) && Math.Abs(cy) + Math.Abs(cz) < 0.15, "Far from knots fibre should stay along the board");
+        var (skeleton, flow) = knottedPanel.TraceFibreStrands(across: 5, through: 3, stepMm: 20);
+        Assert(skeleton.Count >= 1 && flow.Count >= 3, $"Fibre strands need skeleton and flow curves (skeleton {skeleton.Count}, flow {flow.Count})");
+        Assert(Math.Abs(fdy) + Math.Abs(fdz) > Math.Abs(cy) + Math.Abs(cz), "Fibre should divert more beside a knot than far away");
+        var clipped = knottedPanel.TraceFibreFlow(uMax - 40, uMax + 40, vMax - 30, vMax + 30, wMax - 20, wMax + 20, across: 4, through: 3, stepMm: 10);
+        Assert(clipped.Count >= 2, $"Force-flow clip box around the knot peak needs streamlines (got {clipped.Count})");
+    }
+
+    public static void PreviewDisplayModeArchive()
+    {
+        IsolatedHost.LoadWoodie(typeof(PreviewComponent).Assembly.Location);
+        var preview = new PreviewComponent();
+        preview.SetPreviewDisplayModeForChecks(2);
+        var modeArchive = new GH_Archive();
+        Assert(modeArchive.AppendObject(preview, "Preview"), "Could not write Preview display mode");
+        var copy = new PreviewComponent();
+        Assert(modeArchive.ExtractObject(copy, "Preview") && copy.PreviewDisplayModeByte == 2, "Preview Force flow mode must reload from archive");
     }
 
     static TimberSettings Bamboo(TimberProduct product, double variation = 0, int seed = 5) => new() { Product = product, Seed = seed, Variation = variation };
@@ -64,7 +98,7 @@ internal static class StockChecks
                 Near(Math.Abs(radialAxis == 'z' ? alongZ : alongY), 1, 1e-9);                 // radial axis follows the culm radius
                 Near(Math.Abs(radialAxis == 'z' ? alongY : alongZ), 0, 1e-9);                 // the other stock axis is tangential
             }
-        // Machining + split: strip corners stay inside the planed wall for Variation 0 and the default 0.5 wobble.
+        // Machining + split: strip corners stay inside the planed wall for Variation 0 and the default wobble.
         foreach (var stock in new[] { plain, side, StockDefinition.FromTimber(Bamboo(TimberProduct.BambooLumber, .5), 2000, 100, 40), StockDefinition.FromTimber(Bamboo(TimberProduct.BambooLumberSide, .5), 2000, 100, 40) })
             foreach (var piece in stock.Construction.Pieces) {
                 var f = piece.Specimen.Features; double half = f.Diameter / 2;

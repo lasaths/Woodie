@@ -1,6 +1,6 @@
-# Timber playground — Woodie 0.1.4
+# Timber playground — Woodie 0.1.5
 
-Open **Timber-preview.ghx** from this `examples/` folder (not an older Yak copy). Everything is in this one self-contained definition: cutting, knot transitions, a custom buildup, the eight-product library, a rotated tower, and a Natural Stock bamboo culm. No external geometry or scripts are required.
+Open **Timber-preview.ghx** from this `examples/` folder (not an older Yak copy). Everything is in this one self-contained definition: cutting, knot transitions, a custom buildup, the eight-product library, a same-log tower story, and a sectioned Bamboo Stock culm. No external geometry or scripts are required.
 
 ## Find your way around
 
@@ -8,9 +8,9 @@ Numbered **Scribble** headings and subtle rectangular groups divide the canvas. 
 
 Scribbles and the schedule use **Consolas**. If it is unavailable on another machine, Grasshopper may substitute a font; check text spacing there.
 
-The opening view focuses on cutting. Pan right for the knot, buildup, tower and bamboo demonstrations, or down for the product library.
+The opening view focuses on cutting. Pan right for the knot, buildup, same-log tower and bamboo demonstrations, or down for the product library.
 
-The viewport initially shows only the open demonstrations. Library **Show** toggles start off; enable one product at a time to inspect its eleven cases. Shared Settings, Show and Units wires appear when their inputs are selected. Input geometry stays hidden so it does not overlay the timber textures.
+The viewport initially shows only the open demonstrations. Library **Show** starts off; enable it and change Product on Timber Material to inspect the eleven cases. Shared Settings, Show and Units wires appear when their inputs are selected. Input geometry stays hidden so it does not overlay the timber textures.
 
 ## 01 / Cut through the stock
 
@@ -28,7 +28,7 @@ Three Timber Layer components define **30 mm longitudinal / 60 mm cross / 30 mm 
 
 ## 04 / Product library
 
-Eight product cards each contain a compact Material, a **Show** toggle, source units and eleven labelled geometry cases. Products are Solid timber, KVH, Glulam, CLT, Three-layer panel (3S), Plywood, parallel LVL and Kerto-Q. Each uses its own representative depth with Clean/Pale at **1 mm/pixel**.
+One Material, one **Show library** toggle, source units and eleven labelled geometry cases. Change **Product** on Timber Material to preview Solid timber, KVH, Glulam, CLT, Three-layer panel (3S), Plywood, parallel LVL or Kerto-Q on the same cases. Geometry depth stays the starting product’s virtual depth; Clean/Pale at **1 mm/pixel**.
 
 | Case | Geometry/mapping |
 | --- | --- |
@@ -44,13 +44,13 @@ Eight product cards each contain a compact Material, a **Show** toggle, source u
 | 10 | Bowed extrusion with guide |
 | 11 | Bowed mesh with guide |
 
-## 05 / Rotated tower
+## 05 / Same log → tower
 
-Sixteen solid-timber slats between two rings. The top ring is twisted so the generators form a hyperboloid waist. Each slat is item-matched through Preview; fibre follows the long axis.
+Sixteen seed-3 solid-timber blanks sit in an exploded cut inside a log envelope. **Placement lines** map each blank end to its tower foot (hyperboloid waist). **Log blanks** and **tower** previews start **Textured** so each cut's grain reads. Right-click either preview for Gradient or Force flow. Those modes use the same influence heat. The coloured end-face disk samples that log-sized field. Blanks and slats share one Timber Material.
 
 ## 06 / Natural bamboo
 
-**Natural Stock** with Kind=Bamboo builds a hollow Moso culm on a Line from base to tip (Ø 80 · wall 7 · 1500 mm). Natural Stock alone shows the culm solid. Wire Stock Model to Timber Preview Stock when you want texture.
+**Bamboo Stock** (Species=Moso) builds a hollow cured culm on the demo ground line (Ø 80 · wall 7 · 1500 mm). **Bamboo culm section preview** is a vertical half-cut. It shows wall, cavity and nodes. Gradient and Force flow stay off for natural stock.
 
 ## Units and appearance
 
@@ -61,3 +61,5 @@ Face resolution is **1 mm/pixel** in the library; denser demos may use coarser s
 The appearance is inspired by Maria Larsson et al., [Procedural Texturing of Solid Wood with Knots](https://doi.org/10.1145/3528223.3530081), SIGGRAPH 2022. Credits and MIT notices accompany Woodie.
 
 Bake by right-clicking **Timber Preview → Bake**. This creates native textured Rhino geometry; enable **Save textures** when saving the model. Shape changes require rebaking.
+
+Right-click **Timber Preview** on engineered timber for **Textured**, **Gradient** (cool-to-hot influence field), or **Force flow** (same influence shell plus streamlines tinted by that field). Bake stays textured. Natural Log and Bamboo stay Textured.
