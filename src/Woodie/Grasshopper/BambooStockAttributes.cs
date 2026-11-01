@@ -26,7 +26,7 @@ internal sealed class BambooStockAttributes : GH_ComponentAttributes
     static readonly Color LabelInk = Color.FromArgb(72, 70, 62);
 
     readonly BambooStockComponent bamboo;
-    RectangleF panel, species, summary, disclosure;
+    RectangleF panel, species, summary, advanced, disclosure;
     readonly List<RectangleF> options = new();
     bool open;
     public BambooStockAttributes(BambooStockComponent owner) : base(owner) => bamboo = owner;
@@ -39,7 +39,7 @@ internal sealed class BambooStockAttributes : GH_ComponentAttributes
         options.Clear();
         if (!bamboo.PanelExpanded) {
             open = false;
-            panel = species = summary = RectangleF.Empty;
+            panel = species = summary = advanced = RectangleF.Empty;
             Bounds = RectangleF.Union(standard, disclosure);
             return;
         }
@@ -54,7 +54,9 @@ internal sealed class BambooStockAttributes : GH_ComponentAttributes
                 options.Add(new RectangleF(left + 8, optionTop + i * row, width - 16, row));
         float after = open ? optionTop + BambooSpecies.All.Length * row + gap : species.Bottom + gap;
         summary = new RectangleF(left + 8, after, width - 16, 28);
-        panel = new RectangleF(left, top, width, summary.Bottom - top + 12);
+        advanced = new RectangleF(left + 8, summary.Bottom + gap, width - 16, row);
+        float notice = bamboo.AdvancedNotice == null ? 0 : 40;
+        panel = new RectangleF(left, top, width, advanced.Bottom - top + 12 + notice);
         Bounds = RectangleF.Union(RectangleF.Union(standard, disclosure), panel);
     }
 
@@ -87,6 +89,10 @@ internal sealed class BambooStockAttributes : GH_ComponentAttributes
         }
         Label(graphics, bamboo.SpeciesSource ?? BambooSpecies.Summary(current),
             new RectangleF(summary.X, summary.Y, summary.Width, summary.Height));
+        Field(graphics, advanced, bamboo.Advanced ? "−  Advanced inputs" : "+  Advanced inputs", true, bamboo.Advanced, false, null);
+        if (bamboo.AdvancedNotice != null)
+            Label(graphics, "Keep advanced wires / stored values.\nClear them before collapsing.",
+                new RectangleF(advanced.X, advanced.Bottom + 4, advanced.Width, 32));
     }
 
     static void Label(Graphics g, string text, RectangleF rect)
@@ -126,6 +132,7 @@ internal sealed class BambooStockAttributes : GH_ComponentAttributes
             bamboo.SelectSpecies(BambooSpecies.All[i].Id); open = false; ExpireLayout(); return true;
         }
         if (species.Contains(location)) { if (!bamboo.SpeciesControlled) open = !open; ExpireLayout(); return true; }
+        if (advanced.Contains(location)) { open = false; bamboo.SetAdvanced(!bamboo.Advanced); ExpireLayout(); return true; }
         if (open) { open = false; ExpireLayout(); return true; }
         return false;
     }

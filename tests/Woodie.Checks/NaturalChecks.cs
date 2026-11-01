@@ -113,7 +113,7 @@ internal static class NaturalChecks
         // Natural products still resolve through the shared layup/palette paths.
         foreach (var product in new[] { TimberProduct.Log, TimberProduct.Bamboo }) {
             var s = new TimberSettings { Product = product };
-            Assert(TimberLayups.Resolve(s, s.VirtualDepthMm, 300).Count == 1 && s.Palette() != null && s.VirtualDepthMm == (product == TimberProduct.Log ? 200 : 80), "Natural product defaults");
+            Assert(TimberLayups.Resolve(s, s.VirtualDepthMm, 300).Count == 1 && s.Palette() != null && s.VirtualDepthMm == (product == TimberProduct.Log ? 200 : BambooSpecies.Default.Diameter), "Natural product defaults");
             new TimberPanel(product, 1800, 500, s.VirtualDepthMm, 1).Col(10, 10, 10);
         }
         Assert(!TimberProducts.MenuOrder.Contains(TimberProduct.Log) && !TimberProducts.MenuOrder.Contains(TimberProduct.Bamboo) && (int)TimberProduct.Log == 8 && (int)TimberProduct.Bamboo == 9, "Product ids");
@@ -159,9 +159,10 @@ internal static class NaturalChecks
         var culmStock = bamboo.Params.Output[0].VolatileData.AllData(true).OfType<StockGoo>().Single().Value;
         Assert(log.ComponentGuid == new Guid("5d7f3c1e-8a42-4b6f-9e0d-1c3a7b9f2e64"), "Log Stock keeps Natural Stock GUID");
         Assert(bamboo.ComponentGuid == new Guid("d65cfaa6-137e-4547-91b5-33e5960ea8ca"), "Bamboo Stock GUID");
-        Assert(bamboo.Attributes is BambooStockAttributes && bamboo.PanelExpanded && bamboo.SelectedSpecies == BambooSpeciesId.Moso && !bamboo.SpeciesControlled, "Bamboo species panel defaults");
+        Assert(bamboo.Attributes is BambooStockAttributes && bamboo.PanelExpanded && bamboo.SelectedSpecies == BambooSpeciesId.Moso && !bamboo.SpeciesControlled && !bamboo.Advanced, "Bamboo species panel defaults");
+        Assert(bamboo.Params.Input.Count == 4 && bamboo.Params.Input[3] is Param_Interval, "Bamboo Stock starts with Line, Species, Settings and Diameter Domain");
         Assert(logStock.Settings.Product == TimberProduct.Log && logStock.Settings.Diameter == 200 && logStock.Settings.BarkThickness == 5, "Log defaults");
-        Assert(culmStock.Settings.Product == TimberProduct.Bamboo && culmStock.Settings.Species == BambooSpeciesId.Moso && culmStock.Settings.Diameter == 80 && culmStock.Settings.WallThickness == 7 && culmStock.Settings.NodeSpacing == 270 && culmStock.Settings.Variation == .8, "Bamboo defaults");
+        Assert(culmStock.Settings.Product == TimberProduct.Bamboo && culmStock.Settings.Species == BambooSpeciesId.Moso && culmStock.Settings.Diameter == 75 && culmStock.Settings.WallThickness == 7 && culmStock.Settings.NodeSpacing == 270 && culmStock.Settings.Variation == .8, "Bamboo defaults");
         Near(culmStock.Definition.LengthMm, 3000, .01); Assert(culmStock.BasePlane.HasValue && culmStock.Fibre.HasValue && culmStock.Geometry is Brep { IsSolid: true }, "Bamboo stock mapping");
         Assert(BambooSpecies.All.Length == 3 && !BambooSpecies.TryParse("nigra", out _), "Library is construction species only");
         Assert(BambooSpecies.TryParse("Guadua bamboo", out var phrase) && phrase.Id == BambooSpeciesId.Guadua, "Species phrase parse");
@@ -170,14 +171,18 @@ internal static class NaturalChecks
         // Panel selection without a Species wire.
         bamboo.SelectSpecies(BambooSpeciesId.Asper); doc.NewSolution(false);
         Assert(bamboo.SelectedSpecies == BambooSpeciesId.Asper && bamboo.Params.Output[0].VolatileData.AllData(true).OfType<StockGoo>().Single().Value.Settings.Diameter == 140, "Panel Asper selection");
+        // Stored Species text drives Solve; panel stays free so SelectSpecies can clear it.
         var guadua = new BambooStockComponent(); guadua.CreateAttributes(); doc.AddObject(guadua, false);
         ((Param_Line)guadua.Params.Input[0]).SetPersistentData(new Line(new Point3d(0, 1000, 0), new Point3d(0, 1000, 2000)));
         ((Param_String)guadua.Params.Input[1]).PersistentData.Clear(); ((Param_String)guadua.Params.Input[1]).SetPersistentData("Guadua");
         doc.NewSolution(false);
         Assert(!guadua.RuntimeMessages(GH_RuntimeMessageLevel.Error).Any(), "Guadua Bamboo Stock failed");
-        Assert(guadua.SpeciesControlled && guadua.SelectedSpecies == BambooSpeciesId.Guadua, "Stored Species input controls the panel");
+        Assert(!guadua.SpeciesControlled && guadua.SelectedSpecies == BambooSpeciesId.Guadua, "Stored Species text selects Guadua without locking the panel");
         var guaduaStock = guadua.Params.Output[0].VolatileData.AllData(true).OfType<StockGoo>().Single().Value;
-        Assert(guaduaStock.Settings.Species == BambooSpeciesId.Guadua && guaduaStock.Settings.Diameter == 120 && guaduaStock.Settings.WallThickness == 12 && guaduaStock.Settings.NodeSpacing == 310, "Guadua defaults");
+        Assert(guaduaStock.Settings.Species == BambooSpeciesId.Guadua && guaduaStock.Settings.Diameter == 126.5 && guaduaStock.Settings.WallThickness == 12 && guaduaStock.Settings.NodeSpacing == 310, "Guadua defaults");
+        guadua.SelectSpecies(BambooSpeciesId.Moso); doc.NewSolution(false);
+        Assert(guadua.SelectedSpecies == BambooSpeciesId.Moso && ((Param_String)guadua.Params.Input[1]).PersistentDataCount == 0
+            && guadua.Params.Output[0].VolatileData.AllData(true).OfType<StockGoo>().Single().Value.Settings.Diameter == 75, "Panel clears stored Species and applies Moso range");
         // Species archive round trip.
         var speciesArchive = new GH_Archive(); Assert(speciesArchive.AppendObject(bamboo, "Bamboo"), "Bamboo component write");
         var restoredBamboo = new BambooStockComponent(); Assert(speciesArchive.ExtractObject(restoredBamboo, "Bamboo") && restoredBamboo.SelectedSpecies == BambooSpeciesId.Asper, "Bamboo species archive");

@@ -4,7 +4,7 @@ Starting visual presets (not species-wide specifications): log diameter **200 mm
 
 ## Natural bamboo species library
 
-**Bamboo Stock** `Species` accepts one of three construction trade species. All share the same hollow-culm generator; presets only change starting diameter, wall, node spacing, taper and **cured** skin colour (dried poles, not living green). Explicit Diameter/Wall/Node Spacing/Taper inputs still override the preset. **Log Stock** is a separate component for softwood stems. Engineered bamboo strips still come from an internal Moso source culm.
+**Bamboo Stock** `Species` accepts one of three construction trade species. All share the same hollow-culm generator; presets set a diameter **range**, wall, node spacing, taper and **cured** skin colour (dried poles, not living green). The Diameter Domain input overrides the species range (mid-point is modelled); Wall/Node Spacing/Taper under Advanced still override when set. **Log Stock** is a separate component for softwood stems. Engineered bamboo strips still come from an internal Moso source culm.
 
 | Species | Botanical | Ø mm | Wall mm | Node mm | Notes |
 |---------|-----------|------|---------|---------|-------|

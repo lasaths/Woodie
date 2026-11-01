@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Bamboo Stock day-to-day inputs are Line, Species, Settings and a **Diameter Domain** (species trade range when empty). Wall, Node Spacing, Taper, Variation and Geometry Units sit under **+ Advanced inputs**.
+- Species presets use diameter ranges (Moso Ø70–80, Guadua Ø105–148, Asper Ø80–200); the modelled base diameter is the range mid-point. Diameter is not taken from Settings.
+- Species panel choice clears stored Species text; only a Species wire locks the list.
+
 ## 0.1.5 — 2026-11-01
 
 - Split Natural Stock into **Log Stock** (kept GUID `5d7f3c1e-…`) and **Bamboo Stock** (GUID `d65cfaa6-…`). Bamboo Species: Moso / Guadua / Asper with cured skins. Old Natural Stock nodes reopen as Log Stock; replace bamboo culms with Bamboo Stock.

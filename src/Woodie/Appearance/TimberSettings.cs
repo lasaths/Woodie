@@ -43,7 +43,7 @@ public sealed class TimberSettings
     public double VirtualDepthMm => Layers != null ? Layers.Sum(l => l.Thickness) : Product switch
     {
         TimberProduct.BambooLumber or TimberProduct.BambooLumberSide => 40, TimberProduct.BambooPanel => 18,
-        TimberProduct.Log or TimberProduct.Bamboo => double.IsNaN(Diameter) ? (Product == TimberProduct.Log ? 200 : 80) : Diameter,
+        TimberProduct.Log or TimberProduct.Bamboo => double.IsNaN(Diameter) ? (Product == TimberProduct.Log ? 200 : BambooSpecies.Default.Diameter) : Diameter,
         TimberProduct.CLT => 200, TimberProduct.ThreeS => 27,
         TimberProduct.KertoQ or TimberProduct.ParallelLVL => 45, TimberProduct.Plywood => 18, _ => 120
     };

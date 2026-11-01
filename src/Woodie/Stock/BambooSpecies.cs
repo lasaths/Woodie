@@ -1,7 +1,9 @@
+using Rhino.Geometry;
+
 namespace Woodie.Stock;
 
 /// <summary>
-/// Construction-ready culm presets for Bamboo Stock. Dimensions are mid-culm starting points, not species-wide
+/// Construction-ready culm presets for Bamboo Stock. Diameters are trade ranges in mm, not species-wide
 /// specifications. Skin colours are cured/dried pole tones (not living green). Provenance notes sit next to each preset.
 /// </summary>
 public enum BambooSpeciesId { Moso = 0, Guadua = 1, Asper = 2 }
@@ -11,7 +13,12 @@ public readonly struct BambooSpeciesPreset
     public BambooSpeciesId Id { get; init; }
     public string Name { get; init; }
     public string[] Aliases { get; init; }
-    public double Diameter { get; init; }
+    /// <summary>Lower bound of typical base diameter (mm).</summary>
+    public double DiameterMin { get; init; }
+    /// <summary>Upper bound of typical base diameter (mm).</summary>
+    public double DiameterMax { get; init; }
+    /// <summary>Mid-point of the diameter range; used as the modelled base diameter.</summary>
+    public double Diameter => 0.5 * (DiameterMin + DiameterMax);
     public double Wall { get; init; }
     /// <summary>Mean internode length (mm) used to choose segment count for a stock length.</summary>
     public double Spacing { get; init; }
@@ -30,13 +37,13 @@ public static class BambooSpecies
     {
         // Moso — Phyllostachys edulis; European structural poles ~Ø70–80 / wall 7 (ISO 22156 case studies).
         new() { Id = BambooSpeciesId.Moso, Name = "Moso", Aliases = new[] { "bamboo", "moso", "phyllostachys edulis", "p. edulis" },
-            Diameter = 80, Wall = 7, Spacing = 270, Taper = 5, Skin = new[] { 176.0, 148, 92 }, CulmInternodes = 60, PeakRin = 0.48 },
+            DiameterMin = 70, DiameterMax = 80, Wall = 7, Spacing = 270, Taper = 5, Skin = new[] { 176.0, 148, 92 }, CulmInternodes = 60, PeakRin = 0.48 },
         // Guadua — Latin American construction; BioResources mature culms ~Ø105–148, wall ~12–22, internodes ~310 mm.
         new() { Id = BambooSpeciesId.Guadua, Name = "Guadua", Aliases = new[] { "guadua", "guadua angustifolia", "g. angustifolia" },
-            Diameter = 120, Wall = 12, Spacing = 310, Taper = 8, Skin = new[] { 158.0, 138, 100 }, CulmInternodes = 55, PeakRin = 0.50 },
+            DiameterMin = 105, DiameterMax = 148, Wall = 12, Spacing = 310, Taper = 8, Skin = new[] { 158.0, 138, 100 }, CulmInternodes = 55, PeakRin = 0.50 },
         // Dendrocalamus asper (Betung) — SE Asian structural culms Ø80–200, wall 11–20, internodes 400–500 mm.
         new() { Id = BambooSpeciesId.Asper, Name = "Asper", Aliases = new[] { "asper", "dendrocalamus", "dendrocalamus asper", "d. asper", "betung" },
-            Diameter = 140, Wall = 15, Spacing = 450, Taper = 10, Skin = new[] { 188.0, 162, 108 }, CulmInternodes = 50, PeakRin = 0.48 },
+            DiameterMin = 80, DiameterMax = 200, Wall = 15, Spacing = 450, Taper = 10, Skin = new[] { 188.0, 162, 108 }, CulmInternodes = 50, PeakRin = 0.48 },
     };
 
     public static BambooSpeciesPreset Default => All[0];
@@ -58,9 +65,25 @@ public static class BambooSpecies
     }
 
     public static string KindHelp => "Set Species to Moso, Guadua or Asper.";
-    /// <summary>Menu label: name plus starting dimensions (recognition, not colour alone).</summary>
+    /// <summary>Menu label: name plus diameter range (recognition, not colour alone).</summary>
     public static string MenuLabel(BambooSpeciesPreset p) =>
-        FormattableString.Invariant($"{p.Name} · Ø{p.Diameter:0} · wall {p.Wall:0}");
+        FormattableString.Invariant($"{p.Name} · Ø{p.DiameterMin:0}–{p.DiameterMax:0} · wall {p.Wall:0}");
     public static string Summary(BambooSpeciesPreset p) =>
-        FormattableString.Invariant($"{p.Name} · cured · Ø{p.Diameter:0} · wall {p.Wall:0} · nodes {p.Spacing:0}");
+        FormattableString.Invariant($"{p.Name} · cured · Ø{p.DiameterMin:0}–{p.DiameterMax:0} · wall {p.Wall:0} · nodes {p.Spacing:0}");
+
+    /// <summary>
+    /// Modelled base diameter in mm: mid-point of an explicit Domain, otherwise the species trade range.
+    /// A zero-width Domain sets an exact pole diameter.
+    /// </summary>
+    public static double ResolveDiameter(BambooSpeciesPreset species, Interval? domain)
+    {
+        double min = species.DiameterMin, max = species.DiameterMax;
+        if (domain is { } d) {
+            min = d.T0; max = d.T1;
+            if (min > max) (min, max) = (max, min);
+        }
+        if (!(min > 0) || !(max > 0) || !double.IsFinite(min + max))
+            throw new ArgumentException("Diameter must be a finite positive range in millimetres.");
+        return 0.5 * (min + max);
+    }
 }

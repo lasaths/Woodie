@@ -231,7 +231,9 @@ internal static class TimberExamples
         var basePt=new Point3d(1600,150,0); var tipPt=new Point3d(1600,150,1500);
         var culm=Add(doc,new BambooStockComponent{NickName="Bamboo culm",Hidden=true},6950,520);
         ((Param_Line)culm.Params.Input[0]).SetPersistentData(new Line(basePt,tipPt));
-        // Species comes from the on-canvas panel default (Moso); no stored Species text.
+        // Species comes from SelectedSpecies (panel). Stored Species text locks the dropdown.
+        ((Param_String)culm.Params.Input[1]).PersistentData.Clear();
+        Assert(culm.SetAdvanced(true),"Bamboo advanced inputs required for Geometry Units");
         ((Param_String)culm.Params.Input[8]).SetPersistentData("Millimetres");
         culm.Params.Input[2].AddSource(material.Params.Output[0]);
         var geometry=Add(doc,new Param_Geometry{NickName="Culm geometry",Hidden=true},7200,650);
@@ -399,6 +401,7 @@ internal static class TimberExamples
             Assert(influenceMesh.VertexColors.Count==influenceMesh.Vertices.Count && influenceMesh.Vertices.Count>0,"Knot influence disk must carry vertex colours");
             var culm=doc.Objects.OfType<BambooStockComponent>().Single(c=>c.NickName=="Bamboo culm");
             Assert(!culm.RuntimeMessages(GH_RuntimeMessageLevel.Error).Any(),"Bamboo culm Bamboo Stock failed");
+            Assert(!culm.SpeciesControlled && culm.SelectedSpecies==BambooSpeciesId.Moso,"Bamboo Species dropdown must stay free; store SelectedSpecies only");
             var culmStock=culm.Params.Output[0].VolatileData.AllData(true).OfType<StockGoo>().Single().Value;
             Assert(culmStock.Settings.Product==TimberProduct.Bamboo && culmStock.Geometry is Brep { IsSolid: true },"Bamboo culm stock must be a solid Bamboo model");
             var culmSection=demos.Single(p=>p.NickName=="Bamboo culm section preview");
