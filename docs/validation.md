@@ -6,7 +6,7 @@
 - Native `--rhino --integration --geometry-gallery --examples`: PASS, **50** checks, 0 failed. Covers Log Stock and Bamboo Stock (archive, preview atlas, legacy Natural Stock GUID), RIN–RCIL node placement via natural feature checks, example regenerate/reopen, and all eight products × eleven geometry cases.
 - `--bake-matrix`: PASS, **6** checks, 0 failed. Eight products × eleven geometry textures, plus native bake core, geometry, units/stock, component and the stepped knot section.
 - Mac native checks: not run. A fresh installed Bake-menu session for this build was not repeated.
-- Not yet published.
+- Publication (2026-11-01): verified GHA SHA-256 `D76D32832C045A05C03256207AAE11845CA036B51FCDD26B66D798A0A9E28F02`; Yak `woodie-0.1.5-rh8_20-any.yak` SHA-256 `a38a47a013655db3d718209c4317e041c6e188afaa3eaf2f63fcc74c56ee6d37`. Test-server package `woodie-releasecheck-20261101161558` upload/download matched. Production push of `woodie` / `0.1.5` succeeded. GitHub release: https://github.com/lasaths/Woodie/releases/tag/v0.1.5.
 
 ## 0.1.5 — playground layout (same-log tower + bamboo section) — 2026-10-27
 
