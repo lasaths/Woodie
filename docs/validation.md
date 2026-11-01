@@ -1,5 +1,13 @@
 # Release validation
 
+## 0.1.5 — Log Stock, Bamboo Stock and playground — 2026-11-01
+
+- Release builds of `Woodie.Checks` then `Woodie.gha`: PASS, zero warnings/errors.
+- Native `--rhino --integration --geometry-gallery --examples`: PASS, **50** checks, 0 failed. Covers Log Stock and Bamboo Stock (archive, preview atlas, legacy Natural Stock GUID), RIN–RCIL node placement via natural feature checks, example regenerate/reopen, and all eight products × eleven geometry cases.
+- `--bake-matrix`: PASS, **6** checks, 0 failed. Eight products × eleven geometry textures, plus native bake core, geometry, units/stock, component and the stepped knot section.
+- Mac native checks: not run. A fresh installed Bake-menu session for this build was not repeated.
+- Not yet published.
+
 ## 0.1.5 — playground layout (same-log tower + bamboo section) — 2026-10-27
 
 - Release builds of `Woodie.Checks` then `Woodie.gha`: PASS, zero warnings/errors.
@@ -7,7 +15,7 @@
 - Preview display modes on engineered timber: Textured / Gradient / Force flow. Force flow draws the same influence false-colour shell as Gradient under streamlines. Natural stock hides those modes. Texture cache `woodie-10` after natural tint and mesh changes.
 - Same-log tower: Textured defaults. Diversity check uses fibre, plane and Stock Geometry. End-face disk samples the log-AABB field. Mode archive round-trip covers Force flow.
 - Cassis live (installed GHA `725C9BE9…`): Timber-preview reopened; Tower and Log blanks Preview solve 16 SolidTimber meshes each (seed 3, fibre/plane/SG wired, no errors/warnings). Perspective Shaded captures show the hyperboloid tower with textured grain. Scene mixed with an existing Rhino model; close check of cut-to-cut grain difference is easier in an empty .3dm.
-- Not yet published; local install overwrites Libraries + Yak `0.1.4` package until `0.1.5` is packed.
+- Playground checks above predate the Log Stock / Bamboo Stock split. The 2026-11-01 section is the release gate.
 
 ## 0.1.4 — shared stock, natural materials and engineered bamboo — 2026-10-26
 

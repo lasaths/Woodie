@@ -22,7 +22,7 @@ Exact thicknesses are checked against the original stock depth using document to
 
 Prefer **Cut Stock Model → Preview Stock**. Legacy: **Cut Geometry → Preview Geometry** and **Cut Stock Geometry → Preview Stock Geometry**, leaving downstream Geometry Units at **Document**. Preview derives its mapping frame, full dimensions and layer positions from the stock (model or Stock Geometry), including any supplied guide. Moving the cut reveals the original field rather than resizing it. Its Aligned Box describes the displayed cut geometry; Frame describes the original material reference. Geometry outside the stock's mapped domain is rejected. Knots remain continuous within a board/veneer and independent across glue lines. A cap is sampled from the material volume; it is not a flat image pasted onto the end.
 
-Open the single [Timber playground](../examples/Timber-preview.ghx). Its numbered Scribble sections cover movable cutting, knot transitions, a custom longitudinal/cross buildup with schedule, and the complete product library. The three demonstrations start visible; use each product card's Show toggle to inspect the library. Material panels start collapsed.
+Open the single [Timber playground](../examples/Timber-preview.ghx). Its numbered Scribble sections cover movable cutting, knot transitions, a custom longitudinal/cross buildup with schedule, one product library, a same-log tower and a bamboo culm section. Demonstrations start visible; turn on **Show library** and change Product to inspect the eleven cases. Material panels start collapsed.
 
 ![Clean combined example with Scribble headings and groups](images/timber-playground-canvas.png)
 

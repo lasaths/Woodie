@@ -4,7 +4,7 @@ Woodie shows native Rhino geometry as timber in **Rhino and Grasshopper**. Conne
 
 **Timber Material → optional Timber Buildup → Timber Preview** · **Display → Woodie**
 
-**0.1.3** adds custom layer stacks, stock-aware cuts and native textured baking. Mac native display and a fresh interactive Bake-menu session remain unverified. See [validation](docs/validation.md).
+**0.1.5** adds Log Stock and Bamboo Stock, a same-log tower, knot-influence display modes, and the earlier stock-aware cuts and native textured baking. Mac native display and a fresh interactive Bake-menu session remain unverified. See [validation](docs/validation.md).
 
 ## How it works
 
@@ -80,7 +80,10 @@ Typical graph:
 ```text
 Timber Material ──► (optional Timber Buildup) ──► Timber Preview
 Timber Layer ─────► Timber Buildup
-Timber Cut ───────► Timber Preview  (Geometry + Stock)
+Material Stock ───► Timber Cut ──► Timber Preview   (Stock Model)
+Log Stock ────────► Timber Preview
+Bamboo Stock ─────► Timber Preview
+Timber Cut ───────► Timber Preview  (Geometry + Stock Geometry)
 ```
 
 ## Install from Rhino PackageManager
@@ -92,19 +95,22 @@ Timber Cut ───────► Timber Preview  (Geometry + Stock)
 
 **Use Rhino PackageManager for normal installation and updates.** You do not need a GitHub checkout, an SDK or a command-line install. Remove a previously copied Woodie.gha from Grasshopper Libraries before you install through PackageManager. That avoids duplicate components.
 
-**0.1.3** targets **.NET 8** and needs **Rhino 8.20 or later** on Windows or Mac. Rhino 8.20 supplies .NET 8 by default. See [McNeel's runtime guidance](https://developer.rhino3d.com/en/guides/rhinocommon/moving-to-dotnet-core/). On Windows, use modern .NET rather than .NET Framework mode. Rhino 7 is unsupported. Native Mac display and interaction remain unverified. See [validation](docs/validation.md).
+**0.1.5** targets **.NET 8** and needs **Rhino 8.20 or later** on Windows or Mac. Rhino 8.20 supplies .NET 8 by default. See [McNeel's runtime guidance](https://developer.rhino3d.com/en/guides/rhinocommon/moving-to-dotnet-core/). On Windows, use modern .NET rather than .NET Framework mode. Rhino 7 is unsupported. Native Mac display and interaction remain unverified. See [validation](docs/validation.md).
 
 ## Components
 
-All five components are under **Display → Woodie**.
+Components are under **Display → Woodie**.
 
 | Component | Purpose |
 | --- | --- |
 | **Timber Material** | Choose a product and Natural/Clean-Pale appearance. Seed controls repeatability. Resolution controls face detail in mm/pixel. Advanced inputs expose knots, rings, board/veneer dimensions and palette colours. |
 | **Timber Layer** | Define one layer: thickness, longitudinal/cross grain, solid/boards/veneer construction and optional board joints. |
 | **Timber Buildup** | Combine layers from bottom to top. Output material settings, a schedule and a section diagram. Exact thickness is checked. Fit to part scales proportions when you enable it. |
-| **Timber Cut** | Cut and cap closed stock with a plane. Outputs the retained geometry, original Stock and section outlines. |
-| **Timber Preview** | Display textured meshes for native geometry. Fibre, Base Plane and Guide Curve control mapping. Geometry Units declares source units. Its Bake action creates native textured Rhino objects. |
+| **Timber Cut** | Cut and cap closed stock with a plane. Outputs the retained geometry, original Stock and section outlines. Accepts a Stock Model. |
+| **Timber Preview** | Display textured meshes for native geometry. Fibre, Base Plane and Guide Curve control mapping. Geometry Units declares source units. Right-click engineered timber for Textured, Gradient or Force flow. Its Bake action creates native textured Rhino objects. |
+| **Material Stock** | Wrap geometry and timber settings in a Stock Model for Cut and Preview. |
+| **Log Stock** | Build a tapered softwood log from a base-to-tip Line. Older Natural Stock nodes reopen as Log Stock. |
+| **Bamboo Stock** | Build a hollow culm from a Line. Open the panel to choose Moso, Guadua or Asper. |
 
 **Timber Material → optional Timber Buildup → Timber Preview**. For cuts, connect Cut's Geometry and Stock outputs to Preview's Geometry and Stock Geometry inputs. The uncut stock keeps grain and knots fixed as the plane moves.
 
@@ -114,20 +120,22 @@ Choose Solid timber, KVH, Glulam, CLT, Three-layer panel (3S), Plywood, LVL — 
 
 ## Start with the example
 
-Open the single **[Timber-preview.ghx](examples/Timber-preview.ghx)** definition with **Woodie 0.1.3**. It contains four numbered sections, with Scribble headings and groups:
+Open the single **[Timber-preview.ghx](examples/Timber-preview.ghx)** definition with **Woodie 0.1.5**. It contains six numbered sections, with Scribble headings and groups:
 
 1. **Cut through the stock:** one rectangular piece with position/angle sliders and a textured interior cap.
 2. **Follow a knot:** a stepped cutaway with a **Knot section (%)** slider and capped exposed face. It reveals the same automatic knot field through its depth.
 3. **Build your own stack:** longitudinal/cross layers, a live schedule and a section diagram.
 4. **Product library:** eleven geometry cases on one Material; change Product to switch appearance.
+5. **Same log → tower:** exploded blanks in a log envelope, placement lines, and a knot-influence end face. Shared seed 3.
+6. **Natural bamboo:** a Moso Bamboo Stock culm and a vertical section Preview.
 
-The three demonstrations are visible at first. Library previews start off to keep the viewport clean. Material controls start collapsed. All geometry is embedded and source units are declared. The definition works in millimetre, metre and inch Rhino documents. Faces use **1 mm/pixel**. See the [example guide](examples/README.md). For the published 0.1.2 plugin, use its [matching gallery](https://raw.githubusercontent.com/lasaths/Woodie/v0.1.2/examples/Timber-preview.ghx).
+Demonstrations are visible at first. The library Show toggle starts off. Material controls start collapsed. All geometry is embedded and source units are declared. The definition works in millimetre, metre and inch Rhino documents. Faces use **1 mm/pixel**. See the [example guide](examples/README.md). For the published 0.1.2 plugin, use its [matching gallery](https://raw.githubusercontent.com/lasaths/Woodie/v0.1.2/examples/Timber-preview.ghx).
 
 ![Moving section through the stepped timber, captured in Rhino Arctic mode](docs/images/knot-section-arctic.gif)
 
 Move **Knot section (%)** in section 02 to reproduce this cut. The fixed camera faces the stepped profile. The moving cap samples the original material field, including the knot near the end of the sweep. The 186-frame loop runs from 95% to 15% and back, with eased starts/stops and slower travel through the knot crossings.
 
-The product library uses product-appropriate thicknesses and matched flat/bowed centreline lengths. Use a product card's Show toggle to explore its geometry cases.
+The product library uses product-appropriate thicknesses and matched flat/bowed centreline lengths. Turn on **Show library** and change Product to explore the eleven cases.
 
 For older **0.1.1** installations, use its [matching two-board example](https://raw.githubusercontent.com/lasaths/Woodie/v0.1.1/examples/Timber-preview.ghx) in a **millimetre Rhino document**. The Geometry Units input is available from 0.1.2.
 

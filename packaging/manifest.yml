@@ -10,8 +10,12 @@ description: >
   guide-curve bending, explicit source units and adjustable appearance settings.
   Includes a unit-aware gallery covering all eight products and eleven geometry types.
   Define custom layer stacks with schedules and section diagrams. Move capped cutting planes
-  through fixed stock to reveal its original grain and knots. One grouped, Scribble-labelled example
-  includes basic cutting, a stepped knot cutaway, custom buildup and the product library.
+  through fixed stock to reveal its original grain and knots.
+  Material Stock, Log Stock and Bamboo Stock (Moso, Guadua, Asper) supply Stock Models.
+  Older Natural Stock nodes reopen as Log Stock.
+  One grouped, Scribble-labelled example includes cutting, a stepped knot cutaway, custom buildup,
+  one shared product library, a same-log tower and a bamboo culm section.
+  Engineered timber previews can show Textured, Gradient or Force flow. Bake stays textured.
   Bake native geometry with persistent timber textures through Timber Preview.
   Baked objects are independent snapshots; save textures in the 3dm for portability.
   Requires Rhino 8.20 or later running .NET 8 on Windows or Mac.

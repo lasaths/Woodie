@@ -1,13 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.1.5 — 2026-11-01
 
 - Split Natural Stock into **Log Stock** (kept GUID `5d7f3c1e-…`) and **Bamboo Stock** (GUID `d65cfaa6-…`). Bamboo Species: Moso / Guadua / Asper with cured skins. Old Natural Stock nodes reopen as Log Stock; replace bamboo culms with Bamboo Stock.
 - Bamboo Stock: on-canvas Species list (name · Ø · wall + skin chip + summary). Matches Timber Material light chrome. Species wire still overrides the panel.
-
-## 0.1.5 — 2026-10-27
-
-- Align the Natural Stock bamboo culm with the other demos. Ship a vertical section Preview only.
+- Place bamboo nodes with a short-base, mid-culm-long, short-tip profile (RIN–RCIL), instead of equal spacing.
+- Align the bamboo culm with the other demos. Ship a vertical section Preview only.
 - Replace the lone tower card with a same-log story. Exploded blanks sit in a log envelope. Placement lines run to each tower slat. A Larsson-style knot-influence end-face mesh uses shared seed 3.
 - Collapse the eight product-library cards into one Material, one Show toggle, and eleven cases. Switch Product on Timber Material.
 - Expose `TimberPanel.KnotInfluence` / `IMaterialModel.KnotInfluence` for volumetric knot weight sampling.

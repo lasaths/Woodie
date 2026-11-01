@@ -5,9 +5,9 @@ Procedural timber preview for Rhino 8.20+ / .NET 8 and Grasshopper.
 Install and update through Rhino **PackageManager**, searching for **woodie**.
 Components are under **Display → Woodie**: connect Timber Material → Settings to Timber Preview → Settings.
 
-Open the single examples/Timber-preview.ghx definition for all examples. Numbered Scribble headings and groups organize cutting, knot transitions, custom buildup and the eight-product library.
-The three demonstrations are visible initially. Product library Show toggles start off; Material panels start compact.
-Timber Layer and Timber Buildup define physical stacks and a section diagram. Exact thicknesses are checked; Fit to part scales proportions explicitly. Connect Timber Cut's uncut Stock output to Preview's Stock Geometry to preserve grain while cutting. Cut outputs are in document units.
+Open the single examples/Timber-preview.ghx definition for all examples. Numbered Scribble headings and groups organize cutting, knot transitions, custom buildup, one eight-product library, a same-log tower and a bamboo culm section.
+Demonstrations are visible initially. The library Show toggle starts off; Material panels start compact.
+Timber Layer and Timber Buildup define physical stacks and a section diagram. Exact thicknesses are checked; Fit to part scales proportions explicitly. Material Stock, Log Stock and Bamboo Stock build Stock Models. Older Natural Stock nodes reopen as Log Stock. Connect a Stock Model, or Timber Cut's uncut Stock output, so cutting preserves grain. Cut outputs are in document units.
 The gallery declares Geometry Units = Millimetres, so it works in millimetre, metre and inch documents.
 For your own geometry, Geometry Units defaults to Document; choose the source units explicitly when the coordinate values came from another unit system.
 Input geometry is never transformed in place.
@@ -22,4 +22,5 @@ ACM TOG 41(4), Article 45, SIGGRAPH 2022; independent C# procedural adaptation.
 
 MIT licence and third-party credits are included alongside this file.
 
-Bake the remaining cut or any library object by right-clicking its **Timber Preview → Bake** (0.1.3). This creates native textured Rhino geometry; enable **Save textures** when saving the model. Shape changes require rebaking.
+Right-click engineered **Timber Preview** for Textured, Gradient or Force flow. Bake stays textured. Natural Log and Bamboo stay Textured.
+Bake by right-clicking **Timber Preview → Bake**. This creates native textured Rhino geometry; enable **Save textures** when saving the model. Shape changes require rebaking.
