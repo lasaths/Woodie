@@ -34,7 +34,8 @@ public class TimberPalette {
       case TimberProduct.BambooLumberSide:
       case TimberProduct.BambooPanel:
         // Construction-ready dried tones (not living green); engineered strip stock shares the same cut-face palette.
-        c.E0 = new double[] { 232, 208, 150 }; c.E1 = new double[] { 240, 224, 180 }; c.Late = new double[] { 148, 108, 58 }; c.Knot = new double[] { 168, 140, 88 };
+        // Late = fibre-sheath brown (higher contrast ≈ Larsson latewood clarity); E0/E1 = pale parenchyma foam.
+        c.E0 = new double[] { 236, 214, 158 }; c.E1 = new double[] { 242, 228, 186 }; c.Late = new double[] { 118, 78, 42 }; c.Knot = new double[] { 150, 118, 72 };
         if (p != TimberProduct.Bamboo) { c.Glue = new double[] { 120, 84, 44 }; c.GlueW = 0.3; c.GlueK = 0.55; }   // thin brown adhesive lines between strips (visual estimate)
         break;
     }

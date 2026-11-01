@@ -34,7 +34,7 @@ public sealed class AppearanceBudgetException : ArgumentException
 
 public static class TextureAtlas
 {
-    public const string EngineVersion = "woodie-10";
+    public const string EngineVersion = "woodie-16";
     internal const int Side = 2048, Gutter = 3, MaxPages = 16;
     public static string CacheDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Woodie", "Textures", EngineVersion);
 

@@ -5,6 +5,7 @@
 - Bamboo Stock day-to-day inputs are Line, Species, Settings and a **Diameter Domain** (species trade range when empty). Wall, Node Spacing, Taper, Variation and Geometry Units sit under **+ Advanced inputs**.
 - Species presets use diameter ranges (Moso Ø70–80, Guadua Ø105–148, Asper Ø80–200); the modelled base diameter is the range mid-point. Diameter is not taken from Settings.
 - Species panel choice clears stored Species text; only a Species wire locks the list.
+- Bamboo wall appearance toward Larsson-level clarity: flower VBs, Speichinger pith/skin empty bands, Dixon `S_f` lumen fade, Peng ~12.9 mm node reorientation, MFA-split streaks (texture cache `woodie-16`).
 
 ## 0.1.5 — 2026-11-01
 

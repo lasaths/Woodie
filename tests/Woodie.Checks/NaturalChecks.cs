@@ -71,6 +71,26 @@ internal static class NaturalChecks
         return gaps;
     }
 
+    public static void ProbeBundles()
+    {
+        var culm = Bamboo(3, 0); var bf = Resolve(culm, 3000); var cs = StockDefinition.FromNatural(culm, 3000, 80, 80);
+        double gap = (bf.Nodes[0] + bf.Nodes[1]) / 2, ro = bf.Outer(gap), ri = bf.Inner(gap), rr = ri + 0.72 * (ro - ri);
+        Console.WriteLine($"ri={ri:0.##} ro={ro:0.##} rr={rr:0.##}");
+        double min = 999, max = -999; int jumps = 0; double prev = -1;
+        for (int i = 0; i < 96; i++) {
+            double ang = i * (2 * Math.PI / 96);
+            double L = Luma(cs.Sample(gap, 40 + rr * Math.Cos(ang), 40 + rr * Math.Sin(ang), 1, 0, 0));
+            min = Math.Min(min, L); max = Math.Max(max, L);
+            if (i > 0 && Math.Abs(L - prev) > 22) jumps++;
+            prev = L;
+        }
+        Console.WriteLine($"luma {min:0}-{max:0} jumps={jumps}");
+        for (int k = 0; k < 8; k++) {
+            double t = k / 7.0, r = ri + t * (ro - ri);
+            Console.WriteLine($"  t={t:0.00} L={Luma(cs.Sample(gap, 40 + r, 40, 1, 0, 0)):0}");
+        }
+    }
+
     public static void Appearance()
     {
         foreach (var settings in new[] { Log(), Log(7, .5, 0), Bamboo() })
@@ -105,6 +125,32 @@ internal static class NaturalChecks
         Assert(Red(skin) > Green(skin) && Red(inner) > Green(inner), "Cured bamboo skin and wall interior should read warm, not living green");
         Assert(node != mid, "Node fibre appearance should differ from an internode wall");
         Assert(Luma(cs.Sample(n0, 40, 40)) > 150 && Luma(cs.Sample(gap, 40 + ri - 1, 40)) > 150, "Diaphragm and lining should be pale");
+        // End-cut wall: outer third darker/more varied than inner third (vascular packing toward cortex).
+        double lumaInner = 0, lumaOuter = 0; int nSamp = 0;
+        for (int i = 0; i < 48; i++) {
+            double ang = i * (2 * Math.PI / 48), ca = Math.Cos(ang), sa = Math.Sin(ang);
+            lumaInner += Luma(cs.Sample(gap, 40 + (ri + 0.2 * (ro - ri)) * ca, 40 + (ri + 0.2 * (ro - ri)) * sa, 1, 0, 0));
+            lumaOuter += Luma(cs.Sample(gap, 40 + (ri + 0.88 * (ro - ri)) * ca, 40 + (ri + 0.88 * (ro - ri)) * sa, 1, 0, 0));
+            nSamp++;
+        }
+        Assert(lumaOuter / nSamp < lumaInner / nSamp - 6, $"Outer wall should read darker than lining on end cuts ({lumaOuter / nSamp:0} vs {lumaInner / nSamp:0})");
+        Assert(Luma(cs.Sample(n0, 40 + ro - .05, 40, 0, 1, 0)) + 12 < Luma(skin) || cs.Sample(n0, 40 + ro - .05, 40, 0, 1, 0) != skin, "Node ring should darken the exterior skin");
+        // Discrete bundles: along an outer arc, luma should jump between pale parenchyma and dark sheath.
+        int jumps = 0; double rr = ri + 0.72 * (ro - ri);
+        double prev = Luma(cs.Sample(gap, 40 + rr, 40, 1, 0, 0));
+        for (int i = 1; i < 96; i++) {
+            double ang = i * (2 * Math.PI / 96);
+            double L = Luma(cs.Sample(gap, 40 + rr * Math.Cos(ang), 40 + rr * Math.Sin(ang), 1, 0, 0));
+            if (Math.Abs(L - prev) > 22) jumps++; prev = L;
+        }
+        Assert(jumps >= 10, $"Outer wall should show discrete bundle contrast (jumps {jumps})");
+        // Mid-wall should not be empty parenchyma: at least some darker samples than the lining.
+        double midDark = 999;
+        for (int i = 0; i < 48; i++) {
+            double ang = i * (2 * Math.PI / 48), rm = ri + 0.55 * (ro - ri);
+            midDark = Math.Min(midDark, Luma(cs.Sample(gap, 40 + rm * Math.Cos(ang), 40 + rm * Math.Sin(ang), 1, 0, 0)));
+        }
+        Assert(midDark < lumaInner / nSamp - 15, $"Mid-wall should carry some vascular bundles ({midDark:0} vs lining {lumaInner / nSamp:0})");
         var definition = StockDefinition.FromTimber(culm, 3000, 80, 80);
         Assert(definition.Sample(135, 40 + ro, 40) == cs.Sample(135, 40 + ro, 40) && definition.Construction.Pieces.Single().Specimen.Features != null && definition.Construction.Pieces[0].Specimen.Seed == 3, "FromTimber must dispatch natural products");
         // Unset diameter wraps the cross-section bounds (legacy Product=Log on a user Brep).

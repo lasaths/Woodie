@@ -6,6 +6,7 @@ using Grasshopper.Kernel.Types;
 using Woodie.Appearance;
 using Woodie.Grasshopper;
 using Woodie.Rendering;
+using Woodie.Stock;
 using static Woodie.Checks.Program;
 
 namespace Woodie.Checks;
@@ -78,6 +79,203 @@ internal static class MaterialChecks
                 y < 195 ? panel.Col(u, 0, (y - 150) * depth / 44) : panel.Col(0, x * 500d / (width - 1), (y - 195) * depth / 44);
         }
         PngEncoder.WriteAtomic(Path.Combine(Output, "material-" + settings.Product + ".png"), width, height, pixels, CancellationToken.None);
+    }
+
+    /// <summary>Large side (skin) + top (end ring) renders for each bamboo species. Writes bamboo-*-side/top.png and bamboo-side-top.png.</summary>
+    public static void BambooFullRenders()
+    {
+        const int sideW = 480, sideH = 1400, topS = 720, gap = 24, bg = unchecked((int)0xFFF0EEE6);
+        var paths = new List<(string Label, string Side, string Top)>();
+        foreach (var species in BambooSpecies.All) {
+            var settings = new TimberSettings {
+                Product = TimberProduct.Bamboo, Seed = 17, Species = species.Id,
+                Diameter = species.Diameter, WallThickness = species.Wall, NodeSpacing = species.Spacing,
+                Taper = species.Taper, Variation = .5 };
+            settings.Validate();
+            const double length = 3000;
+            double diameter = settings.VirtualDepthMm;
+            var features = NaturalFeatures.Resolve(settings, length, diameter, diameter);
+            double width = 2 * features.Outer(0) * (1 + Math.Abs(features.Ovality)) + 4;
+            var stock = StockDefinition.FromNatural(settings, length, width, width);
+            double cy = width / 2, cz = width / 2;
+
+            // Side: length down the image; slight limb darkening so it reads as a round pole, not a flat board.
+            var side = new int[sideW * sideH];
+            for (int y = 0; y < sideH; y++) for (int x = 0; x < sideW; x++) {
+                double u = y * (length - 2) / (sideH - 1) + 1;
+                double nx = x / (sideW - 1d) - .5;
+                double ang = nx * 1.15;
+                double ro = features.Outer(u);
+                double sy = cy + ro * Math.Cos(ang), sz = cz + ro * Math.Sin(ang);
+                int rgb = stock.Sample(u, sy, sz, 0, Math.Cos(ang), Math.Sin(ang));
+                double limb = 1 - 0.22 * (nx * nx * 4);   // darken toward left/right silhouette
+                int r8 = (int)Math.Clamp(((rgb >> 16) & 255) * limb, 0, 255);
+                int g8 = (int)Math.Clamp(((rgb >> 8) & 255) * limb, 0, 255);
+                int b8 = (int)Math.Clamp((rgb & 255) * limb, 0, 255);
+                side[y * sideW + x] = (255 << 24) | (r8 << 16) | (g8 << 8) | b8;
+            }
+            string sidePath = Path.Combine(Output, "bamboo-" + species.Name + "-side.png");
+            PngEncoder.WriteAtomic(sidePath, sideW, sideH, side, CancellationToken.None);
+
+            // Top: full end-grain ring at mid-internode (fresh-cut normal).
+            double xCut = length / 2;
+            if (features.Nodes.Count > 0)
+                xCut = (features.Nodes[0] + (features.Nodes.Count > 1 ? features.Nodes[1] : length)) / 2;
+            double pad = features.Outer(xCut) + features.Ridge(xCut) + 6;
+            var top = new int[topS * topS];
+            for (int i = 0; i < top.Length; i++) top[i] = bg;
+            for (int y = 0; y < topS; y++) for (int x = 0; x < topS; x++) {
+                double sy = cy + (2 * (x + .5) / topS - 1) * pad, sz = cz + (2 * (y + .5) / topS - 1) * pad;
+                double dy = (sy - cy) / (1 + features.Ovality), dz = (sz - cz) / (1 - features.Ovality);
+                double r = Math.Sqrt(dy * dy + dz * dz);
+                if (r > features.Outer(xCut) + features.Ridge(xCut) + .5 || !features.Solid(xCut, r)) continue;
+                top[y * topS + x] = stock.Sample(xCut, sy, sz, 1, 0, 0);
+            }
+            string topPath = Path.Combine(Output, "bamboo-" + species.Name + "-top.png");
+            PngEncoder.WriteAtomic(topPath, topS, topS, top, CancellationToken.None);
+            paths.Add((species.Name + " · Ø" + species.DiameterMin.ToString("0") + "–" + species.DiameterMax.ToString("0"), sidePath, topPath));
+            Console.WriteLine("Wrote " + sidePath);
+            Console.WriteLine("Wrote " + topPath);
+        }
+
+        // Combined sheet: side | top per species.
+        int sheetW = 40 + sideW + gap + topS + 40;
+        int rowH = Math.Max(sideH, topS) + 48;
+        using var sheet = new Bitmap(sheetW, 70 + paths.Count * rowH);
+        using var g = Graphics.FromImage(sheet); g.Clear(Color.FromArgb(248, 246, 239));
+        using var title = new Font(FontFamily.GenericSansSerif, 20);
+        using var label = new Font(FontFamily.GenericSansSerif, 13);
+        g.DrawString("Woodie · bamboo side (skin) + top (end cut) · seed 17", title, Brushes.Black, 24, 18);
+        for (int i = 0; i < paths.Count; i++) {
+            int y = 64 + i * rowH;
+            g.DrawString(paths[i].Label, label, Brushes.Black, 24, y);
+            using var sideImg = Image.FromFile(paths[i].Side);
+            using var topImg = Image.FromFile(paths[i].Top);
+            g.DrawImage(sideImg, 24, y + 22, sideW, sideH);
+            g.DrawImage(topImg, 24 + sideW + gap, y + 22 + (sideH - topS) / 2, topS, topS);
+        }
+        string combined = Path.Combine(Output, "bamboo-side-top.png");
+        sheet.Save(combined);
+        Console.WriteLine("Bamboo side+top sheet: " + combined);
+    }
+
+    // One inspection sheet: every product plus a square radial/end section. Writes artifacts/checks/material-radial-contact.png.
+    public static void RadialInspectionSheet()
+    {
+        var entries = new List<(string Key, string Label, TimberSettings Settings)>();
+        foreach (var product in TimberProducts.MenuOrder)
+            entries.Add((product.ToString(), product.Label(), new TimberSettings { Product = product, Seed = 17 }));
+        entries.Add(("Log", "Log", new TimberSettings { Product = TimberProduct.Log, Seed = 17, Diameter = 200, Taper = 10, BarkThickness = 5, Variation = .5 }));
+        foreach (var species in BambooSpecies.All)
+            entries.Add(("Bamboo-" + species.Name, "Bamboo · " + species.Name,
+                new TimberSettings { Product = TimberProduct.Bamboo, Seed = 17, Species = species.Id,
+                    Diameter = species.Diameter, WallThickness = species.Wall, NodeSpacing = species.Spacing, Taper = species.Taper, Variation = .5 }));
+        foreach (var product in TimberProducts.BambooOrder)
+            entries.Add((product.ToString(), product.Label(), new TimberSettings { Product = product, Seed = 17, Variation = 0 }));
+
+        foreach (var entry in entries) WriteRadialPair(entry.Key, entry.Settings);
+
+        const int faceW = 420, radial = 280, gap = 12, rowH = 328, cols = 2;
+        int cellW = faceW + gap + radial, rows = (entries.Count + cols - 1) / cols;
+        using var bitmap = new Bitmap(24 * 2 + cols * cellW + (cols - 1) * 24, 96 + rows * rowH);
+        using var g = Graphics.FromImage(bitmap); g.Clear(Color.FromArgb(248, 246, 239));
+        using var title = new Font(FontFamily.GenericSansSerif, 18);
+        using var label = new Font(FontFamily.GenericSansSerif, 11);
+        g.DrawString("Woodie · materials + radial sections · seed 17", title, Brushes.Black, 24, 16);
+        g.DrawString("Left: longitudinal / broad face. Right: radial/end. Bamboo right = magnified wall (inner→outer), not the whole ring.", label, Brushes.DimGray, 24, 52);
+        for (int i = 0; i < entries.Count; i++) {
+            int x = 24 + i % cols * (cellW + 24), y = 88 + i / cols * rowH;
+            g.DrawString(entries[i].Label, label, Brushes.Black, x, y);
+            using var swatch = Image.FromFile(Path.Combine(Output, "radial-" + entries[i].Key + ".png"));
+            g.DrawImageUnscaled(swatch, x, y + 22);
+        }
+        string path = Path.Combine(Output, "material-radial-contact.png");
+        bitmap.Save(path);
+        Console.WriteLine("Radial contact sheet: " + path);
+    }
+
+    static void WriteRadialPair(string key, TimberSettings settings)
+    {
+        const int faceW = 420, h = 280, radial = 280, gap = 12, bg = unchecked((int)0xFFF0EEE6);
+        int width = faceW + gap + radial;
+        var pixels = new int[width * h];
+        for (int i = 0; i < pixels.Length; i++) pixels[i] = bg;
+        settings.Validate();
+        if (settings.IsNatural) FillNaturalPair(pixels, width, faceW, h, radial, gap, settings, bg);
+        else FillStockPair(pixels, width, faceW, h, radial, gap, settings, bg);
+        PngEncoder.WriteAtomic(Path.Combine(Output, "radial-" + key + ".png"), width, h, pixels, CancellationToken.None);
+    }
+
+    static void FillStockPair(int[] pixels, int stride, int faceW, int h, int radial, int gap, TimberSettings settings, int bg)
+    {
+        double length = 1800, breadth = 500, depth = settings.VirtualDepthMm;
+        if (settings.IsEngineeredBamboo) { breadth = 100; depth = 40; if (settings.Product == TimberProduct.BambooPanel) depth = 18; }
+        var stock = StockDefinition.FromTimber(settings, length, breadth, depth);
+        for (int y = 0; y < h; y++) for (int x = 0; x < faceW; x++) {
+            double u = x * (length - 2) / (faceW - 1) + 1, v = y * (breadth - 2) / (h - 1) + 1;
+            pixels[y * stride + x] = settings.Product == TimberProduct.BambooLumberSide
+                ? stock.Sample(u, breadth / 2, Math.Min(depth - .1, v * depth / breadth), 0, 1, 0)
+                : stock.Sample(u, v, depth, 0, 0, 1);
+        }
+        // Plain-pressed radial = Z: fibre×radial (X×Z). Side-pressed radial = Y: fibre×radial (X×Y). Else end grain.
+        for (int y = 0; y < h; y++) for (int x = 0; x < radial; x++) {
+            double a = (x + .5) / radial, b = (y + .5) / h;
+            pixels[y * stride + faceW + gap + x] = settings.Product switch {
+                TimberProduct.BambooLumber => stock.Sample(length * (.2 + .6 * a), breadth / 2, depth * b, 0, 1, 0),
+                TimberProduct.BambooLumberSide => stock.Sample(length * (.2 + .6 * a), breadth * b, depth / 2, 0, 0, 1),
+                TimberProduct.BambooPanel => stock.Sample(0, breadth * a, depth * b, 1, 0, 0),
+                _ => stock.Sample(0, breadth * a, depth * b, 1, 0, 0)
+            };
+        }
+    }
+
+    static void FillNaturalPair(int[] pixels, int stride, int faceW, int h, int radial, int gap, TimberSettings settings, int bg)
+    {
+        const double length = 2400;
+        double diameter = settings.VirtualDepthMm;
+        var features = NaturalFeatures.Resolve(settings, length, diameter, diameter);
+        double width = 2 * features.Outer(0) * (1 + Math.Abs(features.Ovality)) + 4;
+        var stock = StockDefinition.FromNatural(settings, length, width, width);
+        double cy = width / 2, cz = width / 2;
+        // Longitudinal: bamboo length runs down the swatch so node rings read as horizontal bands (side-view culm).
+        for (int y = 0; y < h; y++) for (int x = 0; x < faceW; x++) {
+            if (features.Bamboo) {
+                double u = y * (length - 2) / (h - 1) + 1;
+                double ang = (x / (faceW - 1d) - .5) * .7;
+                // Sample the epidermis (not Outer+Ridge) so nodes are appearance rings on continuous skin.
+                double ro = features.Outer(u);
+                double sy = cy + ro * Math.Cos(ang), sz = cz + ro * Math.Sin(ang);
+                pixels[y * stride + x] = stock.Sample(u, sy, sz, 0, Math.Cos(ang), Math.Sin(ang));
+            } else {
+                double u = x * (length - 2) / (faceW - 1) + 1;
+                double ro = features.Outer(u);
+                double t = .55 + .4 * y / (h - 1);
+                pixels[y * stride + x] = stock.Sample(u, cy + ro * t, cz, 0, 1, 0);
+            }
+        }
+        double xCut = length / 2;
+        if (features.Bamboo && features.Nodes.Count > 0)
+            xCut = (features.Nodes[0] + (features.Nodes.Count > 1 ? features.Nodes[1] : length)) / 2;
+        if (features.Bamboo) {
+            // Magnified wall sector so discrete bundles resolve (full-ring tiles only had ~20 px across the wall).
+            double ri = features.Inner(xCut), ro = features.Outer(xCut), wall = Math.Max(ro - ri, 1);
+            double arcSpan = Math.Max(8, 1.8 * wall);
+            for (int y = 0; y < h; y++) for (int x = 0; x < radial; x++) {
+                double t = (x + .5) / radial, arc = ((y + .5) / h - .5) * arcSpan;
+                double rr = ri + t * wall, ang = arc / Math.Max(rr, 1e-3);
+                double sy = cy + rr * Math.Cos(ang), sz = cz + rr * Math.Sin(ang);
+                pixels[y * stride + faceW + gap + x] = stock.Sample(xCut, sy, sz, 1, 0, 0);
+            }
+        } else {
+            double pad = features.Outer(xCut) + 4;
+            for (int y = 0; y < h; y++) for (int x = 0; x < radial; x++) {
+                double sy = cy + (2 * (x + .5) / radial - 1) * pad, sz = cz + (2 * (y + .5) / h - 1) * pad;
+                double dy = (sy - cy) / (1 + features.Ovality), dz = (sz - cz) / (1 - features.Ovality);
+                double r = Math.Sqrt(dy * dy + dz * dz);
+                if (r > features.Outer(xCut) + .5) pixels[y * stride + faceW + gap + x] = bg;
+                else pixels[y * stride + faceW + gap + x] = stock.Sample(xCut, sy, sz, 1, 0, 0);
+            }
+        }
     }
     static SettingsGoo Result(SettingsComponent c) => c.Params.Output[0].VolatileData.AllData(true).OfType<SettingsGoo>().Single();
     public static void Interface()

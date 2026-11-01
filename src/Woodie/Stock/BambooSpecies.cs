@@ -37,13 +37,13 @@ public static class BambooSpecies
     {
         // Moso — Phyllostachys edulis; European structural poles ~Ø70–80 / wall 7 (ISO 22156 case studies).
         new() { Id = BambooSpeciesId.Moso, Name = "Moso", Aliases = new[] { "bamboo", "moso", "phyllostachys edulis", "p. edulis" },
-            DiameterMin = 70, DiameterMax = 80, Wall = 7, Spacing = 270, Taper = 5, Skin = new[] { 176.0, 148, 92 }, CulmInternodes = 60, PeakRin = 0.48 },
+            DiameterMin = 70, DiameterMax = 80, Wall = 7, Spacing = 270, Taper = 5, Skin = new[] { 186.0, 152, 88 }, CulmInternodes = 60, PeakRin = 0.48 },
         // Guadua — Latin American construction; BioResources mature culms ~Ø105–148, wall ~12–22, internodes ~310 mm.
         new() { Id = BambooSpeciesId.Guadua, Name = "Guadua", Aliases = new[] { "guadua", "guadua angustifolia", "g. angustifolia" },
-            DiameterMin = 105, DiameterMax = 148, Wall = 12, Spacing = 310, Taper = 8, Skin = new[] { 158.0, 138, 100 }, CulmInternodes = 55, PeakRin = 0.50 },
+            DiameterMin = 105, DiameterMax = 148, Wall = 12, Spacing = 310, Taper = 8, Skin = new[] { 148.0, 128, 92 }, CulmInternodes = 55, PeakRin = 0.50 },
         // Dendrocalamus asper (Betung) — SE Asian structural culms Ø80–200, wall 11–20, internodes 400–500 mm.
         new() { Id = BambooSpeciesId.Asper, Name = "Asper", Aliases = new[] { "asper", "dendrocalamus", "dendrocalamus asper", "d. asper", "betung" },
-            DiameterMin = 80, DiameterMax = 200, Wall = 15, Spacing = 450, Taper = 10, Skin = new[] { 188.0, 162, 108 }, CulmInternodes = 50, PeakRin = 0.48 },
+            DiameterMin = 80, DiameterMax = 200, Wall = 15, Spacing = 450, Taper = 10, Skin = new[] { 198.0, 168, 112 }, CulmInternodes = 50, PeakRin = 0.48 },
     };
 
     public static BambooSpeciesPreset Default => All[0];

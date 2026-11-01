@@ -24,6 +24,20 @@ internal static class Program
         if (args.Contains("--material-ui")) {
             RhinoInside.Resolver.Initialize(); RunMaterialUI(); return failures == 0 ? 0 : 1;
         }
+        if (args.Contains("--material-sheet")) {
+            Check("Material radial inspection contact sheet", MaterialChecks.RadialInspectionSheet);
+            Console.WriteLine($"{passed} passed, {failures} failed");
+            return failures == 0 ? 0 : 1;
+        }
+        if (args.Contains("--bamboo-probe")) {
+            NaturalChecks.ProbeBundles();
+            return 0;
+        }
+        if (args.Contains("--bamboo-render")) {
+            Check("Bamboo side and top full renders", MaterialChecks.BambooFullRenders);
+            Console.WriteLine($"{passed} passed, {failures} failed");
+            return failures == 0 ? 0 : 1;
+        }
         if (args.Contains("--benchmark-atlas"))
         {
             RhinoInside.Resolver.Initialize();
