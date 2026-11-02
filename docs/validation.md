@@ -7,7 +7,7 @@
 - `--bake-matrix`: PASS, **6** checks, 0 failed.
 - Bamboo Sample throughput: within softwood cost class (~0.7–1.0× `TimberPanel.Col` on 200k hits). Texture cache `woodie-20`.
 - Mac native checks: not run. Fresh installed Bake-menu session for this build: not run.
-- Publication hashes filled after Yak push (below).
+- Publication (2026-11-02): verified GHA SHA-256 `D21FFCE03F3B6F906D140D7CD9730654D0F7CBF1E34272710619C933CB3A4477`; Yak `woodie-0.1.6-rh8_20-any.yak` SHA-256 `9D40A0784E7BCAF14AF4DCEF143B978E746E2CA7C7E029115B583420CF2C6C99`. Test-server package `woodie-releasecheck-20261102084955` upload/download matched. Production push of `woodie` / `0.1.6` succeeded. GitHub release: https://github.com/lasaths/Woodie/releases/tag/v0.1.6.
 
 ## 0.1.5 — Log Stock, Bamboo Stock and playground — 2026-11-01
 
