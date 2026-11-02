@@ -79,8 +79,8 @@ public sealed class StockDefinition : IMaterialModel
     {
         var piece = Construction.PieceAt(x, y, z);
         piece.ToSource(x, y, z, out var sx, out var sy, out var sz);
-        if (!piece.Model.TryFibreDirection(sx, sy, sz, out dx, out dy, out dz)) return false;
-        // Direction is a free vector in source millimetres; piece frames match stock axes for solid timber.
+        if (!piece.Model.TryFibreDirection(sx, sy, sz, out var fx, out var fy, out var fz)) { dx = dy = dz = 0; return false; }
+        piece.ToStockDirection(fx, fy, fz, out dx, out dy, out dz);
         return true;
     }
 
@@ -89,15 +89,36 @@ public sealed class StockDefinition : IMaterialModel
     {
         if (Construction.Pieces.Count == 1 && Construction.Pieces[0].Model is TimberPanel panel)
             return panel.TraceFibreStrands(across, through, stepMm);
-        return (new List<List<(double X, double Y, double Z)>>(), new List<List<(double X, double Y, double Z)>>());
+        return (new List<List<(double X, double Y, double Z)>>(), TraceFibreFlow(0, LengthMm, 0, WidthMm, 0, DepthMm, across, through, stepMm));
     }
 
-    /// <summary>Fibre streamlines clipped to a material box when the stock is a single TimberPanel piece.</summary>
+    /// <summary>Fibre streamlines clipped to a material box. TimberPanel uses its knot field; other models use <see cref="TryFibreDirection"/>.</summary>
     public List<List<(double X, double Y, double Z)>> TraceFibreFlow(double x0, double x1, double y0, double y1, double z0, double z1, int across = 10, int through = 8, double stepMm = 8)
     {
         if (Construction.Pieces.Count == 1 && Construction.Pieces[0].Model is TimberPanel panel)
             return panel.TraceFibreFlow(x0, x1, y0, y1, z0, z1, across, through, stepMm);
-        return new List<List<(double X, double Y, double Z)>>();
+        var flow = new List<List<(double X, double Y, double Z)>>();
+        if (!(stepMm > 0) || across < 1 || through < 1) return flow;
+        for (int j = 0; j < across; j++)
+        for (int k = 0; k < through; k++)
+        {
+            double y = y0 + (y1 - y0) * ((j + 0.5) / across);
+            double z = z0 + (z1 - z0) * ((k + 0.5) / through);
+            foreach (double sign in new[] { 1.0, -1.0 })
+            {
+                var poly = new List<(double X, double Y, double Z)>();
+                double x = 0.5 * (x0 + x1), px = x, py = y, pz = z;
+                for (int step = 0; step < 400; step++)
+                {
+                    if (px < x0 || px > x1 || py < y0 || py > y1 || pz < z0 || pz > z1) break;
+                    poly.Add((px, py, pz));
+                    if (!TryFibreDirection(px, py, pz, out double dx, out double dy, out double dz)) break;
+                    px += sign * dx * stepMm; py += sign * dy * stepMm; pz += sign * dz * stepMm;
+                }
+                if (poly.Count >= 3) flow.Add(poly);
+            }
+        }
+        return flow;
     }
 
     int Sample(double x, double y, double z, double nx, double ny, double nz, bool oriented)

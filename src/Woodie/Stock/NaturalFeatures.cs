@@ -5,7 +5,9 @@ namespace Woodie.Stock;
 /// <summary>
 /// Resolved anatomy of one natural Log or bamboo specimen, in stock millimetres with X along the axis (base → tip).
 /// Geometry (radius, ovality, node stations) and appearance (knots, noise phase, tint) draw from separate seeded streams
-/// and are resolved once; Variation 0 leaves nominal taper, nodes and rings only. Species presets supply starting dimensions and skin.
+/// and are resolved once. Bamboo vascular identity is a 2D cellular field in wall-polar (θ, t) — no axial cell index —
+/// so cuts keep the same bundles at Larsson speed (O(9) neighbours, same cost class as softwood Perlin).
+/// Variation 0 leaves nominal taper and nodes only.
 /// </summary>
 public sealed class NaturalFeatures
 {
@@ -70,6 +72,8 @@ public sealed class NaturalFeatures
     /// <summary>Grosser free fibre strands (0 / 1 / 2) from the bamboo species preset.</summary>
     public int FreeFibreStrands { get; }
     public int KnotCount => knotX.Length;
+    /// <summary>True when bamboo uses the axial-persistent wall-polar bundle field.</summary>
+    public bool HasVolumetricBundles => Bamboo;
     public (double X, double Angle, double Size) Knot(int i) => (knotX[i], knotAngle[i], knotSize[i]);
 
     /// <summary>Resolve once. A null Diameter on the settings wraps the supplied cross-section (legacy/boxed stock).</summary>
@@ -129,12 +133,97 @@ public sealed class NaturalFeatures
         return (S(u) - S(0)) / (S(1) - S(0));
     }
 
+    /// <summary>Speichinger-style radial occupancy for pith/skin empty bands and cell survival.</summary>
+    public static double BundleSurvive(double tc)
+    {
+        double s = SmoothStep(0.08, 0.28, tc) * (0.20 + 0.80 * Math.Pow(Math.Max(0, (Math.Exp(2.9 * tc) - 1) / (Math.Exp(2.9) - 1)), 0.92));
+        s *= SmoothStep(0.056, 0.10, tc) * (1.0 - SmoothStep(0.97, 0.995, tc));
+        if (tc > 0.8) s *= Lerp(1.0, 0.78, (tc - 0.8) / 0.2);
+        return s;
+    }
+
+    /// <summary>
+    /// Vascular flower at wall point. 2D cellular field in (arc, wall-depth) only — no axial cell index — so identity
+    /// is constant along the culm. Cost matches softwood: ≤9 neighbour cells + cheap integer hashes (no Perlin).
+    /// <paramref name="angWarp"/> warps the query (Peng) without changing the field.
+    /// </summary>
+    public (double Sheath, double Lumen) SampleBundle(double ri, double ro, double r, double ang, double angWarp = 0)
+    {
+        if (!Bamboo) return (0, 0);
+        double wall = ro - ri; if (!(wall > 1e-6)) return (0, 0);
+        double tc = (r - ri) / wall; if (tc < 0.05 || tc > 0.995) return (0, 0);
+        double areaMm2 = Lerp(0.194, 0.061, Math.Pow(tc, 0.9));
+        double spacing = Math.Max(0.34, Math.Sqrt(areaMm2) * Lerp(2.6, 0.55, Math.Pow(tc, 1.25)));
+        double survive = BundleSurvive(tc);
+        double aspect = Lerp(1.55, 0.48, tc);
+        double clover = Math.Pow(1 - tc, 1.25);
+        // Fixed reference radius so (θ,t) identity does not drift with taper along x.
+        double rRef = Math.Max(Diameter * 0.5 - Wall * 0.5, spacing);
+        double u = (ang + angWarp) * rRef / spacing, v = tc * Wall / spacing;
+        return BundleField2D(u, v, OffsetX * Variation, OffsetY * Variation, aspect, survive, clover, FreeFibreStrands);
+    }
+
+    // Flower VB (Grosser/Dixon) in cell units. clover=1 → four caps; clover=0 → skull.
+    static (double Sheath, double Lumen) BundleField2D(double u, double v, double ox, double oy, double aspect, double survive, double clover, int freeFibre)
+    {
+        int iu = (int)Math.Floor(u), iv = (int)Math.Floor(v);
+        double su = Math.Max(0.55, Math.Sqrt(aspect)), sv = Math.Max(0.55, 1 / Math.Sqrt(aspect));
+        double best = 9, blu = 0, blv = 0;
+        for (int dv = -1; dv <= 1; dv++)
+        for (int du = -1; du <= 1; du++)
+        {
+            int cx = iu + du, cy = iv + dv;
+            if (Hash01(cx, cy + 41, 0, ox) > survive) continue;
+            double jx = Hash01(cx, cy, 1, ox), jy = Hash01(cx + 19, cy - 7, 2, oy);
+            double lu = u - (cx + jx), lv = v - (cy + jy);
+            double d = Math.Sqrt(lu * lu * su * su + lv * lv * sv * sv);
+            if (d < best) { best = d; blu = lu; blv = lv; }
+        }
+        if (best > 8) return (0, 0);
+        double fibre = SoftCap(blu, blv, 0.0, 0.0, su, sv) * 0.65;
+        fibre = Math.Max(fibre, Math.Max(SoftCap(blu, blv, 0.0, 0.18, su, sv), SoftCap(blu, blv, 0.0, -0.18, su, sv)));
+        if (clover > 0.05)
+            fibre = Math.Max(fibre, clover * Math.Max(SoftCap(blu, blv, 0.18, 0.0, su, sv), SoftCap(blu, blv, -0.18, 0.0, su, sv)));
+        if (freeFibre >= 1) fibre = Math.Max(fibre, SoftCap(blu, blv, 0.0, 0.40, su, sv) * 0.95);
+        if (freeFibre >= 2) fibre = Math.Max(fibre, SoftCap(blu, blv, 0.0, -0.38, su, sv) * 0.9);
+        double vs = Lerp(0.07, 0.13, clover);
+        double lumen = Math.Max(SoftCap(blu, blv, vs, 0.0, su, sv), SoftCap(blu, blv, -vs, 0.0, su, sv));
+        return (Math.Min(1, fibre), lumen * SmoothStep(0.42, 0.08, best));
+    }
+
+    static double SoftCap(double lu, double lv, double cu, double cv, double su, double sv)
+    {
+        double d = Math.Sqrt((lu - cu) * (lu - cu) * su * su + (lv - cv) * (lv - cv) * sv * sv);
+        return SmoothStep(0.15, 0.035, d);
+    }
+
+    // Integer hash — faster than Perlin for cellular jitter (TimberPanel still owns grain noise).
+    static double Hash01(int x, int y, int z, double salt)
+    {
+        unchecked
+        {
+            uint n = (uint)(x * 374761393 + y * 668265263 + z * 2147483647);
+            n ^= (uint)(salt * 4294967.0);
+            n = (n ^ (n >> 13)) * 1274126177u;
+            return (n & 0xffffff) * (1.0 / 16777215.0);
+        }
+    }
+
+    static double Lerp(double a, double b, double t) => a + (b - a) * t;
+    static double SmoothStep(double edge0, double edge1, double x)
+    {
+        if (edge0 == edge1) return x < edge0 ? 0 : 1;
+        double t = Math.Clamp((x - edge0) / (edge1 - edge0), 0, 1);
+        return t * t * (3 - 2 * t);
+    }
+
     double Sway(double x) => 0.6 * Math.Sin(2 * Math.PI * x / b1 + a1) + 0.4 * Math.Sin(2 * Math.PI * x / b2 + a2);
 
     /// <summary>Stem radius (mm) before node ridges: nominal taper plus bounded variation.</summary>
     public double Outer(double x) => (Diameter / 2 - Taper * x / 2000) * (1 + Variation * Wobble * Sway(x));
 
     /// <summary>Bamboo wall thickness at x.</summary>
+    // shortcut: sinusoid Variation only; add species t(z) taper when strip machining uses a local window.
     public double WallAt(double x) => Wall * (1 + 0.15 * Variation * Math.Sin(2 * Math.PI * x / b3 + wallPhase));
 
     /// <summary>Inner (hollow) radius at x for bamboo.</summary>

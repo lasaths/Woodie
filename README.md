@@ -1,78 +1,70 @@
 # Woodie
 
-Woodie shows native Rhino geometry as timber in **Rhino and Grasshopper**. Connect a mesh, Brep, surface or extrusion. Choose a product to see grain, knots, board joints and layered construction in the viewport.
+**Woodie** is a Rhino 8.20+ / .NET 8 Grasshopper plugin that shows native geometry as **procedural timber and bamboo**. Connect a mesh, Brep, surface or extrusion. Choose a product. Grain, knots, boards, veneers, hollow culms and engineered bamboo strips come from a **continuous material volume in millimetres** — not a flat image glued to the surface.
 
-**Timber Material → optional Timber Buildup → Timber Preview** · **Display → Woodie**
+**Display → Woodie** · **Timber Material → optional Timber Buildup → Timber Preview**
 
-**0.1.5** adds Log Stock and Bamboo Stock, a same-log tower, knot-influence display modes, and the earlier stock-aware cuts and native textured baking. Mac native display and a fresh interactive Bake-menu session remain unverified. See [validation](docs/validation.md).
+**0.1.6** keeps Log Stock and Bamboo Stock, and makes bamboo **volumetric like the softwood path**: vascular-bundle identity is fixed in wall-polar coordinates along the culm, so cuts, previews and bakes sample the same field. Sampling stays in the same cost class as softwood. Mac native display and a fresh interactive Bake-menu session remain unverified. See [validation](docs/validation.md).
+
+![Bamboo side and end cuts — Moso, Guadua, Asper](docs/images/bamboo-side-top.png)
+
+*Contact sheet from the checks runner (`--bamboo-render`): side skin and end cut for three construction species. Visual approximation, not a measured species atlas.*
+
+## Why Woodie
+
+| Need | What Woodie does |
+| --- | --- |
+| Cut through a board and keep the grain | Optional **Stock** locks material coordinates while geometry changes |
+| Layered products | CLT, 3S, plywood, LVL, Kerto-Q, custom **Timber Buildup** |
+| Natural poles | **Log Stock** and **Bamboo Stock** from a base→tip Line |
+| Engineered bamboo | Plain-pressed, side-pressed and layered strip products |
+| Take it into Rhino | **Bake** native objects with persistent textures |
+
+Materials are **visual presets**. They are not manufacturing schedules or structural certifications. Softwood appearance is inspired by Larsson et al. (2022). Bamboo uses a separate monocot wall model grounded in published anatomy (bundle density toward the outer wall, Grosser types, RIN–RCIL node spacing). Colours and node paint are appearance adaptations. See [material limitations](docs/material-realism-audit.md) and [natural materials notes](docs/development/natural-materials-research.md).
 
 ## How it works
 
-Woodie treats wood as a **volumetric material field** in physical millimetres. It does not paint a flat image onto the surface.
-
 1. Resolve a fibre-aligned frame (or a guide-curve bend) for the part.
 2. Measure the part in physical units from Geometry Units and the Rhino document.
-3. Build a product layup: boards, veneers, layer directions and optional joints.
-4. Sample a procedural softwood model at each render-mesh triangle in material coordinates.
-5. Pack sampled colours into texture atlases for Grasshopper display or Bake.
+3. Build a product layup or a natural/engineered stock definition.
+4. Sample the procedural field at each render-mesh triangle in material millimetres.
+5. Pack colours into texture atlases for Grasshopper display or Bake.
 
-Face grain, end grain, knots and cross-grain layers come from the same field. A cut moves the visible surface through that field. The uncut Stock keeps grain and knots fixed while the plane moves. Input geometry is unchanged. Open surfaces stay open.
+A cut moves the visible surface through the **same** field. Face grain, end grain and layer edges stay consistent. Open surfaces stay open. Input geometry is never transformed in place.
 
-A smooth open guide curve maps grain along a bend by arc length. A coherent curved single surface can derive its own bent mapping. Straight parts use the largest planar region or an area-weighted principal frame.
+### Softwood field
 
-### Method
+Growth rings and knots follow a Larsson-style volumetric construction (independent C# adaptation). Knot influence and Force-flow streamlines are available on engineered timber Previews.
 
-The grain and knot model is inspired by **Maria Larsson et al., [*Procedural Texturing of Solid Wood with Knots*](https://doi.org/10.1145/3528223.3530081), ACM Transactions on Graphics 41(4), Article 45, SIGGRAPH 2022**. Woodie is an independent C# procedural adaptation. It is not a reproduction of the research implementation. It is not a species-calibrated material model.
+### Bamboo field
 
-Cut-aware colour and detail also draw on Larsson et al. (2024) and *Mokume* (2025). Noise follows Ken Perlin's [*Improving Noise*](https://doi.org/10.1145/566654.566636), SIGGRAPH 2002. Full credits are [below](#research-and-credits). Scope and evidence are in [appearance](docs/appearance.md).
+Bamboo is **not** annual rings. Internodes are a parenchyma matrix with **vascular bundles** that densify and shrink toward the epidermis (Speichinger / Dixon / Shang / Grosser-guided). Bundles live in wall-polar `(θ, t)` so axial cuts keep the same identities. Nodes share stations between geometry (ridge + diaphragm) and appearance. Texture cache namespace: `woodie-20`.
 
-Each atlas triangle supplies its edges' cross product in mapped material coordinates. The squared normal component along the layer fibre axis gives a continuous end-grain weight. Growth and ring sampling stay independent of cut orientation. Colour synthesis blends longitudinal and end-grain contrast from that phase.
+Engineered bamboo strips map rectangular stock cells into a machined window of a source culm (skin and lining removed). Strip corners stay inside that window.
 
-Rhino geometry work runs on the host thread during solution preparation. Background rendering uses copied managed triangle and pixel data only. Baking writes native Rhino objects with final textures. It does not substitute preview meshes.
-
-### Architecture (UML)
-
-Grasshopper components prepare settings and geometry. Core modules map the part, sample appearance, build atlases and bake.
+### Architecture
 
 ```mermaid
 classDiagram
   direction LR
-
-  class SettingsComponent["Timber Material"]
-  class LayerComponent["Timber Layer"]
-  class BuildupComponent["Timber Buildup"]
-  class CutComponent["Timber Cut"]
   class PreviewComponent["Timber Preview"]
-
-  class TimberSettings
-  class LayerDefinition
-  class PreparedPart
+  class StockDefinition
+  class Construction
+  class MaterialPiece
+  class IMaterialModel
   class TimberPanel
+  class BambooMaterialModel
   class TextureAtlas
-  class NativeBakePlan
   class TimberBaker
 
-  SettingsComponent --> TimberSettings : Settings
-  LayerComponent --> LayerDefinition : Layer
-  BuildupComponent --> TimberSettings : Settings + layup
-  LayerComponent --> BuildupComponent : Layers
-  SettingsComponent --> BuildupComponent : Settings
-  SettingsComponent --> PreviewComponent : Settings
-  BuildupComponent --> PreviewComponent : Settings
-  CutComponent --> PreviewComponent : Geometry + Stock
-
-  PreviewComponent --> PreparedPart : Geometry prep
-  PreparedPart --> TimberPanel : material sample
-  TimberPanel --> TextureAtlas : colours
-  PreviewComponent --> TextureAtlas : display atlases
-  PreviewComponent --> NativeBakePlan : Bake
-  NativeBakePlan --> TimberPanel : final sample
-  NativeBakePlan --> TimberBaker : commit to Rhino
-
-  note for PreparedPart "Geometry module:\nalignment, units, maps"
-  note for TimberPanel "Appearance module:\nfield, layups, palettes"
-  note for TextureAtlas "Rendering module:\ncharts, PNG, refine"
-  note for TimberBaker "Baking module:\nnative UV + document"
+  PreviewComponent --> StockDefinition : sample / bake
+  StockDefinition --> Construction
+  Construction --> MaterialPiece
+  MaterialPiece --> IMaterialModel
+  IMaterialModel <|.. TimberPanel
+  IMaterialModel <|.. BambooMaterialModel
+  PreviewComponent --> TextureAtlas
+  PreviewComponent --> TimberBaker
 ```
 
 Typical graph:
@@ -80,92 +72,81 @@ Typical graph:
 ```text
 Timber Material ──► (optional Timber Buildup) ──► Timber Preview
 Timber Layer ─────► Timber Buildup
-Material Stock ───► Timber Cut ──► Timber Preview   (Stock Model)
-Log Stock ────────► Timber Preview
-Bamboo Stock ─────► Timber Preview
-Timber Cut ───────► Timber Preview  (Geometry + Stock Geometry)
+Material Stock / Log Stock / Bamboo Stock ──► Timber Cut / Timber Preview
+Timber Cut ───────► Timber Preview  (Geometry + Stock)
 ```
 
-## Install from Rhino PackageManager
+## Install
 
-1. Open Rhino and run the **PackageManager** command.
-2. Search for **woodie**.
-3. Select Woodie and click **Install**.
-4. Restart Rhino if prompted. Open Grasshopper. Find **Display → Woodie**.
+1. Open Rhino → **PackageManager**.
+2. Search for **woodie** → Install.
+3. Restart Rhino if prompted. Open Grasshopper → **Display → Woodie**.
 
-**Use Rhino PackageManager for normal installation and updates.** You do not need a GitHub checkout, an SDK or a command-line install. Remove a previously copied Woodie.gha from Grasshopper Libraries before you install through PackageManager. That avoids duplicate components.
+Use PackageManager for normal installs and updates. Remove any hand-copied `Woodie.gha` from Grasshopper Libraries first.
 
-**0.1.5** targets **.NET 8** and needs **Rhino 8.20 or later** on Windows or Mac. Rhino 8.20 supplies .NET 8 by default. See [McNeel's runtime guidance](https://developer.rhino3d.com/en/guides/rhinocommon/moving-to-dotnet-core/). On Windows, use modern .NET rather than .NET Framework mode. Rhino 7 is unsupported. Native Mac display and interaction remain unverified. See [validation](docs/validation.md).
+**Requires Rhino 8.20+** running **.NET 8** (Windows or Mac). Rhino 7 is unsupported. On Windows prefer modern .NET over .NET Framework mode. [McNeel .NET guidance](https://developer.rhino3d.com/en/guides/rhinocommon/moving-to-dotnet-core/).
 
 ## Components
 
-Components are under **Display → Woodie**.
-
 | Component | Purpose |
 | --- | --- |
-| **Timber Material** | Choose a product and Natural/Clean-Pale appearance. Seed controls repeatability. Resolution controls face detail in mm/pixel. Advanced inputs expose knots, rings, board/veneer dimensions and palette colours. |
-| **Timber Layer** | Define one layer: thickness, longitudinal/cross grain, solid/boards/veneer construction and optional board joints. |
-| **Timber Buildup** | Combine layers from bottom to top. Output material settings, a schedule and a section diagram. Exact thickness is checked. Fit to part scales proportions when you enable it. |
-| **Timber Cut** | Cut and cap closed stock with a plane. Outputs the retained geometry, original Stock and section outlines. Accepts a Stock Model. |
-| **Timber Preview** | Display textured meshes for native geometry. Fibre, Base Plane and Guide Curve control mapping. Geometry Units declares source units. Right-click engineered timber for Textured, Gradient or Force flow. Its Bake action creates native textured Rhino objects. |
-| **Material Stock** | Wrap geometry and timber settings in a Stock Model for Cut and Preview. |
-| **Log Stock** | Build a tapered softwood log from a base-to-tip Line. Older Natural Stock nodes reopen as Log Stock. |
-| **Bamboo Stock** | Build a hollow culm from a Line. Open the panel to choose Moso, Guadua or Asper. |
+| **Timber Material** | Product + Natural/Clean-Pale look. Seed, resolution (mm/pixel), advanced knot/palette inputs. |
+| **Timber Layer** / **Timber Buildup** | Physical stacks, schedule, section diagram. Exact thickness or Fit to part. |
+| **Timber Cut** | Plane cut with caps. Passes Stock so grain stays fixed. |
+| **Timber Preview** | Textured display. Fibre / Base Plane / Guide / Geometry Units. Bake. Engineered timber: Textured, Gradient, Force flow. |
+| **Material Stock** | Wrap geometry + settings as a Stock Model. |
+| **Log Stock** | Tapered softwood stem from a Line (GUID kept from older Natural Stock). |
+| **Bamboo Stock** | Hollow culm from a Line. Species panel: Moso, Guadua, Asper. Diameter Domain overrides the trade Ø range. |
 
-**Timber Material → optional Timber Buildup → Timber Preview**. For cuts, connect Cut's Geometry and Stock outputs to Preview's Geometry and Stock Geometry inputs. The uncut stock keeps grain and knots fixed as the plane moves.
+**Timber Material → optional Timber Buildup → Timber Preview**. For cuts, wire Cut’s Geometry and Stock to Preview. [Full input reference](docs/usage.md#complete-component-input-reference).
 
-Material starts at **CLT / Natural**. Click the triangle beneath its icon to collapse the control panel. Wires and settings stay the same. A wired Product value overrides the dropdown. Settings resolve as product defaults → appearance defaults → explicit inputs. [All inputs, outputs and defaults](docs/usage.md#complete-component-input-reference).
+Engineered products: Solid timber, KVH, Glulam, CLT, Three-layer panel, Plywood, LVL — parallel, Kerto-Q. Plus engineered bamboo lumber (plain / side) and BambooPanel. See [materials](docs/materials.md).
 
-Choose Solid timber, KVH, Glulam, CLT, Three-layer panel (3S), Plywood, LVL — parallel or Kerto-Q. These represent different board/veneer constructions. They are visual approximations. They are not manufacturing or structural specifications. See [material coverage](docs/materials.md) and [limitations](docs/material-realism-audit.md).
+## Example
 
-## Start with the example
+Open **[Timber-preview.ghx](examples/Timber-preview.ghx)** with **Woodie 0.1.6**:
 
-Open the single **[Timber-preview.ghx](examples/Timber-preview.ghx)** definition with **Woodie 0.1.5**. It contains six numbered sections, with Scribble headings and groups:
+1. Cut through the stock  
+2. Follow a knot (stepped cutaway)  
+3. Build your own stack  
+4. Product library (eleven geometry cases)  
+5. Same log → tower  
+6. Natural bamboo culm + vertical section  
 
-1. **Cut through the stock:** one rectangular piece with position/angle sliders and a textured interior cap.
-2. **Follow a knot:** a stepped cutaway with a **Knot section (%)** slider and capped exposed face. It reveals the same automatic knot field through its depth.
-3. **Build your own stack:** longitudinal/cross layers, a live schedule and a section diagram.
-4. **Product library:** eleven geometry cases on one Material; change Product to switch appearance.
-5. **Same log → tower:** exploded blanks in a log envelope, placement lines, and a knot-influence end face. Shared seed 3.
-6. **Natural bamboo:** a Moso Bamboo Stock culm and a vertical section Preview.
+Faces use **1 mm/pixel**. Works in millimetre, metre and inch documents. [Example guide](examples/README.md).
 
-Demonstrations are visible at first. The library Show toggle starts off. Material controls start collapsed. All geometry is embedded and source units are declared. The definition works in millimetre, metre and inch Rhino documents. Faces use **1 mm/pixel**. See the [example guide](examples/README.md). For the published 0.1.2 plugin, use its [matching gallery](https://raw.githubusercontent.com/lasaths/Woodie/v0.1.2/examples/Timber-preview.ghx).
+![Moving section through the stepped timber](docs/images/knot-section-arctic.gif)
 
-![Moving section through the stepped timber, captured in Rhino Arctic mode](docs/images/knot-section-arctic.gif)
+## Bake
 
-Move **Knot section (%)** in section 02 to reproduce this cut. The fixed camera faces the stepped profile. The moving cap samples the original material field, including the knot near the end of the sweep. The 186-frame loop runs from 95% to 15% and back, with eased starts/stops and slower travel through the knot crossings.
+Right-click **Timber Preview → Bake**. Native types and topology are preserved. Stock is a mapping reference and is not baked. Enable **Save textures** when saving the `.3dm`. [Bake docs](docs/baking.md).
 
-The product library uses product-appropriate thicknesses and matched flat/bowed centreline lengths. Turn on **Show library** and change Product to explore the eleven cases.
+## Accuracy and limits
 
-For older **0.1.1** installations, use its [matching two-board example](https://raw.githubusercontent.com/lasaths/Woodie/v0.1.1/examples/Timber-preview.ghx) in a **millimetre Rhino document**. The Geometry Units input is available from 0.1.2.
-
-Connect geometry to **Timber Preview → Geometry**. Connect **Timber Material → Settings** to the preview's **Settings** input. Supply Fibre or Base Plane for explicit orientation. Supply Guide Curve for a controlled bend.
-
-## Bake with textures
-
-Right-click **Timber Preview → Bake**. Then choose the Rhino layer as usual. Woodie prepares final-quality textures and creates one native object per shown input. Breps stay joined. Extrusions remain extrusions. Meshes keep their vertices and faces. Stock is a mapping reference and is not baked.
-
-Baked objects are independent snapshots. They display without Woodie. Save the `.3dm` with **Save textures** enabled for portability. Textures also live beside a saved model in `<model>_WoodieTextures`. Unsaved models use Woodie's persistent application-data folder. Later shape edits or cuts need a new bake. [Bake workflow, resolution limits and persistence](docs/baking.md).
+- Softwood: Larsson-inspired procedural field; not a photo-fitted species model.  
+- Bamboo: continuous vascular field with anatomy-guided radial gradients; node colour and epidermis weathering are appearance layers; flower size is preview-scaled for 1 mm texels.  
+- Engineered recipes scale or approximate manufacturer tables in places — see the [realism audit](docs/material-realism-audit.md).  
+- Mac viewport/Bake interaction: not signed off.
 
 ## Development
-
-Use the .NET 8 SDK and PowerShell 7. Native checks need a licensed Rhino 8.20+ on Windows. The plugin targets cross-platform `net8.0`.
 
 ```powershell
 dotnet build tests/Woodie.Checks -c Release
 dotnet build src/Woodie/Woodie.csproj -c Release
-dotnet tests/Woodie.Checks/bin/Release/net8.0-windows/Woodie.Checks.dll --rhino --integration
+dotnet run --project tests/Woodie.Checks -c Release --no-build -- --rhino --integration
 pwsh ./tools/package.ps1
 ```
 
-Build the checks runner before the plugin. Its project reference uses a DLL target. Packaging creates a slim Yak and a source ZIP under `artifacts/release/`. It does not install or publish them. See [development](docs/development.md), [packaging](docs/packaging.md), [validation](docs/validation.md), [contributing](CONTRIBUTING.md) and [changelog](CHANGELOG.md).
+Useful check flags: `--bamboo-render`, `--material-sheet`, `--bamboo-probe`, `--bake-matrix`.
+
+See [development](docs/development.md), [packaging](docs/packaging.md), [validation](docs/validation.md), [contributing](CONTRIBUTING.md), [changelog](CHANGELOG.md). Investigation notes for bamboo live under [docs/development/](docs/development/).
 
 ## Research and credits
 
-The procedural grain and knots are inspired by **Maria Larsson, Takashi Ijiri, Hironori Yoshida, Johannes A. J. Huber, Magnus Fredriksson, Olof Broman and Takeo Igarashi**, [*Procedural Texturing of Solid Wood with Knots*](https://doi.org/10.1145/3528223.3530081), *ACM Transactions on Graphics* 41(4), Article 45, SIGGRAPH 2022. See the [paper](https://www.ma-la.com/procedural_knots/Procedural_Knots_2022.pdf) and [authors' implementation](https://github.com/marialarsson/procedural_knots).
+Softwood grain and knots inspired by **Maria Larsson, Takashi Ijiri, Hironori Yoshida, Johannes A. J. Huber, Magnus Fredriksson, Olof Broman and Takeo Igarashi**, [*Procedural Texturing of Solid Wood with Knots*](https://doi.org/10.1145/3528223.3530081), ACM TOG 41(4), Article 45, SIGGRAPH 2022. [PDF](https://www.ma-la.com/procedural_knots/Procedural_Knots_2022.pdf) · [authors’ repo](https://github.com/marialarsson/procedural_knots).
 
-Woodie is an independent C# procedural adaptation. Cut-aware detail also draws on Larsson et al. (2024) and *Mokume* (2025). [Appearance documentation](docs/appearance.md) explains scope, references and evidence. Noise follows Ken Perlin's [*Improving Noise*](https://doi.org/10.1145/566654.566636), SIGGRAPH 2002.
+Woodie is an **independent C# adaptation**, not a port of that codebase. Cut-aware detail also draws on Larsson et al. (2024) and *Mokume* (2025). Noise follows Perlin, [*Improving Noise*](https://doi.org/10.1145/566654.566636), 2002. Bamboo anatomy cues: Grosser & Liese; Dixon & Gibson; Shang; Speichinger et al.; Inoue / Tan (RIN–RCIL); Peng (node reorientation). See [appearance](docs/appearance.md) and [bamboo research notes](docs/development/bamboo-appearance-research.md).
 
-Component controls follow [McNeel's custom attributes guidance](https://developer.rhino3d.com/guides/grasshopper/custom-attributes/) and are informed by [Arup's custom Grasshopper UI examples](https://github.com/arup-archive/Custom-Grasshopper-UI-Components). Neither Arup/Oasys nor the research implementation is required at runtime. Icons are [Phosphor Icons](https://phosphoricons.com/).
+UI patterns follow [McNeel custom attributes](https://developer.rhino3d.com/guides/grasshopper/custom-attributes/) and are informed by [Arup’s GH UI examples](https://github.com/arup-archive/Custom-Grasshopper-UI-Components). Icons: [Phosphor Icons](https://phosphoricons.com/).
 
-Released under the [MIT licence](LICENSE). Upstream copyright and icon notices are retained in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+[MIT licence](LICENSE) · [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)

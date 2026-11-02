@@ -1,6 +1,6 @@
 # Woodie
 
-Procedural timber preview for Rhino 8.20+ / .NET 8 and Grasshopper.
+Procedural timber and bamboo preview for Rhino 8.20+ / .NET 8 and Grasshopper.
 
 Install and update through Rhino **PackageManager**, searching for **woodie**.
 Components are under **Display → Woodie**: connect Timber Material → Settings to Timber Preview → Settings.
@@ -8,6 +8,7 @@ Components are under **Display → Woodie**: connect Timber Material → Setting
 Open the single examples/Timber-preview.ghx definition for all examples. Numbered Scribble headings and groups organize cutting, knot transitions, custom buildup, one eight-product library, a same-log tower and a bamboo culm section.
 Demonstrations are visible initially. The library Show toggle starts off; Material panels start compact.
 Timber Layer and Timber Buildup define physical stacks and a section diagram. Exact thicknesses are checked; Fit to part scales proportions explicitly. Material Stock, Log Stock and Bamboo Stock build Stock Models. Older Natural Stock nodes reopen as Log Stock. Connect a Stock Model, or Timber Cut's uncut Stock output, so cutting preserves grain. Cut outputs are in document units.
+Bamboo samples a continuous vascular field along the culm (wall-polar bundles). Softwood uses a Larsson-inspired growth field. Both are visual approximations.
 The gallery declares Geometry Units = Millimetres, so it works in millimetre, metre and inch documents.
 For your own geometry, Geometry Units defaults to Document; choose the source units explicitly when the coordinate values came from another unit system.
 Input geometry is never transformed in place.
@@ -18,7 +19,7 @@ and source code are on GitHub. Materials are visual approximations, not structur
 Native Mac display and interaction have not been verified.
 
 Appearance inspired by Maria Larsson et al., [Procedural Texturing of Solid Wood with Knots](https://doi.org/10.1145/3528223.3530081),
-ACM TOG 41(4), Article 45, SIGGRAPH 2022; independent C# procedural adaptation.
+ACM TOG 41(4), Article 45, SIGGRAPH 2022; independent C# procedural adaptation. Bamboo anatomy cues from published culm studies; colours are appearance adaptations.
 
 MIT licence and third-party credits are included alongside this file.
 

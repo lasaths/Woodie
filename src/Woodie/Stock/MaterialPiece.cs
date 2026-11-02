@@ -48,4 +48,12 @@ public sealed class MaterialPiece
         sny = yx * nx + yy * ny + yz * nz;
         snz = zx * nx + zy * ny + zz * nz;
     }
+
+    /// <summary>Map a free vector from source millimetres into stock (transpose of the orthogonal piece frame).</summary>
+    public void ToStockDirection(double sx, double sy, double sz, out double dx, out double dy, out double dz)
+    {
+        dx = xx * sx + yx * sy + zx * sz;
+        dy = xy * sx + yy * sy + zy * sz;
+        dz = xz * sx + yz * sy + zz * sz;
+    }
 }

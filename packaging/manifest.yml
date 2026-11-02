@@ -3,26 +3,27 @@ version: $version
 authors:
   - Lasath Siriwardena
 description: >
-  Procedural timber preview for native Rhino geometry in Grasshopper.
+  Procedural timber and bamboo preview for native Rhino geometry in Grasshopper.
   Preview meshes, Breps, surfaces and extrusions as CLT, three-layer panels,
-  glulam, Kerto-Q, KVH, solid timber, plywood or parallel LVL. Includes combined material
-  settings with product and appearance dropdowns, fibre-aligned bounds, bent surface grain,
-  guide-curve bending, explicit source units and adjustable appearance settings.
-  Includes a unit-aware gallery covering all eight products and eleven geometry types.
-  Define custom layer stacks with schedules and section diagrams. Move capped cutting planes
-  through fixed stock to reveal its original grain and knots.
+  glulam, Kerto-Q, KVH, solid timber, plywood or parallel LVL, plus engineered bamboo.
+  Softwood uses a Larsson-inspired volumetric grain field; bamboo uses a continuous
+  wall-polar vascular-bundle field so cuts keep bundle identity along the culm.
+  Includes combined material settings with product and appearance dropdowns,
+  fibre-aligned bounds, bent surface grain, guide-curve bending, explicit source units
+  and adjustable appearance settings. Unit-aware gallery covering eight timber products
+  and eleven geometry types. Custom layer stacks with schedules and section diagrams.
+  Move capped cutting planes through fixed stock to reveal original grain and knots.
   Material Stock, Log Stock and Bamboo Stock (Moso, Guadua, Asper) supply Stock Models.
   Older Natural Stock nodes reopen as Log Stock.
-  One grouped, Scribble-labelled example includes cutting, a stepped knot cutaway, custom buildup,
-  one shared product library, a same-log tower and a bamboo culm section.
+  One grouped example includes cutting, a stepped knot cutaway, custom buildup,
+  a shared product library, a same-log tower and a bamboo culm section.
   Engineered timber previews can show Textured, Gradient or Force flow. Bake stays textured.
-  Bake native geometry with persistent timber textures through Timber Preview.
-  Baked objects are independent snapshots; save textures in the 3dm for portability.
+  Bake native geometry with persistent textures through Timber Preview.
   Requires Rhino 8.20 or later running .NET 8 on Windows or Mac.
   Mac native verification is pending.
   Visual presets do not specify manufactured or structural products.
-  Appearance inspired by Larsson et al. (2022), Procedural Texturing of Solid
-  Wood with Knots, ACM Transactions on Graphics 41(4), Article 45 (SIGGRAPH 2022),
+  Softwood appearance inspired by Larsson et al. (2022), Procedural Texturing of Solid
+  Wood with Knots, ACM TOG 41(4), Article 45 (SIGGRAPH 2022),
   https://doi.org/10.1145/3528223.3530081.
 url: https://github.com/lasaths/Woodie
 icon: icon.png

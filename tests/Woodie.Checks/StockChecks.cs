@@ -121,6 +121,11 @@ internal static class StockChecks
         Assert(StockDefinition.FromTimber(Bamboo(TimberProduct.BambooLumber), 2000, 100, 40).Sample(500, 33, 21) == plain.Sample(500, 33, 21), "Bamboo lumber is deterministic");
         Assert(plain.Sample(500, 33, 21) != StockDefinition.FromTimber(Bamboo(TimberProduct.BambooLumber, 0, 6), 2000, 100, 40).Sample(500, 33, 21) ||
                plain.Sample(1500, 53, 11) != StockDefinition.FromTimber(Bamboo(TimberProduct.BambooLumber, 0, 6), 2000, 100, 40).Sample(1500, 53, 11), "Seed changes the strips");
+        // Fibre in stock space follows the strip fibre axis after the piece-frame transform (plain: stock X).
+        Assert(plain.TryFibreDirection(500, 33, 21, out var pfx, out var pfy, out var pfz) && pfx > 0.85 && Math.Abs(pfy) + Math.Abs(pfz) < 0.4,
+            $"Plain-pressed fibre should stay along stock X ({pfx:0.###},{pfy:0.###},{pfz:0.###})");
+        Assert(side.TryFibreDirection(500, 33, 21, out var sfx, out var sfy, out var sfz) && sfx > 0.85,
+            $"Side-pressed fibre should stay along stock X ({sfx:0.###},{sfy:0.###},{sfz:0.###})");
 
         // Plain vs side: adhesive lines every 20 mm across the top vs every 4 mm; plain stacks 10 strips through the thickness, side only 2.
         Assert(GlueBands(TimberProduct.BambooLumber, 0, 100, 22) == 4 && GlueBands(TimberProduct.BambooLumberSide, 0, 100, 10) == 24, "Plain/side glue lines differ and never sit on the outside");

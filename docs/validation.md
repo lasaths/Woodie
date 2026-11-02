@@ -1,5 +1,14 @@
 # Release validation
 
+## 0.1.6 — volumetric bamboo + README — 2026-11-02
+
+- Release builds of `Woodie.Checks` then `Woodie.gha`: PASS, zero warnings/errors.
+- Native `--rhino --integration --examples`: PASS, **50** checks, 0 failed (includes bamboo axial-identity appearance asserts, Sample throughput vs softwood, Log/Bamboo Stock, example regenerate/reopen).
+- `--bake-matrix`: PASS, **6** checks, 0 failed.
+- Bamboo Sample throughput: within softwood cost class (~0.7–1.0× `TimberPanel.Col` on 200k hits). Texture cache `woodie-20`.
+- Mac native checks: not run. Fresh installed Bake-menu session for this build: not run.
+- Publication hashes filled after Yak push (below).
+
 ## 0.1.5 — Log Stock, Bamboo Stock and playground — 2026-11-01
 
 - Release builds of `Woodie.Checks` then `Woodie.gha`: PASS, zero warnings/errors.

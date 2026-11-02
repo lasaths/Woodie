@@ -89,6 +89,68 @@ internal static class NaturalChecks
             double t = k / 7.0, r = ri + t * (ro - ri);
             Console.WriteLine($"  t={t:0.00} L={Luma(cs.Sample(gap, 40 + r, 40, 1, 0, 0)):0}");
         }
+        // Axial identity: persistent tubes keep end-grain angular luma correlated along x; cellular fields do not.
+        double Corr(double x0, double x1)
+        {
+            const double t = 0.72;
+            double r0 = bf.Inner(x0) + t * (bf.Outer(x0) - bf.Inner(x0));
+            double r1 = bf.Inner(x1) + t * (bf.Outer(x1) - bf.Inner(x1));
+            double m0 = 0, m1 = 0; var a = new double[48]; var b = new double[48];
+            for (int i = 0; i < 48; i++) {
+                double ang = i * (2 * Math.PI / 48);
+                a[i] = Luma(cs.Sample(x0, 40 + r0 * Math.Cos(ang), 40 + r0 * Math.Sin(ang), 1, 0, 0));
+                b[i] = Luma(cs.Sample(x1, 40 + r1 * Math.Cos(ang), 40 + r1 * Math.Sin(ang), 1, 0, 0));
+                m0 += a[i]; m1 += b[i];
+            }
+            m0 /= 48; m1 /= 48; double num = 0, d0 = 0, d1 = 0;
+            for (int i = 0; i < 48; i++) { double da = a[i] - m0, db = b[i] - m1; num += da * db; d0 += da * da; d1 += db * db; }
+            return num / Math.Sqrt(d0 * d1);
+        }
+        Console.WriteLine($"volumetric={bf.HasVolumetricBundles}");
+        Console.WriteLine($"endgrain angular corr dx=1/5/20/50 mm: {Corr(gap, gap + 1):0.000} {Corr(gap, gap + 5):0.000} {Corr(gap, gap + 20):0.000} {Corr(gap, gap + 50):0.000}");
+        Console.WriteLine($"TryFibreDirection mid-wall: {cs.TryFibreDirection(gap, 40 + rr, 40, out var fx, out var fy, out var fz)} ({fx:0.###},{fy:0.###},{fz:0.###})");
+        Console.WriteLine($"WallAt base/mid/tip: {bf.WallAt(0):0.##} {bf.WallAt(1500):0.##} {bf.WallAt(3000):0.##}");
+        var wobble = Bamboo(3, 1); var wf = Resolve(wobble, 3000);
+        Console.WriteLine($"WallAt Variation=1 base/mid/tip: {wf.WallAt(0):0.##} {wf.WallAt(1500):0.##} {wf.WallAt(3000):0.##}");
+        ReportSampleThroughput();
+    }
+
+    /// <summary>Bamboo Sample must stay in the same cost class as softwood Col (atlas raster does millions of hits).</summary>
+    public static void SampleThroughput()
+    {
+        var (bambooMs, woodMs, n) = MeasureSampleThroughput();
+        double ratio = bambooMs / Math.Max(woodMs, 1e-9);
+        Console.WriteLine($"Sample throughput: {n:0} hits · bamboo {bambooMs:0.0} ms · wood {woodMs:0.0} ms · ratio {ratio:0.00}×");
+        Assert(ratio < 2.5, $"Bamboo Sample is too slow vs wood ({ratio:0.00}×; keep under 2.5×)");
+    }
+
+    static (double BambooMs, double WoodMs, int N) MeasureSampleThroughput()
+    {
+        const int n = 200_000;
+        var culm = Bamboo(3, 0.5); var bf = Resolve(culm, 3000);
+        var bamboo = StockDefinition.FromNatural(culm, 3000, 80, 80);
+        var wood = new TimberPanel(TimberProduct.SolidTimber, 3000, 80, 80, 3, 0.4, new TimberSettings { Product = TimberProduct.SolidTimber, Seed = 3 }.Palette());
+        double gap = (bf.Nodes[0] + bf.Nodes[1]) / 2, ri = bf.Inner(gap), ro = bf.Outer(gap), rr = ri + 0.72 * (ro - ri);
+        // Warmup
+        for (int i = 0; i < 2000; i++) { bamboo.Sample(gap, 40 + rr, 40, 1, 0, 0); wood.Col(gap, 40, 40, 1, 0, 0); }
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        for (int i = 0; i < n; i++) {
+            double ang = i * 0.017, x = gap + (i % 50) * 0.2;
+            bamboo.Sample(x, 40 + rr * Math.Cos(ang), 40 + rr * Math.Sin(ang), 1, 0, 0);
+        }
+        double bambooMs = sw.Elapsed.TotalMilliseconds;
+        sw.Restart();
+        for (int i = 0; i < n; i++) {
+            double y = 10 + (i % 60), z = 10 + (i / 60 % 60);
+            wood.Col(20 + i * 0.01, y, z, 1, 0, 0);
+        }
+        return (bambooMs, sw.Elapsed.TotalMilliseconds, n);
+    }
+
+    static void ReportSampleThroughput()
+    {
+        var (bambooMs, woodMs, n) = MeasureSampleThroughput();
+        Console.WriteLine($"Sample throughput: {n:0} hits · bamboo {bambooMs:0.0} ms · wood {woodMs:0.0} ms · ratio {bambooMs / Math.Max(woodMs, 1e-9):0.00}×");
     }
 
     public static void Appearance()
@@ -151,6 +213,27 @@ internal static class NaturalChecks
             midDark = Math.Min(midDark, Luma(cs.Sample(gap, 40 + rm * Math.Cos(ang), 40 + rm * Math.Sin(ang), 1, 0, 0)));
         }
         Assert(midDark < lumaInner / nSamp - 15, $"Mid-wall should carry some vascular bundles ({midDark:0} vs lining {lumaInner / nSamp:0})");
+        // Larsson-style continuity: same wall depth t (not fixed r) keeps end-grain angular structure along the axis.
+        Assert(bf.HasVolumetricBundles, "Culm must use the axial-persistent vascular field");
+        double AxialCorr(double x0, double x1)
+        {
+            double t = 0.72;
+            double r0 = bf.Inner(x0) + t * (bf.Outer(x0) - bf.Inner(x0));
+            double r1 = bf.Inner(x1) + t * (bf.Outer(x1) - bf.Inner(x1));
+            double m0 = 0, m1 = 0; var a = new double[48]; var b = new double[48];
+            for (int i = 0; i < 48; i++) {
+                double ang = i * (2 * Math.PI / 48);
+                a[i] = Luma(cs.Sample(x0, 40 + r0 * Math.Cos(ang), 40 + r0 * Math.Sin(ang), 1, 0, 0));
+                b[i] = Luma(cs.Sample(x1, 40 + r1 * Math.Cos(ang), 40 + r1 * Math.Sin(ang), 1, 0, 0));
+                m0 += a[i]; m1 += b[i];
+            }
+            m0 /= 48; m1 /= 48; double num = 0, d0 = 0, d1 = 0;
+            for (int i = 0; i < 48; i++) { double da = a[i] - m0, db = b[i] - m1; num += da * db; d0 += da * da; d1 += db * db; }
+            return num / Math.Sqrt(d0 * d1);
+        }
+        double corr1 = AxialCorr(gap, gap + 1), corr5 = AxialCorr(gap, gap + 5);
+        Assert(corr1 > 0.92 && corr5 > 0.85, $"Axial end-grain identity too weak (corr 1 mm={corr1:0.000}, 5 mm={corr5:0.000})");
+        Assert(cs.TryFibreDirection(gap, 40 + rr, 40, out var fdx, out var fdy, out var fdz) && fdx > 0.7, $"Bamboo fibre should follow the culm axis ({fdx:0.###},{fdy:0.###},{fdz:0.###})");
         Assert(BambooSpecies.For(BambooSpeciesId.Moso).FreeFibreStrands == 0 && BambooSpecies.For(BambooSpeciesId.Guadua).FreeFibreStrands == 1 && BambooSpecies.For(BambooSpeciesId.Asper).FreeFibreStrands == 2, "Grosser Type I/III/IV free-fibre counts");
         var asper = Bamboo(3, 0); asper.Species = BambooSpeciesId.Asper; asper.Validate();
         var af = Resolve(asper, 3000);

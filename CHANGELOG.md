@@ -1,11 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.1.6 — 2026-11-02
 
-- Bamboo Stock day-to-day inputs are Line, Species, Settings and a **Diameter Domain** (species trade range when empty). Wall, Node Spacing, Taper, Variation and Geometry Units sit under **+ Advanced inputs**.
-- Species presets use diameter ranges (Moso Ø70–80, Guadua Ø105–148, Asper Ø80–200); the modelled base diameter is the range mid-point. Diameter is not taken from Settings.
-- Species panel choice clears stored Species text; only a Species wire locks the list.
-- Bamboo realism pass: Speichinger wall A/B, geometric node ridges, stronger strip grain, Grosser Type I/III/IV by species, and varied cured epidermis texture (texture cache `woodie-18`).
+- Bamboo uses a **Larsson-style continuous volume**: vascular bundles are a 2D cellular field in fixed wall-polar `(θ, t)`, so axial cuts keep bundle identity. Softwood-class sample cost (throughput gate vs `TimberPanel`).
+- Bamboo `TryFibreDirection` plus stock-space fibre transform for engineered strips; Force flow works on non-panel stocks.
+- Bamboo Stock day-to-day inputs: Line, Species, Settings and **Diameter Domain** (species trade range when empty). Wall / Node Spacing / Taper / Variation / Geometry Units under Advanced.
+- Species diameter ranges (Moso Ø70–80, Guadua Ø105–148, Asper Ø80–200); modelled Ø is the mid-point. Panel choice clears stored Species text; a Species wire locks the list.
+- Anatomy-guided look: Speichinger-style radial occupancy, Shang size ramp, Grosser Type I/III/IV free-fibre counts, cured epidermis (texture cache `woodie-20`).
+- Full project README covering timber, bamboo, stock, bake, limits and credits.
 
 ## 0.1.5 — 2026-11-01
 
