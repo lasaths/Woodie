@@ -128,71 +128,78 @@ public sealed class BambooMaterialModel : NaturalModel
             double areaMm2 = Lerp(0.194, 0.061, Math.Pow(tc, 0.9));
             double spacing = Math.Max(0.34, Math.Sqrt(areaMm2) * Lerp(2.6, 0.55, Math.Pow(tc, 1.25)));
             spacing *= 1 + 0.04 * v * Perlin(x * 0.01, ox, oy);
-            double survive = SmoothStep(0.08, 0.28, tc) * (0.18 + 0.82 * Math.Pow(Math.Max(0, (Math.Exp(2.8 * tc) - 1) / (Math.Exp(2.8) - 1)), 0.95));
-            // Speichinger empty pith (~5.6%) and skin (~1.0%) — no VBs.
+            // Speichinger gradient with enough mid-wall survivors for NaturalChecks midDark.
+            double survive = SmoothStep(0.08, 0.28, tc) * (0.20 + 0.80 * Math.Pow(Math.Max(0, (Math.Exp(2.9 * tc) - 1) / (Math.Exp(2.9) - 1)), 0.92));
             survive *= SmoothStep(0.056, 0.10, tc) * (1.0 - SmoothStep(0.97, 0.995, tc));
-            if (tc > 0.8) survive *= Lerp(1.0, 0.72, (tc - 0.8) / 0.2);
+            if (tc > 0.8) survive *= Lerp(1.0, 0.78, (tc - 0.8) / 0.2);
             double aspect = Lerp(1.55, 0.48, Math.Pow(tc, 1.0));
-            double clover = Math.Pow(1 - tc, 1.15);
+            // Speichinger wall mask: outer small dense ovals; mid U; inner four-lobe clover.
+            double clover = Math.Pow(1 - tc, 1.25);
             var (sheath, lumen) = BundleField(arc / spacing, (r - ri) / spacing,
-                Lerp(x / (spacing * 36), x / spacing, cross), ox, oy, aspect, survive, clover, ox);
-            // Dixon Eq. 3.6: S_f rises outward — fade pale vessel lumens.
+                Lerp(x / (spacing * 36), x / spacing, cross), ox, oy, aspect, survive, clover, F.FreeFibreStrands, ox);
             double sf = 0.226 * tc + 0.710;
             lumen *= Math.Clamp(1.12 - sf, 0, 1);
             double longKeep = 1 - cross;
-            // Dixon-ish density albedo: pale foam inner → denser outer parenchyma.
             double rho = Math.Pow(tc, 1.55);
             c = Lerp3(Pal.E0, Pal.E1, 0.05 + 0.18 * (1 - tc));
             for (int k = 0; k < 3; k++) c[k] *= Lerp(1.04, 0.90, rho);
             c = Lerp3(c, F.Skin, 0.04);
-            // Ahvenainen: soft parenchyma mottling (high MFA) vs sharp sheath needles (low MFA).
             if (longKeep > 0.2) {
                 double brick = Math.Abs(Fract(x * 0.55 + ox) - 0.5) * Math.Abs(Fract(arc * 0.9 + oy) - 0.5);
                 brick = SmoothStep(0.18, 0.02, brick);
                 double softPar = (0.5 + 0.5 * Perlin(x * 0.03, dy * 1.2 + ox, dz * 1.2)) * 0.04 * longKeep * (1 - sheath);
                 for (int k = 0; k < 3; k++) c[k] *= 1 - 0.045 * brick * longKeep - softPar;
             }
-            // Tangential blend of streak axes near node (Peng reorientation).
             double tx = -Math.Sin(ang), ty = Math.Cos(ang);
             double sx = Lerp(dy, tx * r * 0.02 + dy * (1 - nodeW), nodeW);
             double sy = Lerp(dz, ty * r * 0.02 + dz * (1 - nodeW), nodeW);
+            // Stronger axial needles on machined strips (no epidermis) and culm long-grain.
             double fibreStreak =
-                (0.5 + 0.5 * Perlin(x * 0.004, sx * 4.2 + ox, sy * 4.2)) * 0.10 * longKeep +
-                (0.5 + 0.5 * Perlin(x * 0.012, sx * 11 + ox, sy * 11)) * 0.07 * longKeep +
-                (0.5 + 0.5 * Perlin(x * 0.035, sx * 22 + ox, sy * 22)) * 0.05 * longKeep * Math.Max(sheath, 0.25);
+                (0.5 + 0.5 * Perlin(x * 0.0035, sx * 5 + ox, sy * 5)) * 0.13 * longKeep +
+                (0.5 + 0.5 * Perlin(x * 0.01, sx * 14 + ox, sy * 14)) * 0.09 * longKeep +
+                (0.5 + 0.5 * Perlin(x * 0.03, sx * 28 + ox, sy * 28)) * 0.06 * longKeep * Math.Max(sheath, 0.2);
             for (int k = 0; k < 3; k++) c[k] *= 1 - fibreStreak;
-            c = Lerp3(c, Pal.Late, Math.Min(1, Math.Pow(sheath, 0.85) * (0.62 + 0.38 * cross + 0.35 * longKeep)));
+            c = Lerp3(c, Pal.Late, Math.Min(1, Math.Pow(sheath, 0.7) * (0.70 + 0.30 * cross + 0.40 * longKeep)));
             if (cross > 0.12 && lumen > 0)
-                c = Lerp3(c, Pal.E1, lumen * cross * 0.95);
-            double cortex = SmoothStep(0.91, 0.97, tc);   // stop before VB-free skin band
+                c = Lerp3(c, Pal.E1, lumen * Math.Max(sheath, 0.35) * cross * 0.98);
+            double cortex = SmoothStep(0.91, 0.97, tc);
             if (cortex > 0) c = Lerp3(c, Pal.Late, 0.40 * cortex * Math.Max(sheath, 0.45));
-            double skin = SmoothStep(0.22, 0.0, ro - r);
+            // Epidermis on Outer; ridge samples (r > Outer) stay in skin.
+            double skin = SmoothStep(0.22, 0.0, ro - Math.Min(r, ro));
+            if (r > ro) skin = 1;
             double twist = nodeW * (1.0 + 0.55 * Perlin(ang * 3.1 + ox, oy, 2.2));
             double fAng = ang + twist * Perlin(x * 0.05 + ox, ang * 3.5, oy);
-            double fibre = 0.5 + 0.5 * Perlin(x * 0.0008, fAng * 78 + ox, oy);
-            double fibre2 = 0.5 + 0.5 * Perlin(x * 0.00045 + 2.7, fAng * 28 + oy, ox);
-            double needle = 0.5 + 0.5 * Perlin(x * 0.0014, fAng * 140 + ox * 0.5, oy);
-            double mottling = 0.5 + 0.5 * Perlin(x * 0.0018, ang * 1.9 + ox * 0.3, oy);
-            double silica = SmoothStep(0.92, 0.995, Hash01((int)Math.Floor(x * 2.5), (int)Math.Floor(ang * 40), 3, ox));
+            // Cured epidermis: axial grain + weathering blotch + silica glitter (Yoshimura), not flat paint.
+            double fibre = Perlin(x * 0.0035, fAng * 90 + ox, oy);
+            double fibre2 = Perlin(x * 0.0016 + 2.7, fAng * 32 + oy, ox);
+            double needle = Perlin(x * 0.009, fAng * 160 + ox * 0.5, oy);
+            double mottling = Perlin(x * 0.014, ang * 4.2 + ox * 0.3, oy);
+            double blotch = Perlin(x * 0.028, ang * 1.4 + oy, ox * 0.7);
+            double bloom = Perlin(x * 0.055, ang * 6.5 + ox, oy * 1.3);
+            double silica = SmoothStep(0.82, 0.99, Hash01((int)Math.Floor(x * 4.0), (int)Math.Floor(ang * 64), 3, ox));
+            // Signed noise → ±contrast so mid-tones keep mean skin RGB.
+            double grain = 0.16 * fibre + 0.10 * fibre2 + 0.12 * needle;
+            double weather = 0.18 * mottling + 0.22 * blotch + 0.10 * bloom;
+            double lift = 1.0 + grain + weather + 0.10 * silica;
             var sk = new[] {
-                F.Skin[0] * (0.72 + 0.14 * fibre + 0.07 * fibre2 + 0.07 * needle + 0.04 * mottling + 0.06 * silica),
-                F.Skin[1] * (0.73 + 0.13 * fibre + 0.06 * fibre2 + 0.06 * needle + 0.04 * mottling + 0.05 * silica),
-                F.Skin[2] * (0.70 + 0.13 * fibre + 0.06 * fibre2 + 0.06 * needle + 0.04 * mottling + 0.04 * silica) };
+                F.Skin[0] * lift,
+                F.Skin[1] * (1.0 + grain * 0.92 + weather * 0.88 + 0.07 * silica),
+                F.Skin[2] * (1.0 + grain * 0.85 + weather * 0.80 + 0.05 * silica) };
             c = Lerp3(c, sk, skin);
             if (nodeHalo > 0) {
                 var ring = new[] { F.Skin[0] * 0.52, F.Skin[1] * 0.45, F.Skin[2] * 0.33 };
                 var lip = new[] { Math.Min(255, F.Skin[0] * 1.12), Math.Min(255, F.Skin[1] * 1.08), Math.Min(255, F.Skin[2] * 1.05) };
-                double onSkin = Math.Max(skin, 0.55);
-                c = Lerp3(c, lip, 0.42 * nodeHalo * (1 - nodeCore) * onSkin);
-                c = Lerp3(c, ring, (0.80 * nodeCore + 0.34 * nodeHalo) * onSkin);
+                // Visible on culm skin and on machined strip faces (no epidermis).
+                double band = Math.Max(skin, 0.65 * longKeep + 0.45);
+                c = Lerp3(c, lip, 0.42 * nodeHalo * (1 - nodeCore) * band);
+                c = Lerp3(c, ring, (0.80 * nodeCore + 0.34 * nodeHalo) * band);
             }
         }
         return (c[0] * F.Tint, c[1] * F.Tint, c[2] * F.Tint);
     }
 
-    // Flower-shaped VB: fibre caps + two metaxylem vessel lumens (Grosser Type I / Dixon clover→skull).
-    // Cells with Hash > survive are skipped. clover=1 → four caps; clover=0 → two outer caps.
-    static (double Sheath, double Lumen) BundleField(double u, double v, double w, double ox, double oy, double aspect, double survive, double clover, double salt)
+    // Flower VB (Grosser/Dixon) + optional free fibre strands (Type III/IV). clover=1 → four caps; clover=0 → skull.
+    static (double Sheath, double Lumen) BundleField(double u, double v, double w, double ox, double oy, double aspect, double survive, double clover, int freeFibre, double salt)
     {
         int iu = (int)Math.Floor(u), iv = (int)Math.Floor(v), iw = (int)Math.Floor(w);
         double su = Math.Max(0.55, Math.Sqrt(aspect)), sv = Math.Max(0.55, 1 / Math.Sqrt(aspect)), sw = 0.18;
@@ -209,24 +216,23 @@ public sealed class BambooMaterialModel : NaturalModel
             if (d < best) { best = d; blu = lu; blv = lv; blw = lw; }
         }
         if (best > 8) return (0, 0);
-        // Central fibre core + sclerenchyma lobes (Max keeps gaps between bundles).
-        double fibre = SoftCap(blu, blv, blw, 0.0, 0.0, su, sv, sw) * 0.75;
-        fibre = Math.Max(fibre, Math.Max(SoftCap(blu, blv, blw, 0.0, 0.22, su, sv, sw), SoftCap(blu, blv, blw, 0.0, -0.22, su, sv, sw)));
+        double fibre = SoftCap(blu, blv, blw, 0.0, 0.0, su, sv, sw) * 0.65;
+        fibre = Math.Max(fibre, Math.Max(SoftCap(blu, blv, blw, 0.0, 0.18, su, sv, sw), SoftCap(blu, blv, blw, 0.0, -0.18, su, sv, sw)));
         if (clover > 0.05)
-            fibre = Math.Max(fibre, clover * Math.Max(SoftCap(blu, blv, blw, 0.22, 0.0, su, sv, sw), SoftCap(blu, blv, blw, -0.22, 0.0, su, sv, sw)));
-        // Two metaxylem vessels (pale); larger when clover high (inner wall).
-        double vs = Lerp(0.09, 0.15, clover);
+            fibre = Math.Max(fibre, clover * Math.Max(SoftCap(blu, blv, blw, 0.18, 0.0, su, sv, sw), SoftCap(blu, blv, blw, -0.18, 0.0, su, sv, sw)));
+        if (freeFibre >= 1) fibre = Math.Max(fibre, SoftCap(blu, blv, blw, 0.0, 0.40, su, sv, sw) * 0.95);
+        if (freeFibre >= 2) fibre = Math.Max(fibre, SoftCap(blu, blv, blw, 0.0, -0.38, su, sv, sw) * 0.9);
+        double vs = Lerp(0.07, 0.13, clover);
         double lumen = Math.Max(
-            SoftCap(blu, blv, blw, vs, 0.0, su, sv, sw * 1.1),
-            SoftCap(blu, blv, blw, -vs, 0.0, su, sv, sw * 1.1));
-        double sheath = Math.Min(1, fibre);
-        return (sheath, lumen * SmoothStep(0.50, 0.12, best));
+            SoftCap(blu, blv, blw, vs, 0.0, su, sv, sw * 1.05),
+            SoftCap(blu, blv, blw, -vs, 0.0, su, sv, sw * 1.05));
+        return (Math.Min(1, fibre), lumen * SmoothStep(0.42, 0.08, best));
     }
 
     static double SoftCap(double lu, double lv, double lw, double cu, double cv, double su, double sv, double sw)
     {
         double d = Math.Sqrt(Math.Pow((lu - cu) * su, 2) + Math.Pow((lv - cv) * sv, 2) + Math.Pow(lw * sw, 2));
-        return SmoothStep(0.20, 0.05, d);
+        return SmoothStep(0.15, 0.035, d);
     }
 
     static double Fract(double t) => t - Math.Floor(t);

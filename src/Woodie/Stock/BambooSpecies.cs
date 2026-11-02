@@ -28,6 +28,8 @@ public readonly struct BambooSpeciesPreset
     public int CulmInternodes { get; init; }
     /// <summary>Relative internode number of the longest internode on a mature culm (~0.47–0.52 for moso).</summary>
     public double PeakRin { get; init; }
+    /// <summary>Grosser &amp; Liese free fibre strands outside the central sheath: 0 = Type I, 1 = Type III, 2 = Type IV.</summary>
+    public int FreeFibreStrands { get; init; }
 }
 
 public static class BambooSpecies
@@ -36,14 +38,15 @@ public static class BambooSpecies
     public static readonly BambooSpeciesPreset[] All =
     {
         // Moso — Phyllostachys edulis; European structural poles ~Ø70–80 / wall 7 (ISO 22156 case studies).
+        // Type I (Phyllostachys): four sheaths, no free fibre strands (Grosser & Liese 1971).
         new() { Id = BambooSpeciesId.Moso, Name = "Moso", Aliases = new[] { "bamboo", "moso", "phyllostachys edulis", "p. edulis" },
-            DiameterMin = 70, DiameterMax = 80, Wall = 7, Spacing = 270, Taper = 5, Skin = new[] { 186.0, 152, 88 }, CulmInternodes = 60, PeakRin = 0.48 },
-        // Guadua — Latin American construction; BioResources mature culms ~Ø105–148, wall ~12–22, internodes ~310 mm.
+            DiameterMin = 70, DiameterMax = 80, Wall = 7, Spacing = 270, Taper = 5, Skin = new[] { 186.0, 152, 88 }, CulmInternodes = 60, PeakRin = 0.48, FreeFibreStrands = 0 },
+        // Guadua — Type III (one isolated fibre strand); BioResources mature culms ~Ø105–148.
         new() { Id = BambooSpeciesId.Guadua, Name = "Guadua", Aliases = new[] { "guadua", "guadua angustifolia", "g. angustifolia" },
-            DiameterMin = 105, DiameterMax = 148, Wall = 12, Spacing = 310, Taper = 8, Skin = new[] { 148.0, 128, 92 }, CulmInternodes = 55, PeakRin = 0.50 },
-        // Dendrocalamus asper (Betung) — SE Asian structural culms Ø80–200, wall 11–20, internodes 400–500 mm.
+            DiameterMin = 105, DiameterMax = 148, Wall = 12, Spacing = 310, Taper = 8, Skin = new[] { 148.0, 128, 92 }, CulmInternodes = 55, PeakRin = 0.50, FreeFibreStrands = 1 },
+        // Dendrocalamus asper — Type IV (two isolated fibre strands).
         new() { Id = BambooSpeciesId.Asper, Name = "Asper", Aliases = new[] { "asper", "dendrocalamus", "dendrocalamus asper", "d. asper", "betung" },
-            DiameterMin = 80, DiameterMax = 200, Wall = 15, Spacing = 450, Taper = 10, Skin = new[] { 198.0, 168, 112 }, CulmInternodes = 50, PeakRin = 0.48 },
+            DiameterMin = 80, DiameterMax = 200, Wall = 15, Spacing = 450, Taper = 10, Skin = new[] { 198.0, 168, 112 }, CulmInternodes = 50, PeakRin = 0.48, FreeFibreStrands = 2 },
     };
 
     public static BambooSpeciesPreset Default => All[0];

@@ -99,16 +99,24 @@ internal static class MaterialChecks
             var stock = StockDefinition.FromNatural(settings, length, width, width);
             double cy = width / 2, cz = width / 2;
 
-            // Side: length down the image; slight limb darkening so it reads as a round pole, not a flat board.
+            // Side elevation: silhouette uses Outer+Ridge so node rings bulge against the pad.
+            const int sideBg = unchecked((int)0xFFF0EEE6);
+            double maxR = 0;
+            for (int i = 0; i < 64; i++) {
+                double xu = 1 + i * (length - 2) / 63;
+                maxR = Math.Max(maxR, features.Outer(xu) + features.Ridge(xu));
+            }
+            double padR = maxR * 1.08;
             var side = new int[sideW * sideH];
             for (int y = 0; y < sideH; y++) for (int x = 0; x < sideW; x++) {
                 double u = y * (length - 2) / (sideH - 1) + 1;
-                double nx = x / (sideW - 1d) - .5;
-                double ang = nx * 1.15;
-                double ro = features.Outer(u);
+                double worldY = (x / (sideW - 1d) - .5) * 2 * padR;
+                double ro = features.Outer(u) + features.Ridge(u);
+                if (Math.Abs(worldY) > ro) { side[y * sideW + x] = sideBg; continue; }
+                double ang = Math.Asin(Math.Clamp(worldY / Math.Max(ro, 1e-6), -1, 1));
                 double sy = cy + ro * Math.Cos(ang), sz = cz + ro * Math.Sin(ang);
                 int rgb = stock.Sample(u, sy, sz, 0, Math.Cos(ang), Math.Sin(ang));
-                double limb = 1 - 0.22 * (nx * nx * 4);   // darken toward left/right silhouette
+                double limb = 1 - 0.28 * Math.Pow(worldY / Math.Max(ro, 1e-6), 2);
                 int r8 = (int)Math.Clamp(((rgb >> 16) & 255) * limb, 0, 255);
                 int g8 = (int)Math.Clamp(((rgb >> 8) & 255) * limb, 0, 255);
                 int b8 = (int)Math.Clamp((rgb & 255) * limb, 0, 255);
@@ -157,6 +165,57 @@ internal static class MaterialChecks
         string combined = Path.Combine(Output, "bamboo-side-top.png");
         sheet.Save(combined);
         Console.WriteLine("Bamboo side+top sheet: " + combined);
+    }
+
+    /// <summary>
+    /// Speichinger KIT wall-stripe A/B: reference mesostructure (outer→inner vertical) beside Woodie Moso wall sample.
+    /// Writes artifacts/checks/bamboo-speichinger-ab.png. Needs speichinger/page04_img8.png from the paper PDF extract.
+    /// </summary>
+    public static void SpeichingerAbSheet()
+    {
+        string refPath = Path.Combine(Output, "speichinger", "page04_img8.png");
+        Assert(File.Exists(refPath), "Missing Speichinger wall stripe at " + refPath + " (extract from KIT PDF)");
+        const int wallW = 220, wallH = 640, gap = 28;
+        var settings = new TimberSettings {
+            Product = TimberProduct.Bamboo, Seed = 17, Species = BambooSpeciesId.Moso,
+            Diameter = BambooSpecies.Default.Diameter, WallThickness = BambooSpecies.Default.Wall,
+            NodeSpacing = BambooSpecies.Default.Spacing, Taper = BambooSpecies.Default.Taper, Variation = .5 };
+        settings.Validate();
+        const double length = 2400;
+        double diameter = settings.VirtualDepthMm;
+        var features = NaturalFeatures.Resolve(settings, length, diameter, diameter);
+        double width = 2 * features.Outer(0) * (1 + Math.Abs(features.Ovality)) + 4;
+        var stock = StockDefinition.FromNatural(settings, length, width, width);
+        double cy = width / 2, cz = width / 2;
+        double xCut = length / 2;
+        if (features.Nodes.Count > 0)
+            xCut = (features.Nodes[0] + (features.Nodes.Count > 1 ? features.Nodes[1] : length)) / 2;
+        double ri = features.Inner(xCut), ro = features.Outer(xCut), wall = Math.Max(ro - ri, 1);
+        double arcSpan = Math.Max(6, 1.5 * wall);
+        var ours = new int[wallW * wallH];
+        // Match Speichinger crop: top = outer epidermis, bottom = inner lining.
+        for (int y = 0; y < wallH; y++) for (int x = 0; x < wallW; x++) {
+            double t = 1.0 - (y + .5) / wallH;
+            double arc = ((x + .5) / wallW - .5) * arcSpan;
+            double rr = ri + t * wall, ang = arc / Math.Max(rr, 1e-3);
+            ours[y * wallW + x] = stock.Sample(xCut, cy + rr * Math.Cos(ang), cz + rr * Math.Sin(ang), 1, 0, 0);
+        }
+        string oursPath = Path.Combine(Output, "bamboo-wall-moso-outer-top.png");
+        PngEncoder.WriteAtomic(oursPath, wallW, wallH, ours, CancellationToken.None);
+
+        using var sheet = new Bitmap(48 + wallW * 2 + gap, 80 + wallH);
+        using var g = Graphics.FromImage(sheet); g.Clear(Color.FromArgb(248, 246, 239));
+        using var title = new Font(FontFamily.GenericSansSerif, 14);
+        using var label = new Font(FontFamily.GenericSansSerif, 11);
+        g.DrawString("Speichinger KIT wall stripe (left) · Woodie Moso (right) · outer↑ · seed 17", title, Brushes.Black, 20, 14);
+        g.DrawString("CC-BY Speichinger et al. 2026 · DOI 10.1016/j.conbuildmat.2026.146522", label, Brushes.DimGray, 20, 40);
+        using var refImg = Image.FromFile(refPath);
+        g.DrawImage(refImg, 24, 70, wallW, wallH);
+        using var ourImg = Image.FromFile(oursPath);
+        g.DrawImage(ourImg, 24 + wallW + gap, 70, wallW, wallH);
+        string path = Path.Combine(Output, "bamboo-speichinger-ab.png");
+        sheet.Save(path);
+        Console.WriteLine("Speichinger A/B: " + path);
     }
 
     // One inspection sheet: every product plus a square radial/end section. Writes artifacts/checks/material-radial-contact.png.
@@ -237,13 +296,21 @@ internal static class MaterialChecks
         double width = 2 * features.Outer(0) * (1 + Math.Abs(features.Ovality)) + 4;
         var stock = StockDefinition.FromNatural(settings, length, width, width);
         double cy = width / 2, cz = width / 2;
-        // Longitudinal: bamboo length runs down the swatch so node rings read as horizontal bands (side-view culm).
+        // Longitudinal: bamboo length down the swatch; silhouette uses Outer+Ridge for node bulges.
+        double bambooMaxR = 0;
+        if (features.Bamboo)
+            for (int i = 0; i < 48; i++) {
+                double xu = 1 + i * (length - 2) / 47;
+                bambooMaxR = Math.Max(bambooMaxR, features.Outer(xu) + features.Ridge(xu));
+            }
+        double bambooPad = bambooMaxR * 1.08;
         for (int y = 0; y < h; y++) for (int x = 0; x < faceW; x++) {
             if (features.Bamboo) {
                 double u = y * (length - 2) / (h - 1) + 1;
-                double ang = (x / (faceW - 1d) - .5) * .7;
-                // Sample the epidermis (not Outer+Ridge) so nodes are appearance rings on continuous skin.
-                double ro = features.Outer(u);
+                double worldY = (x / (faceW - 1d) - .5) * 2 * bambooPad;
+                double ro = features.Outer(u) + features.Ridge(u);
+                if (Math.Abs(worldY) > ro) { pixels[y * stride + x] = bg; continue; }
+                double ang = Math.Asin(Math.Clamp(worldY / Math.Max(ro, 1e-6), -1, 1));
                 double sy = cy + ro * Math.Cos(ang), sz = cz + ro * Math.Sin(ang);
                 pixels[y * stride + x] = stock.Sample(u, sy, sz, 0, Math.Cos(ang), Math.Sin(ang));
             } else {

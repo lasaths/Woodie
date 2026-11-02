@@ -21,6 +21,7 @@ public sealed class NaturalFeatures
         Bark = Bamboo || double.IsNaN(s.BarkThickness) ? 0 : s.BarkThickness;
         var species = Bamboo ? BambooSpecies.For(s.Species) : BambooSpecies.Default;
         Skin = species.Skin;
+        FreeFibreStrands = Bamboo ? Math.Clamp(species.FreeFibreStrands, 0, 2) : 0;
         var g = Stream(Seed, 1);   // geometry
         a1 = g.NextDouble() * 2 * Math.PI; a2 = g.NextDouble() * 2 * Math.PI; a3 = g.NextDouble() * 2 * Math.PI; wallPhase = g.NextDouble() * 2 * Math.PI;
         b1 = lengthMm * (0.5 + g.NextDouble()); b2 = lengthMm * (0.15 + 0.15 * g.NextDouble()); b3 = lengthMm * (0.25 + 0.2 * g.NextDouble());
@@ -66,6 +67,8 @@ public sealed class NaturalFeatures
     public double Tint { get; }
     /// <summary>Exterior culm skin RGB from the bamboo species preset; unused for Log.</summary>
     public double[] Skin { get; }
+    /// <summary>Grosser free fibre strands (0 / 1 / 2) from the bamboo species preset.</summary>
+    public int FreeFibreStrands { get; }
     public int KnotCount => knotX.Length;
     public (double X, double Angle, double Size) Knot(int i) => (knotX[i], knotAngle[i], knotSize[i]);
 
@@ -113,7 +116,8 @@ public sealed class NaturalFeatures
             x += lengthMm * weights[j] / sum;
             double rise = Variation <= 0 ? 0 : g.NextDouble() * 2 - 1;
             if (x < margin || x > lengthMm - margin) continue;
-            nodes.Add(x); heights.Add(0.035 * (1 + 0.4 * Variation * rise));
+            // Ridge ~6–8% of radius so silhouette bulges read on contact sheets (geometry, not paint-only).
+            nodes.Add(x); heights.Add(0.07 * (1 + 0.35 * Variation * rise));
         }
         if (nodes.Count == 0) throw new ArgumentException("Bamboo node spacing left no room for nodes. Increase Length or reduce Node Spacing.");
     }

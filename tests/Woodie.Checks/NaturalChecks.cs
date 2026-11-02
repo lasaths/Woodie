@@ -151,6 +151,10 @@ internal static class NaturalChecks
             midDark = Math.Min(midDark, Luma(cs.Sample(gap, 40 + rm * Math.Cos(ang), 40 + rm * Math.Sin(ang), 1, 0, 0)));
         }
         Assert(midDark < lumaInner / nSamp - 15, $"Mid-wall should carry some vascular bundles ({midDark:0} vs lining {lumaInner / nSamp:0})");
+        Assert(BambooSpecies.For(BambooSpeciesId.Moso).FreeFibreStrands == 0 && BambooSpecies.For(BambooSpeciesId.Guadua).FreeFibreStrands == 1 && BambooSpecies.For(BambooSpeciesId.Asper).FreeFibreStrands == 2, "Grosser Type I/III/IV free-fibre counts");
+        var asper = Bamboo(3, 0); asper.Species = BambooSpeciesId.Asper; asper.Validate();
+        var af = Resolve(asper, 3000);
+        Assert(af.FreeFibreStrands == 2 && bf.FreeFibreStrands == 0, "Species free-fibre strands must reach NaturalFeatures");
         var definition = StockDefinition.FromTimber(culm, 3000, 80, 80);
         Assert(definition.Sample(135, 40 + ro, 40) == cs.Sample(135, 40 + ro, 40) && definition.Construction.Pieces.Single().Specimen.Features != null && definition.Construction.Pieces[0].Specimen.Seed == 3, "FromTimber must dispatch natural products");
         // Unset diameter wraps the cross-section bounds (legacy Product=Log on a user Brep).
