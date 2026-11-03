@@ -52,7 +52,7 @@ foreach ($name in @('README.md', 'packaging/manifest.yml', 'src/Woodie/Grasshopp
     }
 }
 $notice = [IO.File]::ReadAllText((Join-Path $Root 'THIRD-PARTY-NOTICES.md'))
-if (-not $notice.Contains('University of Stuttgart') -or -not $notice.Contains('Phosphor Icons')) { throw 'Required copyright notices missing.' }
+if (-not $notice.Contains('Phosphor Icons')) { throw 'Required copyright notices missing.' }
 [xml]$project = Get-Content -LiteralPath (Join-Path $Root 'src/Woodie/Woodie.csproj') -Raw
 $version = [string]$project.Project.PropertyGroup.Version
 if (-not $version -or -not [IO.File]::ReadAllText((Join-Path $Root 'CHANGELOG.md')).Contains($version)) { throw 'Project version has no changelog entry.' }

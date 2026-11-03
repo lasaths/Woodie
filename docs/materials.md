@@ -21,7 +21,7 @@ Plywood uses the closest odd layer count, at least three; all veneers are fitted
 
 [Metsä Wood's Kerto LVL environmental declaration](https://www.metsagroup.com/contentassets/f8ff384a208d4786959efa4bca9fab2c/epd-document_kerto-lvl_epd-ies-0026805.pdf) distinguishes products with parallel veneers from products containing cross veneers. [Kerto-Q product guidance](https://www.metsagroup.com/metsawood/products-and-services/products/kerto-lvl/q-panel/) describes its cross-banded construction. [WISA Birch Premium](https://www.wisaplywood.com/siteassets/documents/brochures/wisa-birch-premium-en-fs.pdf) describes cross-bonded plywood with continuous face veneers. Woodie's generic veneer dimensions are display defaults rather than a reproduction of a particular plywood specification.
 
-The procedural grain and knot appearance is inspired by Maria Larsson et al., [Procedural Texturing of Solid Wood with Knots](https://doi.org/10.1145/3528223.3530081), ACM TOG 41(4), Article 45 (SIGGRAPH 2022). MIT notices are retained in THIRD-PARTY-NOTICES.md.
+The procedural grain and knot appearance is inspired by Maria Larsson et al., [Procedural Texturing of Solid Wood with Knots](https://doi.org/10.1145/3528223.3530081), ACM TOG 41(4), Article 45 (SIGGRAPH 2022). Woodie is MIT; Phosphor icon notices are in THIRD-PARTY-NOTICES.md.
 
 ## Appearance and overrides
 
