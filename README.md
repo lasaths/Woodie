@@ -149,4 +149,4 @@ Woodie is an **independent C# adaptation**, not a port of that codebase. Cut-awa
 
 UI patterns follow [McNeel custom attributes](https://developer.rhino3d.com/guides/grasshopper/custom-attributes/) and are informed by [Arup’s GH UI examples](https://github.com/arup-archive/Custom-Grasshopper-UI-Components). Icons: [Phosphor Icons](https://phosphoricons.com/).
 
-[MIT licence](LICENSE) · [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)
+Released under the [MIT licence](LICENSE). Icon notices are retained in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
