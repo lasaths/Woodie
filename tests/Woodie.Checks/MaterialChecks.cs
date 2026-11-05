@@ -168,6 +168,131 @@ internal static class MaterialChecks
     }
 
     /// <summary>
+    /// Side A/B after volumetric skin: plugin Sample vs bare SampleBundle proxy + end cut.
+    /// Prints sheath↔side-darkening Pearson r (want &gt; 0.3).
+    /// </summary>
+    public static void BambooVolumetricCompare()
+    {
+        const int sideW = 360, sideH = 1100, topS = 480, gap = 20, bg = unchecked((int)0xFFF0EEE6);
+        var species = BambooSpecies.Default;
+        var settings = new TimberSettings {
+            Product = TimberProduct.Bamboo, Seed = 17, Species = species.Id,
+            Diameter = species.Diameter, WallThickness = species.Wall, NodeSpacing = species.Spacing,
+            Taper = species.Taper, Variation = .5 };
+        settings.Validate();
+        const double length = 3000;
+        double diameter = settings.VirtualDepthMm;
+        var features = NaturalFeatures.Resolve(settings, length, diameter, diameter);
+        double width = 2 * features.Outer(0) * (1 + Math.Abs(features.Ovality)) + 4;
+        var stock = StockDefinition.FromNatural(settings, length, width, width);
+        double cy = width / 2, cz = width / 2;
+        var pal = settings.Palette();
+        double maxR = 0;
+        for (int i = 0; i < 64; i++) {
+            double xu = 1 + i * (length - 2) / 63;
+            maxR = Math.Max(maxR, features.Outer(xu) + features.Ridge(xu));
+        }
+        double padR = maxR * 1.08;
+
+        var current = new int[sideW * sideH];
+        var vol = new int[sideW * sideH];
+        for (int y = 0; y < sideH; y++) for (int x = 0; x < sideW; x++) {
+            double u = y * (length - 2) / (sideH - 1) + 1;
+            double worldY = (x / (sideW - 1d) - .5) * 2 * padR;
+            double roSil = features.Outer(u) + features.Ridge(u);
+            if (Math.Abs(worldY) > roSil) { current[y * sideW + x] = bg; vol[y * sideW + x] = bg; continue; }
+            double ang = Math.Asin(Math.Clamp(worldY / Math.Max(roSil, 1e-6), -1, 1));
+            double ca = Math.Cos(ang), sa = Math.Sin(ang);
+            double sy = cy + roSil * ca, sz = cz + roSil * sa;
+            int rgb = stock.Sample(u, sy, sz, 0, ca, sa);
+            double limb = 1 - 0.28 * Math.Pow(worldY / Math.Max(roSil, 1e-6), 2);
+            current[y * sideW + x] = (255 << 24)
+                | ((int)Math.Clamp(((rgb >> 16) & 255) * limb, 0, 255) << 16)
+                | ((int)Math.Clamp(((rgb >> 8) & 255) * limb, 0, 255) << 8)
+                | (int)Math.Clamp((rgb & 255) * limb, 0, 255);
+
+            double ri = features.Inner(u), ro = features.Outer(u);
+            var (sheath, _) = features.SampleBundle(ri, ro, ro - 0.22, ang, 0);
+            double cr = TimberPanel.Lerp(pal.E0[0], features.Skin[0], 0.82);
+            double cg = TimberPanel.Lerp(pal.E0[1], features.Skin[1], 0.82);
+            double cb = TimberPanel.Lerp(pal.E0[2], features.Skin[2], 0.82);
+            cr = TimberPanel.Lerp(cr, pal.Late[0], sheath * 0.55);
+            cg = TimberPanel.Lerp(cg, pal.Late[1], sheath * 0.55);
+            cb = TimberPanel.Lerp(cb, pal.Late[2], sheath * 0.55);
+            vol[y * sideW + x] = (255 << 24)
+                | ((int)Math.Clamp(cr * limb, 0, 255) << 16)
+                | ((int)Math.Clamp(cg * limb, 0, 255) << 8)
+                | (int)Math.Clamp(cb * limb, 0, 255);
+        }
+        // Correlation on a mid-internode θ-arc (raw Sample). Match Shade's ovality-corrected ang.
+        double xMid = length / 2;
+        if (features.Nodes.Count > 0)
+            xMid = (features.Nodes[0] + (features.Nodes.Count > 1 ? features.Nodes[1] : length)) / 2;
+        double riM = features.Inner(xMid), roM = features.Outer(xMid);
+        double syO = 1 + features.Ovality, szO = 1 - features.Ovality;
+        double sumL = 0; var Ls = new double[96]; var Ss = new double[96];
+        for (int i = 0; i < 96; i++) {
+            double ang = i * (2 * Math.PI / 96), ca = Math.Cos(ang), sa = Math.Sin(ang);
+            double y = cy + (roM - .05) * ca, z = cz + (roM - .05) * sa;
+            double dy = (y - cy) / syO, dz = (z - cz) / szO;
+            double angShade = Math.Atan2(dz, dy);
+            Ss[i] = features.SampleBundle(riM, roM, roM - 0.22, angShade, 0).Sheath;
+            int rgb = stock.Sample(xMid, y, z, 0, ca, sa);
+            Ls[i] = 0.3 * ((rgb >> 16) & 255) + 0.59 * ((rgb >> 8) & 255) + 0.11 * (rgb & 255);
+            sumL += Ls[i];
+        }
+        double meanL = sumL / 96, sumA = 0, sumB = 0, sumA2 = 0, sumB2 = 0, sumAB = 0;
+        for (int i = 0; i < 96; i++) {
+            double dark = meanL - Ls[i];
+            sumA += Ss[i]; sumB += dark; sumA2 += Ss[i] * Ss[i]; sumB2 += dark * dark; sumAB += Ss[i] * dark;
+        }
+        double meanA = sumA / 96, meanB = sumB / 96;
+        double cov = sumAB / 96 - meanA * meanB;
+        double varA = sumA2 / 96 - meanA * meanA, varB = sumB2 / 96 - meanB * meanB;
+        double corr = (varA > 1e-12 && varB > 1e-12) ? cov / Math.Sqrt(varA * varB) : 0;
+        Console.WriteLine($"Sheath↔side-darkening Pearson r = {corr:0.000} (n=96; want > 0.3)");
+        Assert(corr > 0.3, $"Volumetric skin should track SampleBundle sheath (r={corr:0.00})");
+
+        double xCut = length / 2;
+        if (features.Nodes.Count > 0)
+            xCut = (features.Nodes[0] + (features.Nodes.Count > 1 ? features.Nodes[1] : length)) / 2;
+        double pad = features.Outer(xCut) + features.Ridge(xCut) + 6;
+        var top = new int[topS * topS];
+        for (int i = 0; i < top.Length; i++) top[i] = bg;
+        for (int y = 0; y < topS; y++) for (int x = 0; x < topS; x++) {
+            double sy = cy + (2 * (x + .5) / topS - 1) * pad, sz = cz + (2 * (y + .5) / topS - 1) * pad;
+            double dy = (sy - cy) / (1 + features.Ovality), dz = (sz - cz) / (1 - features.Ovality);
+            double r = Math.Sqrt(dy * dy + dz * dz);
+            if (r > features.Outer(xCut) + features.Ridge(xCut) + .5 || !features.Solid(xCut, r)) continue;
+            top[y * topS + x] = stock.Sample(xCut, sy, sz, 1, 0, 0);
+        }
+
+        string curPath = Path.Combine(Output, "bamboo-compare-current-side.png");
+        string volPath = Path.Combine(Output, "bamboo-compare-vol-side.png");
+        string topPath = Path.Combine(Output, "bamboo-compare-end.png");
+        PngEncoder.WriteAtomic(curPath, sideW, sideH, current, CancellationToken.None);
+        PngEncoder.WriteAtomic(volPath, sideW, sideH, vol, CancellationToken.None);
+        PngEncoder.WriteAtomic(topPath, topS, topS, top, CancellationToken.None);
+
+        int sheetW = 32 + sideW + gap + sideW + gap + topS + 32;
+        int sheetH = 90 + sideH;
+        using var sheet = new Bitmap(sheetW, sheetH);
+        using var g = Graphics.FromImage(sheet); g.Clear(Color.FromArgb(248, 246, 239));
+        using var title = new Font(FontFamily.GenericSansSerif, 16);
+        using var label = new Font(FontFamily.GenericSansSerif, 12);
+        g.DrawString($"Woodie · volumetric skin · Moso seed 17 · sheath↔darkening r={corr:0.00}", title, Brushes.Black, 20, 14);
+        g.DrawString("PLUGIN side (SampleBundle streaks)", label, Brushes.Black, 20, 48);
+        g.DrawString("PROXY side (sheath→Late only)", label, Brushes.Black, 20 + sideW + gap, 48);
+        g.DrawString("End cut (volumetric field)", label, Brushes.Black, 20 + 2 * (sideW + gap), 48);
+        using (var a = Image.FromFile(curPath)) g.DrawImage(a, 20, 72, sideW, sideH);
+        using (var b = Image.FromFile(volPath)) g.DrawImage(b, 20 + sideW + gap, 72, sideW, sideH);
+        using (var c = Image.FromFile(topPath)) g.DrawImage(c, 20 + 2 * (sideW + gap), 72 + (sideH - topS) / 2, topS, topS);
+        string combined = Path.Combine(Output, "bamboo-vol-vs-current.png");
+        sheet.Save(combined);
+        Console.WriteLine("Wrote " + combined);
+    }
+
+    /// <summary>
     /// Speichinger KIT wall-stripe A/B: reference mesostructure (outer→inner vertical) beside Woodie Moso wall sample.
     /// Writes artifacts/checks/bamboo-speichinger-ab.png. Needs speichinger/page04_img8.png from the paper PDF extract.
     /// </summary>

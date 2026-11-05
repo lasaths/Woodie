@@ -137,8 +137,9 @@ public sealed class NaturalFeatures
     public static double BundleSurvive(double tc)
     {
         double s = SmoothStep(0.08, 0.28, tc) * (0.20 + 0.80 * Math.Pow(Math.Max(0, (Math.Exp(2.9 * tc) - 1) / (Math.Exp(2.9) - 1)), 0.92));
-        s *= SmoothStep(0.056, 0.10, tc) * (1.0 - SmoothStep(0.97, 0.995, tc));
-        if (tc > 0.8) s *= Lerp(1.0, 0.78, (tc - 0.8) / 0.2);
+        // Speichinger ~1% skin VB-free; keep outer cortex (t≲0.97) dense for side streaks.
+        s *= SmoothStep(0.056, 0.10, tc) * (1.0 - SmoothStep(0.97, 0.99, tc));
+        if (tc > 0.85) s *= Lerp(1.0, 0.92, (tc - 0.85) / 0.15);
         return s;
     }
 
@@ -151,9 +152,10 @@ public sealed class NaturalFeatures
     {
         if (!Bamboo) return (0, 0);
         double wall = ro - ri; if (!(wall > 1e-6)) return (0, 0);
-        double tc = (r - ri) / wall; if (tc < 0.05 || tc > 0.995) return (0, 0);
+        double tc = (r - ri) / wall; if (tc < 0.05 || tc > 0.99) return (0, 0);
         double areaMm2 = Lerp(0.194, 0.061, Math.Pow(tc, 0.9));
-        double spacing = Math.Max(0.34, Math.Sqrt(areaMm2) * Lerp(2.6, 0.55, Math.Pow(tc, 1.25)));
+        // Shang-scale floor — dense outer packing without single-pixel charcoal.
+        double spacing = Math.Max(0.50, Math.Sqrt(areaMm2) * Lerp(2.6, 0.85, Math.Pow(tc, 1.25)));
         double survive = BundleSurvive(tc);
         double aspect = Lerp(1.55, 0.48, tc);
         double clover = Math.Pow(1 - tc, 1.25);
@@ -180,12 +182,12 @@ public sealed class NaturalFeatures
             if (d < best) { best = d; blu = lu; blv = lv; }
         }
         if (best > 8) return (0, 0);
-        double fibre = SoftCap(blu, blv, 0.0, 0.0, su, sv) * 0.65;
+        double fibre = SoftCap(blu, blv, 0.0, 0.0, su, sv) * 0.70;
         fibre = Math.Max(fibre, Math.Max(SoftCap(blu, blv, 0.0, 0.18, su, sv), SoftCap(blu, blv, 0.0, -0.18, su, sv)));
         if (clover > 0.05)
             fibre = Math.Max(fibre, clover * Math.Max(SoftCap(blu, blv, 0.18, 0.0, su, sv), SoftCap(blu, blv, -0.18, 0.0, su, sv)));
-        if (freeFibre >= 1) fibre = Math.Max(fibre, SoftCap(blu, blv, 0.0, 0.40, su, sv) * 0.95);
-        if (freeFibre >= 2) fibre = Math.Max(fibre, SoftCap(blu, blv, 0.0, -0.38, su, sv) * 0.9);
+        if (freeFibre >= 1) fibre = Math.Max(fibre, SoftCap(blu, blv, 0.0, 0.40, su, sv) * 0.85);
+        if (freeFibre >= 2) fibre = Math.Max(fibre, SoftCap(blu, blv, 0.0, -0.38, su, sv) * 0.8);
         double vs = Lerp(0.07, 0.13, clover);
         double lumen = Math.Max(SoftCap(blu, blv, vs, 0.0, su, sv), SoftCap(blu, blv, -vs, 0.0, su, sv));
         return (Math.Min(1, fibre), lumen * SmoothStep(0.42, 0.08, best));
@@ -194,7 +196,8 @@ public sealed class NaturalFeatures
     static double SoftCap(double lu, double lv, double cu, double cv, double su, double sv)
     {
         double d = Math.Sqrt((lu - cu) * (lu - cu) * su * su + (lv - cv) * (lv - cv) * sv * sv);
-        return SmoothStep(0.15, 0.035, d);
+        // Discrete flower lobes (preview-scale); Late amber keeps contrast non-charcoal.
+        return SmoothStep(0.20, 0.045, d);
     }
 
     // Integer hash — faster than Perlin for cellular jitter (TimberPanel still owns grain noise).

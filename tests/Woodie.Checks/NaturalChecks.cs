@@ -259,6 +259,29 @@ internal static class NaturalChecks
         Assert(Red(skin) > Green(skin) && Red(inner) > Green(inner), "Cured bamboo skin and wall interior should read warm, not living green");
         Assert(node != mid, "Node fibre appearance should differ from an internode wall");
         Assert(Luma(cs.Sample(n0, 40, 40)) > 150 && Luma(cs.Sample(gap, 40 + ri - 1, 40)) > 150, "Diaphragm and lining should be pale");
+        // Skin must not read as flat plastic: outer samples need mid-scale luma spread.
+        double skinSum = 0, skinSum2 = 0; int skinN = 0;
+        for (int i = 0; i < 64; i++) {
+            double ang = i * (2 * Math.PI / 64), xx = gap + (i % 8 - 3.5) * 12;
+            double L = Luma(cs.Sample(xx, 40 + (ro - .05) * Math.Cos(ang), 40 + (ro - .05) * Math.Sin(ang), 0, Math.Cos(ang), Math.Sin(ang)));
+            skinSum += L; skinSum2 += L * L; skinN++;
+        }
+        double skinMean = skinSum / skinN, skinVar = skinSum2 / skinN - skinMean * skinMean;
+        Assert(skinVar > 1.5, $"Bamboo epidermis should keep soft mottling (luma variance {skinVar:0.0}, want > 1.5)");
+        // Side streaks must share identity with SampleBundle (no Fract hatch).
+        double sumS = 0, sumD = 0, sumS2 = 0, sumD2 = 0, sumSD = 0; int nCorr = 0;
+        for (int i = 0; i < 96; i++) {
+            double ang = i * (2 * Math.PI / 96), ca = Math.Cos(ang), sa = Math.Sin(ang);
+            double rWall = ro - 0.22;
+            var (sheath, _) = bf.SampleBundle(ri, ro, rWall, ang, 0);
+            double L = Luma(cs.Sample(gap, 40 + (ro - .05) * ca, 40 + (ro - .05) * sa, 0, ca, sa));
+            double dark = skinMean - L;
+            sumS += sheath; sumD += dark; sumS2 += sheath * sheath; sumD2 += dark * dark; sumSD += sheath * dark; nCorr++;
+        }
+        double mS = sumS / nCorr, mD = sumD / nCorr;
+        double vS = sumS2 / nCorr - mS * mS, vD = sumD2 / nCorr - mD * mD;
+        double corr = (vS > 1e-12 && vD > 1e-12) ? (sumSD / nCorr - mS * mD) / Math.Sqrt(vS * vD) : 0;
+        Assert(corr > 0.3, $"Outer skin darkening should track SampleBundle sheath (Pearson r={corr:0.00}, want > 0.3)");
         // End-cut wall: outer third darker/more varied than inner third (vascular packing toward cortex).
         double lumaInner = 0, lumaOuter = 0; int nSamp = 0;
         for (int i = 0; i < 48; i++) {
@@ -267,24 +290,24 @@ internal static class NaturalChecks
             lumaOuter += Luma(cs.Sample(gap, 40 + (ri + 0.88 * (ro - ri)) * ca, 40 + (ri + 0.88 * (ro - ri)) * sa, 1, 0, 0));
             nSamp++;
         }
-        Assert(lumaOuter / nSamp < lumaInner / nSamp - 6, $"Outer wall should read darker than lining on end cuts ({lumaOuter / nSamp:0} vs {lumaInner / nSamp:0})");
+        Assert(lumaOuter / nSamp < lumaInner / nSamp - 3, $"Outer wall should read darker than lining on end cuts ({lumaOuter / nSamp:0} vs {lumaInner / nSamp:0})");
         Assert(Luma(cs.Sample(n0, 40 + ro - .05, 40, 0, 1, 0)) + 12 < Luma(skin) || cs.Sample(n0, 40 + ro - .05, 40, 0, 1, 0) != skin, "Node ring should darken the exterior skin");
-        // Discrete bundles: along an outer arc, luma should jump between pale parenchyma and dark sheath.
+        // Discrete bundles: soft sheath still yields mid jumps along an outer arc (not charcoal pepper).
         int jumps = 0; double rr = ri + 0.72 * (ro - ri);
         double prev = Luma(cs.Sample(gap, 40 + rr, 40, 1, 0, 0));
         for (int i = 1; i < 96; i++) {
             double ang = i * (2 * Math.PI / 96);
             double L = Luma(cs.Sample(gap, 40 + rr * Math.Cos(ang), 40 + rr * Math.Sin(ang), 1, 0, 0));
-            if (Math.Abs(L - prev) > 22) jumps++; prev = L;
+            if (Math.Abs(L - prev) > 10) jumps++; prev = L;
         }
-        Assert(jumps >= 10, $"Outer wall should show discrete bundle contrast (jumps {jumps})");
+        Assert(jumps >= 8, $"Outer wall should show discrete bundle contrast (jumps {jumps})");
         // Mid-wall should not be empty parenchyma: at least some darker samples than the lining.
         double midDark = 999;
         for (int i = 0; i < 48; i++) {
             double ang = i * (2 * Math.PI / 48), rm = ri + 0.55 * (ro - ri);
             midDark = Math.Min(midDark, Luma(cs.Sample(gap, 40 + rm * Math.Cos(ang), 40 + rm * Math.Sin(ang), 1, 0, 0)));
         }
-        Assert(midDark < lumaInner / nSamp - 15, $"Mid-wall should carry some vascular bundles ({midDark:0} vs lining {lumaInner / nSamp:0})");
+        Assert(midDark < lumaInner / nSamp - 8, $"Mid-wall should carry some vascular bundles ({midDark:0} vs lining {lumaInner / nSamp:0})");
         // Larsson-style continuity: same wall depth t (not fixed r) keeps end-grain angular structure along the axis.
         Assert(bf.HasVolumetricBundles, "Culm must use the axial-persistent vascular field");
         double AxialCorr(double x0, double x1)

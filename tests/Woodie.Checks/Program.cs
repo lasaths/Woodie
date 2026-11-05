@@ -43,6 +43,11 @@ internal static class Program
             Console.WriteLine($"{passed} passed, {failures} failed");
             return failures == 0 ? 0 : 1;
         }
+        if (args.Contains("--bamboo-vol-compare")) {
+            Check("Bamboo volumetric vs current side A/B", MaterialChecks.BambooVolumetricCompare);
+            Console.WriteLine($"{passed} passed, {failures} failed");
+            return failures == 0 ? 0 : 1;
+        }
         if (args.Contains("--bamboo-ab")) {
             Check("Speichinger KIT wall-stripe A/B", MaterialChecks.SpeichingerAbSheet);
             Console.WriteLine($"{passed} passed, {failures} failed");

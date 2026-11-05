@@ -35,7 +35,8 @@ public abstract class NaturalModel : IMaterialModel
         double end = x < 1e-3 || x > F.Length - 1e-3 ? 1 : 0;   // axial share of the geometric cut normal; end faces are 1
         double scale = Math.Max(Math.Abs(nx), Math.Max(Math.Abs(ny), Math.Abs(nz)));
         if (oriented && scale > 0 && double.IsFinite(scale)) { nx /= scale; ny /= scale; nz /= scale; end = nx * nx / (nx * nx + ny * ny + nz * nz); }
-        var c = Shade(Math.Clamp(x, 0, F.Length), r, dy, dz, end);
+        else { nx = ny = nz = 0; }
+        var c = Shade(Math.Clamp(x, 0, F.Length), r, dy, dz, end, nx, ny, nz);
         double g = Pal.Gain, mx = Math.Max(c.R, Math.Max(c.G, c.B));
         if (mx > Pal.Cap) { c.R *= Pal.Cap / mx; c.G *= Pal.Cap / mx; c.B *= Pal.Cap / mx; }
         return (255 << 24) | (Channel(c.R * g * Pal.GR) << 16) | (Channel(c.G * g * Pal.GG) << 8) | Channel(c.B * g * Pal.GB);
@@ -44,7 +45,8 @@ public abstract class NaturalModel : IMaterialModel
     static int Channel(double v) => double.IsNaN(v) ? 255 : (int)Math.Max(0, Math.Min(255, v));
     protected double[] Lerp3(double[] a, double[] b, double t) => new[] { Lerp(a[0], b[0], t), Lerp(a[1], b[1], t), Lerp(a[2], b[2], t) };
 
-    protected abstract (double R, double G, double B) Shade(double x, double r, double dy, double dz, double end);
+    /// <param name="nx">Oriented surface normal (unit-ish); zeros when Sample was unoriented.</param>
+    protected abstract (double R, double G, double B) Shade(double x, double r, double dy, double dz, double end, double nx, double ny, double nz);
 }
 
 /// <summary>Softwood stem: growth rings parallel to the surface, bounded noise, knots and an outer bark region.</summary>
@@ -52,8 +54,9 @@ public sealed class LogMaterialModel : NaturalModel
 {
     public LogMaterialModel(NaturalFeatures features, TimberPalette palette, double widthMm, double depthMm) : base(features, palette, widthMm, depthMm) { }
 
-    protected override (double R, double G, double B) Shade(double x, double r, double dy, double dz, double end)
+    protected override (double R, double G, double B) Shade(double x, double r, double dy, double dz, double end, double nx, double ny, double nz)
     {
+        _ = (nx, ny, nz);
         double R = F.Outer(x), v = F.Variation, ox = OffsetX;
         if (F.Bark > 0 && r >= R - F.Bark)
         {
@@ -118,9 +121,9 @@ public sealed class BambooMaterialModel : NaturalModel
         return r <= F.Outer(x) + F.Ridge(x) + 1e-3;
     }
 
-    protected override (double R, double G, double B) Shade(double x, double r, double dy, double dz, double end)
+    protected override (double R, double G, double B) Shade(double x, double r, double dy, double dz, double end, double nx, double ny, double nz)
     {
-        // Scalar RGB (no Lerp3 allocations) and few Perlin calls — atlas raster hits this millions of times.
+        // Scalar RGB; atlas raster hits this millions of times. Side streaks = same SampleBundle as end grain.
         double ox = OffsetX, oy = OffsetY, ri = F.Inner(x), ro = F.Outer(x), tint = F.Tint;
         F.NearNode(x, out double nd);
         double ang = Math.Atan2(dz, dy);
@@ -128,9 +131,9 @@ public sealed class BambooMaterialModel : NaturalModel
         double nodeW = 0, nodeCore = 0, nodeHalo = 0;
         if (!double.IsInfinity(nd) && nd < nodeHalf * 2)
         {
-            double ndAdj = Math.Abs(nd + 0.9 * Perlin(ang * 2.4 + ox, oy * 0.35, 1.7));
-            nodeCore = Math.Exp(-0.5 * Math.Pow(ndAdj / Math.Max(nodeHalf * 0.22, 0.8), 2));
-            nodeHalo = Math.Exp(-0.5 * Math.Pow(ndAdj / Math.Max(nodeHalf * 0.55, 2.0), 2));
+            double ndAdj = Math.Abs(nd + 1.35 * Perlin(ang * 3.1 + ox, oy * 0.4, 1.7) + 0.55 * Perlin(ang * 7.2 + oy, ox * 0.5, 2.3));
+            nodeCore = Math.Exp(-0.5 * Math.Pow(ndAdj / Math.Max(nodeHalf * 0.38, 1.4), 2));
+            nodeHalo = Math.Exp(-0.5 * Math.Pow(ndAdj / Math.Max(nodeHalf * 0.75, 2.8), 2));
             nodeW = Math.Max(nodeCore, 0.7 * nodeHalo);
         }
         double cr, cg, cb;
@@ -145,76 +148,82 @@ public sealed class BambooMaterialModel : NaturalModel
         {
             double wall = Math.Max(ro - ri, 1e-6), tc = Math.Clamp((r - ri) / wall, 0, 1);
             double cross = Math.Max(end, nodeW * 0.85);
-            double angWarp = nodeW > 1e-3 ? nodeW * 0.55 * Perlin(x * 0.06, ang * 4 + ox, oy) : 0;
-            var (sheath, lumen) = F.SampleBundle(ri, ro, r, ang, angWarp);
-            lumen *= Math.Clamp(1.12 - (0.226 * tc + 0.710), 0, 1);
-            double longKeep = 1 - cross, rho = Math.Pow(tc, 1.55), shade = Lerp(1.04, 0.90, rho);
-            double baseT = 0.05 + 0.18 * (1 - tc);
+            // Peng: stronger θ-warp near nodes so bundles reorient (µCT ~RidgeHalfWidth band).
+            double angWarp = nodeW > 1e-3 ? nodeW * 0.85 * Perlin(x * 0.05, ang * 5 + ox, oy) : 0;
+            // Query cortex just inside Speichinger skin cull so outer surface still sees VBs as streaks.
+            double rBundle = Math.Min(r, Math.Max(ri + 0.06 * wall, ro - 0.22));
+            var (sheath, lumen) = F.SampleBundle(ri, ro, rBundle, ang, angWarp);
+            double tcBundle = Math.Clamp((rBundle - ri) / wall, 0, 1);
+            lumen *= Math.Clamp(1.12 - (0.226 * tcBundle + 0.710), 0, 1);
+            double longKeep = 1 - cross, rho = Math.Pow(tcBundle, 1.55), shade = Lerp(1.02, 0.95, rho);
+            double baseT = 0.05 + 0.18 * (1 - tcBundle);
             cr = Lerp(Pal.E0[0], Pal.E1[0], baseT) * shade; cg = Lerp(Pal.E0[1], Pal.E1[1], baseT) * shade; cb = Lerp(Pal.E0[2], Pal.E1[2], baseT) * shade;
             cr = Lerp(cr, F.Skin[0], 0.04); cg = Lerp(cg, F.Skin[1], 0.04); cb = Lerp(cb, F.Skin[2], 0.04);
+            // Ahvenainen: soft parenchyma mottling; sharp sheath streaks.
             if (longKeep > 0.2)
             {
-                double arc = (ang + angWarp) * 0.5 * (ri + ro);
-                double brick = SmoothStep(0.18, 0.02, Math.Abs(Fract(x * 0.55 + ox) - 0.5) * Math.Abs(Fract(arc * 0.9 + oy) - 0.5));
-                double softPar = (0.5 + 0.5 * Perlin(x * 0.03, dy * 1.2 + ox, dz * 1.2)) * 0.04 * longKeep * (1 - sheath);
-                double dim = 1 - 0.045 * brick * longKeep - softPar;
-                cr *= dim; cg *= dim; cb *= dim;
+                double softPar = (0.5 + 0.5 * Perlin(x * 0.025, dy + ox, dz)) * 0.28 * longKeep * (1 - sheath);
+                cr = Lerp(cr, Pal.E0[0] * 0.95, softPar); cg = Lerp(cg, Pal.E0[1] * 0.95, softPar); cb = Lerp(cb, Pal.E0[2] * 0.96, softPar);
             }
-            if (longKeep > 0.15)
+            if (longKeep > 0.12)
             {
                 double sx = dy, sy = dz;
-                if (nodeW > 1e-3) { double tx = -Math.Sin(ang), ty = Math.Cos(ang); sx = Lerp(dy, tx * r * 0.02 + dy * (1 - nodeW), nodeW); sy = Lerp(dz, ty * r * 0.02 + dz * (1 - nodeW), nodeW); }
-                // One axial octave (wood uses a similar Perlin budget); sheath boost keeps VB needles readable.
-                double fibreStreak = (0.5 + 0.5 * Perlin(x * 0.008, sx * 12 + ox, sy * 12)) * (0.16 + 0.08 * sheath) * longKeep;
-                cr *= 1 - fibreStreak; cg *= 1 - fibreStreak; cb *= 1 - fibreStreak;
+                if (nodeW > 1e-3)
+                {
+                    double tx = -Math.Sin(ang), ty = Math.Cos(ang);
+                    sx = Lerp(dy, tx * r * 0.04 + dy * (1 - nodeW), nodeW);
+                    sy = Lerp(dz, ty * r * 0.04 + dz * (1 - nodeW), nodeW);
+                }
+                double fibreT = (0.5 + 0.5 * Perlin(x * 0.0035, sx * 5 + ox, sy * 5)) * 0.22 * longKeep * Math.Max(sheath, 0.15);
+                cr = Lerp(cr, Pal.Late[0] * 1.08, fibreT); cg = Lerp(cg, Pal.Late[1] * 1.06, fibreT); cb = Lerp(cb, Pal.Late[2] * 1.04, fibreT);
             }
-            double sheathMix = Math.Min(1, Math.Pow(sheath, 0.55) * (0.82 + 0.18 * cross + 0.35 * longKeep));
+            // Sheath → Late amber (end grain flowers + long-grain identity).
+            double sheathMix = Math.Min(1, Math.Pow(sheath, 0.55) * (0.38 + 0.28 * cross + 0.22 * longKeep));
             cr = Lerp(cr, Pal.Late[0], sheathMix); cg = Lerp(cg, Pal.Late[1], sheathMix); cb = Lerp(cb, Pal.Late[2], sheathMix);
             if (cross > 0.12 && lumen > 0)
             {
-                double lt = lumen * Math.Max(sheath, 0.35) * cross * 0.98;
+                double lt = lumen * Math.Max(sheath, 0.35) * cross * 0.45;
                 cr = Lerp(cr, Pal.E1[0], lt); cg = Lerp(cg, Pal.E1[1], lt); cb = Lerp(cb, Pal.E1[2], lt);
             }
-            double cortex = SmoothStep(0.91, 0.97, tc);
-            if (cortex > 0)
-            {
-                double ct = 0.40 * cortex * Math.Max(sheath, 0.45);
-                cr = Lerp(cr, Pal.Late[0], ct); cg = Lerp(cg, Pal.Late[1], ct); cb = Lerp(cb, Pal.Late[2], ct);
-            }
-            double skin = r > ro ? 1 : SmoothStep(0.22, 0.0, ro - r);
+            // Thin wax/silica epidermis (~0.4 mm) + volumetric sheath streaks (no Fract hatch).
+            double skin = r > ro ? 1 : SmoothStep(0.45, 0.0, ro - r);
             if (skin > 1e-3)
             {
-                // Soft epidermis: high weather/silica read as dirty pepper at scaffold distance / 2 mm/px.
-                double fAng = ang + nodeW * Perlin(x * 0.05 + ox, ang * 3.5, oy);
-                double grain = 0.10 * Perlin(x * 0.0035, fAng * 90 + ox, oy) + 0.05 * Perlin(x * 0.012, fAng * 40 + oy, ox);
-                double weather = 0.06 * Perlin(x * 0.025, ang * 2.2 + oy, ox * 0.7);
-                double silica = SmoothStep(0.82, 0.99, FastHash01((int)Math.Floor(x * 4.0), (int)Math.Floor(ang * 64), ox));
-                double lift = 1.0 + grain + weather + 0.03 * silica;
-                cr = Lerp(cr, F.Skin[0] * lift, skin);
-                cg = Lerp(cg, F.Skin[1] * (1.0 + grain * 0.92 + weather * 0.88 + 0.03 * silica), skin);
-                cb = Lerp(cb, F.Skin[2] * (1.0 + grain * 0.85 + weather * 0.80 + 0.02 * silica), skin);
+                // Near-base Skin mottling (low amp — sheath carries most structure).
+                double blotch = 0.05 * Perlin(x * 0.0035, ang * 1.3 + oy, ox * 0.5);
+                double skinT = Math.Clamp(0.5 + blotch, 0, 1);
+                double sr = Lerp(F.Skin[0] * 0.96, F.Skin[0] * 1.04, skinT);
+                double sg = Lerp(F.Skin[1] * 0.97, F.Skin[1] * 1.03, skinT);
+                double sb = Lerp(F.Skin[2] * 0.97, F.Skin[2] * 1.02, skinT);
+                if (nx * nx + ny * ny + nz * nz > 1e-6)
+                {
+                    const double lx = 0.35, ly = 0.55, lz = 0.76;
+                    double ndot = Math.Max(0, nx * lx + ny * ly + nz * lz);
+                    double wax = 1.0 + 0.06 * ndot;
+                    sr *= wax; sg *= wax; sb *= wax;
+                }
+                cr = Lerp(cr, sr, skin); cg = Lerp(cg, sg, skin); cb = Lerp(cb, sb, skin);
+                // Outer VB sheaths = toasted axial strings (near Skin/Late, not charcoal); node wick.
+                double wick = 1.0 + 0.9 * nodeHalo;
+                double strandT = Math.Pow(Math.Max(sheath, 0), 0.65) * (0.88 * wick) * Math.Max(skin, 0.35 * longKeep);
+                double dr = Lerp(F.Skin[0] * 0.82, Pal.Late[0], 0.40);
+                double dg = Lerp(F.Skin[1] * 0.80, Pal.Late[1], 0.40);
+                double db = Lerp(F.Skin[2] * 0.76, Pal.Late[2], 0.40);
+                cr = Lerp(cr, dr, strandT); cg = Lerp(cg, dg, strandT); cb = Lerp(cb, db, strandT);
+            }
+            else if (longKeep > 0.2 && sheath > 1e-3)
+            {
+                double strandT = Math.Pow(sheath, 0.7) * 0.55 * longKeep * (1.0 + 0.7 * nodeHalo);
+                cr = Lerp(cr, Pal.Late[0], strandT * 0.65); cg = Lerp(cg, Pal.Late[1], strandT * 0.65); cb = Lerp(cb, Pal.Late[2], strandT * 0.65);
             }
             if (nodeHalo > 0)
             {
                 double band = Math.Max(skin, 0.65 * longKeep + 0.45);
-                double lipT = 0.42 * nodeHalo * (1 - nodeCore) * band, ringT = (0.80 * nodeCore + 0.34 * nodeHalo) * band;
-                cr = Lerp(cr, Math.Min(255, F.Skin[0] * 1.12), lipT); cg = Lerp(cg, Math.Min(255, F.Skin[1] * 1.08), lipT); cb = Lerp(cb, Math.Min(255, F.Skin[2] * 1.05), lipT);
-                cr = Lerp(cr, F.Skin[0] * 0.52, ringT); cg = Lerp(cg, F.Skin[1] * 0.45, ringT); cb = Lerp(cb, F.Skin[2] * 0.33, ringT);
+                double lipT = 0.22 * nodeHalo * (1 - nodeCore) * band, ringT = (0.26 * nodeCore + 0.10 * nodeHalo) * band;
+                cr = Lerp(cr, Math.Min(255, F.Skin[0] * 1.05), lipT); cg = Lerp(cg, Math.Min(255, F.Skin[1] * 1.03), lipT); cb = Lerp(cb, Math.Min(255, F.Skin[2] * 1.02), lipT);
+                cr = Lerp(cr, F.Skin[0] * 0.90, ringT); cg = Lerp(cg, F.Skin[1] * 0.88, ringT); cb = Lerp(cb, F.Skin[2] * 0.86, ringT);
             }
         }
         return (cr * tint, cg * tint, cb * tint);
-    }
-
-    static double Fract(double t) => t - Math.Floor(t);
-
-    static double FastHash01(int x, int y, double salt)
-    {
-        unchecked
-        {
-            uint n = (uint)(x * 374761393 + y * 668265263);
-            n ^= (uint)(salt * 4294967.0);
-            n = (n ^ (n >> 13)) * 1274126177u;
-            return (n & 0xffffff) * (1.0 / 16777215.0);
-        }
     }
 }
