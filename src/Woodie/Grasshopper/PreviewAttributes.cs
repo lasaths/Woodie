@@ -20,23 +20,25 @@ internal sealed class PreviewAttributes : GH_ComponentAttributes
     static readonly Color Ink = Color.FromArgb(36, 39, 32);
 
     readonly PreviewComponent preview;
-    RectangleF chip;
+    RectangleF capsule, chip;
 
     public PreviewAttributes(PreviewComponent owner) : base(owner) => preview = owner;
 
     protected override void Layout()
     {
         base.Layout();
-        var standard = Bounds;
-        float width = Math.Max(88, standard.Width * 0.7f);
-        chip = new RectangleF(standard.Left + (standard.Width - width) / 2, standard.Bottom + 4, width, 20);
-        Bounds = RectangleF.Union(standard, chip);
+        capsule = Bounds;
+        float width = Math.Max(88, capsule.Width * 0.7f);
+        chip = new RectangleF(capsule.Left + (capsule.Width - width) / 2, capsule.Bottom + 4, width, 20);
+        Bounds = RectangleF.Union(capsule, chip);
     }
 
     protected override void Render(GH_Canvas canvas, Graphics graphics, GH_CanvasChannel channel)
     {
+        var full = chip.IsEmpty ? capsule : RectangleF.Union(capsule, chip);
+        Bounds = capsule;
         base.Render(canvas, graphics, channel);
-        if (!chip.IsEmpty) Bounds = RectangleF.Union(Bounds, chip);
+        Bounds = full;
         if (channel != GH_CanvasChannel.Objects || chip.IsEmpty) return;
         bool draft = preview.PreviewLod == PreviewLod.Draft;
         string label = draft ? "Draft preview" : "Full preview";

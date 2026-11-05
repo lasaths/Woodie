@@ -25,25 +25,26 @@ internal sealed class MaterialAttributes : GH_ComponentAttributes
     static readonly Color LabelInk = Color.FromArgb(72, 70, 62);
 
     readonly SettingsComponent material;
-    RectangleF panel, product, look, advanced, disclosure;
+    RectangleF capsule, panel, product, look, advanced, disclosure;
     readonly List<RectangleF> options = new();
     int open; // 0 = closed, 1 = products, 2 = appearances
     public MaterialAttributes(SettingsComponent owner) : base(owner) => material = owner;
     protected override void Layout()
     {
         base.Layout();
-        var standard = Bounds;
+        // Keep the GH capsule (grips/wires) fixed; grow pick-bounds downward only.
+        capsule = Bounds;
         // 8pt rhythm; disclosure ≥14px tall but centred under the capsule.
-        disclosure = new RectangleF(standard.Left + (standard.Width - 24) / 2, standard.Bottom + 4, 24, 16);
+        disclosure = new RectangleF(capsule.Left + (capsule.Width - 24) / 2, capsule.Bottom + 4, 24, 16);
         options.Clear();
         if (!material.PanelExpanded) {
             open = 0;
             panel = product = look = advanced = RectangleF.Empty;
-            Bounds = RectangleF.Union(standard, disclosure);
+            Bounds = RectangleF.Union(capsule, disclosure);
             return;
         }
-        float width = Math.Max(176, standard.Width);
-        float left = standard.Left + (standard.Width - width) / 2;
+        float width = Math.Max(176, capsule.Width);
+        float left = capsule.Left + (capsule.Width - width) / 2;
         float top = disclosure.Bottom + 4;
         const float row = 22, gap = 8, label = 16;
         product = new RectangleF(left + 8, top + label, width - 16, row);
@@ -56,13 +57,16 @@ internal sealed class MaterialAttributes : GH_ComponentAttributes
         advanced = new RectangleF(left + 8, look.Bottom + gap + (open == 2 ? count * row + 2 : 0), width - 16, row);
         float notice = material.AdvancedNotice == null ? 0 : 40;
         panel = new RectangleF(left, top, width, advanced.Bottom - top + 24 + notice);
-        Bounds = RectangleF.Union(RectangleF.Union(standard, disclosure), panel);
+        Bounds = RectangleF.Union(RectangleF.Union(capsule, disclosure), panel);
     }
     protected override void Render(GH_Canvas canvas, Graphics graphics, GH_CanvasChannel channel)
     {
+        // base.Render draws the chrome from Bounds; use the capsule so wires/grips stay put.
+        var full = UnionControls(capsule);
+        Bounds = capsule;
         base.Render(canvas, graphics, channel);
         // base.Render may clip Bounds through viewport.IsVisible; keep the full control layout for picking.
-        Bounds = UnionControls(Bounds);
+        Bounds = full;
         if (channel != GH_CanvasChannel.Objects) return;
         using (var fill = new SolidBrush(PanelFill))
         using (var outline = new Pen(Selected ? Accent : PanelLine))
