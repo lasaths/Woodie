@@ -4,7 +4,7 @@
 
 **Display → Woodie** · **Timber Material → optional Timber Buildup → Timber Preview**
 
-**0.1.6** keeps Log Stock and Bamboo Stock, and makes bamboo **volumetric like the softwood path**: vascular-bundle identity is fixed in wall-polar coordinates along the culm, so cuts, previews and bakes sample the same field. Sampling stays in the same cost class as softwood. Mac native display and a fresh interactive Bake-menu session remain unverified. See [validation](docs/validation.md).
+**0.1.7** keeps Log Stock and Bamboo Stock with a **Larsson-style volumetric bamboo field**: side streaks come from the same outer sheath samples as end-grain flowers (no Fract hatch), with sharper SoftCaps, node fringe and a thin wax skin. Draft/Full preview LOD caps long culm meshes. Sampling stays in the softwood cost class. Mac native display and a fresh interactive Bake-menu session remain unverified. See [validation](docs/validation.md).
 
 ![Bamboo side and end cuts — Moso, Guadua, Asper](docs/images/bamboo-side-top.png)
 
@@ -104,7 +104,7 @@ Engineered products: Solid timber, KVH, Glulam, CLT, Three-layer panel, Plywood,
 
 ## Example
 
-Open **[Timber-preview.ghx](examples/Timber-preview.ghx)** with **Woodie 0.1.6**:
+Open **[Timber-preview.ghx](examples/Timber-preview.ghx)** with **Woodie 0.1.7**:
 
 1. Cut through the stock  
 2. Follow a knot (stepped cutaway)  

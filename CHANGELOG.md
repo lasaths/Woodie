@@ -1,10 +1,15 @@
 # Changelog
 
-## 0.1.6.1 — 2026-11-04
+## 0.1.7 — 2026-11-05
 
+- Bamboo appearance: side streaks from the same `SampleBundle` sheath field as end grain (Fract epidermis hatch removed); Pearson sheath↔side gate; sharper SoftCaps / Shang-scale spacing; Peng node warp + basal sheath-scar fringe (`FringeBump` on preview silhouettes); thin wax/silica skin band with limb satin. Texture cache `woodie-21`.
 - Bamboo preview: coarse tube mesh for uncut culms so 6–8 m poles stay under the 200k triangle cap; bake keeps the revolved solid (with a 15° / no-refine remesh retry when needed).
 - Timber Preview Draft/Full toggle (on-component chip): Draft uses a 12×80 mm tube and 0.15 textures without background refine; Full keeps 72×20 mm and refine.
 - Coarser natural profile stations (`min(100 mm, b2/8)`). Scaffolding-length NaturalChecks.
+
+## 0.1.6.1 — 2026-11-04
+
+- Unpublished intermediate: preview LOD / Draft tube work; shipped as part of 0.1.7.
 
 ## 0.1.6 — 2026-11-02
 

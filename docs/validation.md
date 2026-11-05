@@ -1,5 +1,14 @@
 # Release validation
 
+## 0.1.7 — bamboo 8+ appearance + Draft preview — 2026-11-05
+
+- Release builds of `Woodie.Checks` then `Woodie.gha`: PASS, zero warnings/errors.
+- Managed suite: PASS, **15** checks (Appearance, Sample throughput ~0.75× softwood, bamboo vol-compare Pearson r≈0.56).
+- Native `--rhino --integration`: PASS, **49** checks, 0 failed.
+- Texture cache `woodie-21`. GHA SHA-256 `E7BC66393EFB9C7725760CDA57F43F515F3ED0ED84ED4AFB0906E7D6D7CD29C9` (pre-package Release build).
+- Mac native checks: not run. Fresh installed Bake-menu session for this build: not run.
+- Publication: pending.
+
 ## 0.1.6 — volumetric bamboo + README — 2026-11-02
 
 - Release builds of `Woodie.Checks` then `Woodie.gha`: PASS, zero warnings/errors.
