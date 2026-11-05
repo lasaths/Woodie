@@ -9,7 +9,10 @@ internal sealed class NativeUvGeometry : IDisposable
     internal Mesh Samples { get; }
     internal MeshingParameters Meshing { get; }
     internal TextureMapping Mapping { get; }
-    NativeUvGeometry(GeometryBase geometry, Mesh samples, TextureMapping mapping, MeshingParameters meshing = null) { Geometry = geometry; Samples = samples; Mapping = mapping; Meshing = meshing; }
+    /// <summary>Set when bake remeshed coarser to stay under the triangle cap.</summary>
+    internal string Remark { get; }
+    NativeUvGeometry(GeometryBase geometry, Mesh samples, TextureMapping mapping, MeshingParameters meshing = null, string remark = null)
+    { Geometry = geometry; Samples = samples; Mapping = mapping; Meshing = meshing; Remark = remark; }
     internal static NativeUvGeometry Create(GeometryBase source, UnitSystem units, double paddingMm, CancellationToken ct, double gridAngle = Math.PI / 180)
     {
         ct.ThrowIfCancellationRequested();
@@ -50,18 +53,39 @@ internal sealed class NativeUvGeometry : IDisposable
                 var projection = typeof(TextureMapping).GetProperty("Projection"); projection.SetValue(mapping, Enum.Parse(projection.PropertyType, "ClosestPoint"));
             }
             if (mapping == null || obj.SetTextureMapping(1, mapping) == 0) throw new ArgumentException("Could not prepare the native texture mapping.");
-            var parameters = new MeshingParameters(MeshingParameters.Default) { TextureRange = MeshingParameterTextureRange.PackedScaledNormalized, RefineGrid = true, GridAngle = gridAngle, MinimumEdgeLength = 0, MaximumEdgeLength = 30 / RhinoMath.UnitScale(units, UnitSystem.Millimeters), SimplePlanes = false };
-            obj.SetRenderMeshParameters(parameters);
-            if (obj.CreateMeshes(MeshType.Render, parameters, false) == 0) throw new ArgumentException("Rhino could not create native render UVs.");
-            var samples = new Mesh();
-            foreach (var mesh in obj.GetMeshes(MeshType.Render)) { using (mesh) { if (boxed) mesh.SetTextureCoordinates(mapping, Transform.Identity, false, true); samples.Append(mesh); } }
-            samples.Faces.ConvertQuadsToTriangles(); samples.Normals.ComputeNormals();
+            double maxEdge = 30 / RhinoMath.UnitScale(units, UnitSystem.Millimeters);
+            var parameters = new MeshingParameters(MeshingParameters.Default) { TextureRange = MeshingParameterTextureRange.PackedScaledNormalized, RefineGrid = true, GridAngle = gridAngle, MinimumEdgeLength = 0, MaximumEdgeLength = maxEdge, SimplePlanes = false };
+            Mesh samples = MeshBake(obj, mapping, boxed, parameters);
+            string remark = null;
+            // shortcut: long natural solids explode under refine+5°; one coarser remesh before the hard cap. Clear the first render mesh so the host does not reuse it.
+            if (samples.Faces.Count > 200000)
+            {
+                samples.Dispose();
+                scratch.Objects.Delete(obj, true);
+                id = scratch.Objects.Add(geometry);
+                obj = scratch.Objects.FindId(id);
+                if (obj == null || obj.SetTextureMapping(1, mapping) == 0) throw new ArgumentException("Could not prepare the native texture mapping.");
+                parameters.RefineGrid = false;
+                parameters.GridAngle = Math.Max(gridAngle, 15 * Math.PI / 180);
+                samples = MeshBake(obj, mapping, boxed, parameters);
+                remark = "Native bake used a coarser 15° mesh so the triangle cap holds.";
+            }
             if (samples.Faces.Count == 0 || samples.Faces.Count > 200000) { samples.Dispose(); throw new ArgumentException("Native baking supports up to 200,000 render triangles per object. Simplify the geometry."); }
             if (geometry is Brep b) foreach (var face in b.Faces) face.ClearMaterialChannelIndex();
-            return new NativeUvGeometry(geometry, samples, mapping, parameters);
+            return new NativeUvGeometry(geometry, samples, mapping, parameters, remark);
         }
         catch { geometry.Dispose(); mapping?.Dispose(); throw; }
     }
+    static Mesh MeshBake(Rhino.DocObjects.RhinoObject obj, TextureMapping mapping, bool boxed, MeshingParameters parameters)
+    {
+        obj.SetRenderMeshParameters(parameters);
+        if (obj.CreateMeshes(MeshType.Render, parameters, false) == 0) throw new ArgumentException("Rhino could not create native render UVs.");
+        var samples = new Mesh();
+        foreach (var mesh in obj.GetMeshes(MeshType.Render)) { using (mesh) { if (boxed) mesh.SetTextureCoordinates(mapping, Transform.Identity, false, true); samples.Append(mesh); } }
+        samples.Faces.ConvertQuadsToTriangles(); samples.Normals.ComputeNormals();
+        return samples;
+    }
+
     static Box ExtrusionBox(Extrusion extrusion)
     {
         // UV projection follows the physical profile, independently of the timber/guide frame.

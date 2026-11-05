@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.6.1 — 2026-11-04
+
+- Bamboo preview: coarse tube mesh for uncut culms so 6–8 m poles stay under the 200k triangle cap; bake keeps the revolved solid (with a 15° / no-refine remesh retry when needed).
+- Timber Preview Draft/Full toggle (on-component chip): Draft uses a 12×80 mm tube and 0.15 textures without background refine; Full keeps 72×20 mm and refine.
+- Coarser natural profile stations (`min(100 mm, b2/8)`). Scaffolding-length NaturalChecks.
+
 ## 0.1.6 — 2026-11-02
 
 - Bamboo uses a **Larsson-style continuous volume**: vascular bundles are a 2D cellular field in fixed wall-polar `(θ, t)`, so axial cuts keep bundle identity. Softwood-class sample cost (throughput gate vs `TimberPanel`).

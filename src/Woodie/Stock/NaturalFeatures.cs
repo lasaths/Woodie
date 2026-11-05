@@ -267,7 +267,13 @@ public sealed class NaturalFeatures
         {
             var xs = new SortedSet<double> { x0, x1 };
             if (extra != null) foreach (double e in extra) if (e > x0 && e < x1) xs.Add(e);
-            if (Variation > 0) for (int i = 1; i < 64; i++) xs.Add(x0 + (x1 - x0) * i / 64);
+            // shortcut: equal steps of min(100 mm, b2/8) so long hollow runs stay under the 200k preview mesh cap; densify if radius checks fail on short logs.
+            if (Variation > 0 && x1 > x0)
+            {
+                double step = Math.Min(100, b2 / 8);
+                int n = Math.Max(1, (int)Math.Ceiling((x1 - x0) / step));
+                for (int i = 1; i < n; i++) xs.Add(x0 + (x1 - x0) * i / (double)n);
+            }
             return xs.Select(x => (x, radius(x))).ToList();
         }
         if (!Bamboo)

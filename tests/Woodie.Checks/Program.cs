@@ -33,6 +33,11 @@ internal static class Program
             NaturalChecks.ProbeBundles();
             return 0;
         }
+        if (args.Contains("--bamboo-mesh-budget")) {
+            RhinoInside.Resolver.Initialize();
+            NaturalChecks.ProbeMeshBudget();
+            return 0;
+        }
         if (args.Contains("--bamboo-render")) {
             Check("Bamboo side and top full renders", MaterialChecks.BambooFullRenders);
             Console.WriteLine($"{passed} passed, {failures} failed");

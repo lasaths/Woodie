@@ -21,6 +21,7 @@ internal sealed class NativeBakePlan : IDisposable
     internal GeometryBase Geometry => native.Geometry;
     internal MeshingParameters Meshing => native.Meshing;
     internal Rhino.Render.TextureMapping Mapping => native.Mapping;
+    internal string NativeRemark => native.Remark;
     internal int Side { get; }
     internal string TexturePath { get; private set; }
     internal string ImageHash { get; private set; }

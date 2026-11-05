@@ -3,7 +3,9 @@ using Grasshopper.Kernel;
 using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Types;
 using Rhino.Geometry;
+using Rhino.Geometry.Intersect;
 using Woodie.Appearance;
+using Woodie.Baking;
 using Woodie.Geometry;
 using Woodie.Grasshopper;
 using Woodie.Rendering;
@@ -61,6 +63,13 @@ internal static class NaturalChecks
         Reject(() => Resolve(new TimberSettings { Product = TimberProduct.Bamboo, Diameter = 80, WallThickness = 7, NodeSpacing = 20 }), "100 nodes");
         Reject(() => Resolve(new TimberSettings { Product = TimberProduct.Bamboo, Diameter = 80, WallThickness = 40 }), "hollow");
         Reject(() => Resolve(new TimberSettings { Product = TimberProduct.Log, Diameter = 100, BarkThickness = 60 }, 1000), "Bark");
+        // Scaffolding length: Ø80 keeps the hollow guard (Ø75 tip wall fails at 8 m). Absurd length hits taper.
+        var scaffold = new TimberSettings { Product = TimberProduct.Bamboo, Species = BambooSpeciesId.Moso, Diameter = 80, Taper = 5, WallThickness = 7, NodeSpacing = 270, Variation = .8 };
+        Assert(NaturalFeatures.Resolve(scaffold, 8000, 80, 80).Length == 8000, "8 m Moso with trade-range Ø80 must resolve");
+        try { NaturalFeatures.Resolve(new TimberSettings { Product = TimberProduct.Bamboo, Species = BambooSpeciesId.Moso, Diameter = 75, Taper = 5, WallThickness = 7, NodeSpacing = 270, Variation = .8 }, 6_000_000, 75, 75); Assert(false, "6 km taper must throw"); }
+        catch (ArgumentException ex) { Assert(ex.Message.Contains("Taper leaves less than 20%"), "Taper guard message: " + ex.Message); }
+        try { NaturalFeatures.Resolve(new TimberSettings { Product = TimberProduct.Bamboo, Diameter = 75, WallThickness = 7, NodeSpacing = 270, Species = BambooSpeciesId.Moso }, 6_000_000, 75, 75); Assert(false, "Unset taper must hit the node cap"); }
+        catch (ArgumentException ex) { Assert(ex.Message.Contains("more than 100 nodes"), "Unset taper path: " + ex.Message); }
     }
 
     static double[] InternodeLengths(NaturalFeatures f)
@@ -69,6 +78,69 @@ internal static class NaturalChecks
         var gaps = new double[xs.Count - 1];
         for (int i = 0; i < gaps.Length; i++) gaps[i] = xs[i + 1] - xs[i];
         return gaps;
+    }
+
+    /// <summary>Baseline preview mesh face counts for scaffolding-length Moso (docs/development/bamboo-preview-performance.md).</summary>
+    public static void ProbeMeshBudget()
+    {
+        IsolatedHost.Prepare();
+        using var core = new Rhino.Runtime.InProcess.RhinoCore(new[] { "/safemode", "/nosplash", "/notemplate" }, Rhino.Runtime.InProcess.WindowStyle.NoWindow);
+        using var testDoc = Rhino.RhinoDoc.Create(null);
+        testDoc.ModelUnitSystem = Rhino.UnitSystem.Millimeters;
+        IsolatedHost.LoadBuiltIns();
+
+        // Defaults match Bamboo Stock (Moso midpoint Ø75, Variation 0.8).
+        var settings = new TimberSettings {
+            Product = TimberProduct.Bamboo, Species = BambooSpeciesId.Moso, Seed = 0,
+            Diameter = 75, WallThickness = 7, NodeSpacing = 270, Taper = 5, Variation = .8
+        };
+        settings.Validate();
+        double angle = settings.GridAngle; // 5°
+        void Count(string label, TimberSettings s, double lengthMm, double unitToMm, double axisDocument)
+        {
+            try
+            {
+                var features = NaturalFeatures.Resolve(s, lengthMm, s.Diameter, s.Diameter);
+                double mmToDocument = 1 / unitToMm, tolerance = .001;
+                double maxEdge = Math.Max(10 / unitToMm, tolerance * 20);
+                var axis = new Line(Point3d.Origin, new Point3d(0, 0, axisDocument));
+                using var brep = NaturalGeometry.Create(features, axis, mmToDocument, tolerance);
+                var parameters = new MeshingParameters(MeshingParameters.Default)
+                { RefineGrid = false, GridAngle = angle, MinimumEdgeLength = 0, MaximumEdgeLength = maxEdge };
+                Mesh[] pieces = Mesh.CreateFromBrep(brep, parameters);
+                Assert(pieces != null && pieces.Length > 0, label + ": meshing failed");
+                using var mesh = new Mesh();
+                foreach (var piece in pieces) { mesh.Append(piece); piece.Dispose(); }
+                mesh.Faces.ConvertQuadsToTriangles();
+                mesh.Faces.CullDegenerateFaces();
+                mesh.Compact();
+                Console.WriteLine($"{label}: faces={mesh.Faces.Count} maxEdge={maxEdge:0.###} runs={features.Profile().Count} nodes={features.Nodes.Count} Ø={s.Diameter}");
+            }
+            catch (ArgumentException ex) { Console.WriteLine($"{label}: FAIL {ex.Message}"); }
+        }
+        Count("6m mm-doc", settings, 6000, 1, 6000);
+        Count("6m m-doc", settings, 6000, 1000, 6);
+        // Ø75 + taper 5 mm/m fails the hollow guard near 8 m; trade-range Ø80 still leaves a wall.
+        var longPole = settings.Duplicate(); longPole.Diameter = 80; longPole.Validate();
+        Count("8m mm-doc Ø80", longPole, 8000, 1, 8000);
+        Count("8m m-doc Ø80", longPole, 8000, 1000, 8);
+
+        void CountPrepared(string label, TimberSettings s, double lengthMm, double unitToMm, double axisDocument)
+        {
+            try
+            {
+                var features = NaturalFeatures.Resolve(s, lengthMm, s.Diameter, s.Diameter);
+                var axis = new Line(Point3d.Origin, new Point3d(0, 0, axisDocument));
+                using var brep = NaturalGeometry.Create(features, axis, 1 / unitToMm, .001);
+                var frame = NaturalGeometry.Frame(axis);
+                using var part = PreparedPart.Create(brep, s.Duplicate(), unitToMm, .001, frame, frame.XAxis);
+                Console.WriteLine($"{label}: preparedFaces={part.Mesh.Faces.Count} lengthMm={part.LengthMm:0.#} remarks={string.Join(";", part.Remarks)}");
+            }
+            catch (ArgumentException ex) { Console.WriteLine($"{label}: prepared FAIL {ex.Message}"); }
+        }
+        CountPrepared("6m prepared mm", settings, 6000, 1, 6000);
+        CountPrepared("8m prepared mm Ø80", longPole, 8000, 1, 8000);
+        CountPrepared("8m prepared m Ø80", longPole, 8000, 1000, 8);
     }
 
     public static void ProbeBundles()
@@ -276,6 +348,31 @@ internal static class NaturalChecks
             using var cut = TimberCut.Create(brep, cutPlane, false, .001);
             Assert(cut.Geometry.Count == 1 && cut.Geometry[0] is Brep piece && piece.IsSolid && piece.GetVolume() > .3 * brep.GetVolume() && piece.GetVolume() < .7 * brep.GetVolume(), $"Cut natural stock {settings.Product}: {cut.Geometry.Count} pieces, {string.Join(",", cut.Geometry.OfType<Brep>().Select(p => p.IsSolid + " " + p.GetVolume().ToString("0")))} of {brep.GetVolume():0}");
         }
+        // Profile coarsening must keep sway: Brep radius matches Outer+Ridge between stations (within 1 mm).
+        AssertOuterRadius(Resolve(Log(7, .5), 1000), 1000);
+        AssertOuterRadius(Resolve(new TimberSettings { Product = TimberProduct.Bamboo, Species = BambooSpeciesId.Moso, Seed = 7, Diameter = 75, WallThickness = 7, NodeSpacing = 270, Taper = 5, Variation = .8 }, 1500), 1500);
+    }
+
+    static void AssertOuterRadius(NaturalFeatures f, double lengthMm)
+    {
+        var axis = new Line(Point3d.Origin, new Point3d(lengthMm, 0, 0));
+        using var brep = NaturalGeometry.Create(f, axis, 1, .001);
+        var frame = NaturalGeometry.Frame(axis);
+        var stations = new SortedSet<double>();
+        foreach (var run in f.Profile()) foreach (var p in run) stations.Add(p.X);
+        var xs = stations.ToList();
+        for (int i = 0; i < xs.Count - 1; i++)
+        {
+            if (xs[i + 1] - xs[i] < 2) continue;
+            double x = 0.5 * (xs[i] + xs[i + 1]);
+            double expect = f.Outer(x) + f.Ridge(x);
+            // Radial line in +Y so ClosestPoint cannot slide along the axis to a fatter station.
+            using var ray = new LineCurve(frame.PointAt(x, 0, 0), frame.PointAt(x, expect * (1 + Math.Abs(f.Ovality)) * 3, 0));
+            Assert(Intersection.CurveBrep(ray, brep, .01, out _, out Point3d[] hits) && hits.Length > 0, $"Radial hit failed at x={x:0.#}");
+            double Radius(Point3d p) { frame.RemapToPlaneSpace(p, out Point3d local); double ry = local.Y / (1 + f.Ovality), rz = local.Z / (1 - f.Ovality); return Math.Sqrt(ry * ry + rz * rz); }
+            double r = hits.Max(Radius);
+            Assert(Math.Abs(r - expect) <= 1, $"{(f.Bamboo ? "Bamboo" : "Log")}-radius at x={x:0.#}: got {r:0.###} expect {expect:0.###}");
+        }
     }
 
     public static void Component()
@@ -333,12 +430,68 @@ internal static class NaturalChecks
         var previewStock = preview.Params.Output[0].VolatileData.AllData(true).OfType<StockGoo>().Single().Value;
         using var culmPart = PreparedPart.Create(previewStock.Geometry, previewStock.Settings.Duplicate(), 1, .001, previewStock.BasePlane, previewStock.Fibre, null, previewStock.OriginalGeometry);
         Assert(culmPart.Mesh.Faces.Count > 8000 && culmPart.Mesh.Faces.Count <= 200000, $"Bamboo culm preview mesh has {culmPart.Mesh.Faces.Count} triangles");
+        using var draftPart = PreparedPart.Create(previewStock.Geometry, previewStock.Settings.Duplicate(), 1, .001, previewStock.BasePlane, previewStock.Fibre, null, previewStock.OriginalGeometry, PreviewLod.Draft);
+        Assert(draftPart.Mesh.Faces.Count > 0 && draftPart.Mesh.Faces.Count < culmPart.Mesh.Faces.Count / 2,
+            $"Draft tube ({draftPart.Mesh.Faces.Count}) should be under half of Full ({culmPart.Mesh.Faces.Count})");
+        Assert(draftPart.Remarks.Any(r => r.Contains("draft tube")), "Draft preview should remark draft tube");
+        // Geometry-only: longest AABB axis becomes the culm frame (not the short world-X edge).
+        using var noFrame = PreparedPart.Create(previewStock.Geometry, previewStock.Settings.Duplicate(), 1, .001);
+        Assert(noFrame.Remarks.Any(r => r.Contains("tube mesh")), "Geometry-only long bamboo should still use the parametric tube");
         var mid = previewStock.Geometry.GetBoundingBox(true).Center;
         using var half = TimberCut.Create(previewStock.Geometry, new Plane(mid, Vector3d.XAxis), false, .001);
         Assert(half.Geometry.Count == 1 && half.Outlines.Count > 0, "Bamboo vertical section should keep one capped piece with outlines");
         using var cutStock = previewStock.WithGeometry(half.Geometry[0]);
         using var cutPart = PreparedPart.Create(cutStock.Geometry, cutStock.Settings.Duplicate(), 1, .001, cutStock.BasePlane, cutStock.Fibre, null, cutStock.OriginalGeometry);
         Assert(cutPart.Mesh.Faces.Count > 0 && cutPart.Mesh.Faces.Count <= 200000, $"Bamboo section preview mesh has {cutPart.Mesh.Faces.Count} triangles");
+        Assert(!cutPart.Remarks.Any(r => r.Contains("tube mesh")), "Cut bamboo with stock must not use the full-length parametric tube");
+        // Draft coarsens MakeMesh on non-tube paths (engineered board).
+        using var board = Brep.CreateFromBox(new BoundingBox(Point3d.Origin, new Point3d(2000, 100, 40)));
+        using var boardFull = PreparedPart.Create(board, new TimberSettings { Product = TimberProduct.CLT }, 1, .001, Plane.WorldXY);
+        using var boardDraft = PreparedPart.Create(board, new TimberSettings { Product = TimberProduct.CLT }, 1, .001, Plane.WorldXY, previewLod: PreviewLod.Draft);
+        Assert(boardDraft.Mesh.Faces.Count <= boardFull.Mesh.Faces.Count, $"Draft board ({boardDraft.Mesh.Faces.Count}) should not exceed Full ({boardFull.Mesh.Faces.Count})");
+        Assert(boardDraft.Remarks.Any(r => r.Contains("coarser mesh")), "Draft MakeMesh should remark coarser mesh");
+
+        // Scaffolding preview budget (docs/development/bamboo-preview-performance.md). Moso needs Ø80 at 8 m (default Ø75 fails the hollow guard).
+        void AssertScaffoldPreview(int seed, BambooSpeciesId species, string label)
+        {
+            var longPole = new BambooStockComponent(); longPole.CreateAttributes(); doc.AddObject(longPole, false);
+            ((Param_Line)longPole.Params.Input[0]).SetPersistentData(new Line(new Point3d(0, 2000 + seed * 10 + (int)species, 0), new Point3d(0, 2000 + seed * 10 + (int)species, 8000)));
+            if (species != BambooSpeciesId.Moso) longPole.SelectSpecies(species);
+            // Moso default Ø75 and Asper mid Ø140 fail the hollow guard at 8 m; pin diameters that still resolve.
+            if (species == BambooSpeciesId.Moso) ((Param_Interval)longPole.Params.Input[3]).SetPersistentData(new Interval(80, 80));
+            else if (species == BambooSpeciesId.Asper) ((Param_Interval)longPole.Params.Input[3]).SetPersistentData(new Interval(180, 180));
+            ((SettingsParam)longPole.Params.Input[2]).SetPersistentData(new SettingsGoo(new TimberSettings { Seed = seed }));
+            doc.NewSolution(false);
+            Assert(!longPole.RuntimeMessages(GH_RuntimeMessageLevel.Error).Any(), label + ": " + string.Join(";", longPole.RuntimeMessages(GH_RuntimeMessageLevel.Error)));
+            var stock8 = longPole.Params.Output[0].VolatileData.AllData(true).OfType<StockGoo>().Single().Value;
+            using var part8 = PreparedPart.Create(stock8.Geometry, stock8.Settings.Duplicate(), 1, .001, stock8.BasePlane, stock8.Fibre, null, stock8.OriginalGeometry);
+            Console.WriteLine($"{label}: faces={part8.Mesh.Faces.Count} Ø={stock8.Settings.Diameter} seed={seed}");
+            Assert(part8.Mesh.Faces.Count <= 150000, $"{label} preview has {part8.Mesh.Faces.Count} triangles (want ≤150000)");
+            Assert(part8.Remarks.Any(r => r.Contains("tube mesh")), label + " should use the parametric tube");
+        }
+        foreach (int seed in new[] { 0, 1, 2 }) AssertScaffoldPreview(seed, BambooSpeciesId.Moso, $"8m Moso seed {seed}");
+        AssertScaffoldPreview(0, BambooSpeciesId.Guadua, "8m Guadua");
+        AssertScaffoldPreview(0, BambooSpeciesId.Asper, "8m Asper");
+
+        // Metre document: resolve in mm, place the solid at mmToDocument 0.001, prepare with unitToMm 1000.
+        var metreSettings = new TimberSettings { Product = TimberProduct.Bamboo, Species = BambooSpeciesId.Moso, Seed = 0, Diameter = 80, Taper = 5, WallThickness = 7, NodeSpacing = 270, Variation = .8 };
+        metreSettings.Validate();
+        var metreFeatures = NaturalFeatures.Resolve(metreSettings, 8000, 80, 80);
+        var metreAxis = new Line(Point3d.Origin, new Point3d(0, 0, 8));
+        using var metreBrep = NaturalGeometry.Create(metreFeatures, metreAxis, 0.001, .001);
+        var metreFrame = NaturalGeometry.Frame(metreAxis);
+        using var metrePart = PreparedPart.Create(metreBrep, metreSettings.Duplicate(), 1000, .001, metreFrame, metreFrame.XAxis);
+        Console.WriteLine($"8m metre-doc: faces={metrePart.Mesh.Faces.Count}");
+        Assert(metrePart.Mesh.Faces.Count <= 150000, $"Metre-doc 8 m preview has {metrePart.Mesh.Faces.Count} triangles");
+
+        // Bake stays on the revolved solid; dense first pass remeshes at 15° and surfaces a remark.
+        using (var bakeUv = NativeUvGeometry.Create(metreBrep, Rhino.UnitSystem.Meters, 64, CancellationToken.None, Math.PI / 180))
+        {
+            Console.WriteLine($"8m bake metre-doc 1°: faces={bakeUv.Samples.Faces.Count} remark={bakeUv.Remark}");
+            Assert(bakeUv.Samples.Faces.Count <= 200000, $"8 m bake has {bakeUv.Samples.Faces.Count} triangles");
+            Assert(!string.IsNullOrEmpty(bakeUv.Remark) && bakeUv.Remark.Contains("15°"), "Over-budget bake must remark the 15° remesh");
+        }
+
         var stock = logStock; var settings = stock.Settings.Duplicate(); settings.Resolution = 8; settings.EdgeResolution = 8;
         using var part = PreparedPart.Create(stock.Geometry, settings, 1, .001, stock.BasePlane, stock.Fibre, null, stock.OriginalGeometry);
         Near(part.LengthMm, 2400, .05);

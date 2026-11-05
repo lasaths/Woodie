@@ -60,6 +60,17 @@ internal static class StockChecks
         Assert(modeArchive.AppendObject(preview, "Preview"), "Could not write Preview display mode");
         var copy = new PreviewComponent();
         Assert(modeArchive.ExtractObject(copy, "Preview") && copy.PreviewDisplayModeByte == 2, "Preview Force flow mode must reload from archive");
+
+        var draft = new PreviewComponent();
+        draft.SetPreviewLodForChecks(Woodie.Geometry.PreviewLod.Draft);
+        var lodArchive = new GH_Archive();
+        Assert(lodArchive.AppendObject(draft, "PreviewLod"), "Could not write PreviewLod");
+        var restored = new PreviewComponent();
+        Assert(lodArchive.ExtractObject(restored, "PreviewLod") && restored.PreviewLod == Woodie.Geometry.PreviewLod.Draft, "Preview Draft lod must reload from archive");
+        var legacy = new PreviewComponent();
+        var empty = new GH_Archive();
+        Assert(empty.AppendObject(new PreviewComponent(), "Legacy"), "Could not write legacy Preview");
+        Assert(empty.ExtractObject(legacy, "Legacy") && legacy.PreviewLod == Woodie.Geometry.PreviewLod.Full, "Missing PreviewLod must default to Full");
     }
 
     static TimberSettings Bamboo(TimberProduct product, double variation = 0, int seed = 5) => new() { Product = product, Seed = seed, Variation = variation };

@@ -184,15 +184,15 @@ public sealed class BambooMaterialModel : NaturalModel
             double skin = r > ro ? 1 : SmoothStep(0.22, 0.0, ro - r);
             if (skin > 1e-3)
             {
-                // Two Perlin hits for cured epidermis (was six); silica stays a cheap integer hash.
+                // Soft epidermis: high weather/silica read as dirty pepper at scaffold distance / 2 mm/px.
                 double fAng = ang + nodeW * Perlin(x * 0.05 + ox, ang * 3.5, oy);
-                double grain = 0.22 * Perlin(x * 0.0035, fAng * 90 + ox, oy) + 0.12 * Perlin(x * 0.012, fAng * 40 + oy, ox);
-                double weather = 0.20 * Perlin(x * 0.025, ang * 2.2 + oy, ox * 0.7);
+                double grain = 0.10 * Perlin(x * 0.0035, fAng * 90 + ox, oy) + 0.05 * Perlin(x * 0.012, fAng * 40 + oy, ox);
+                double weather = 0.06 * Perlin(x * 0.025, ang * 2.2 + oy, ox * 0.7);
                 double silica = SmoothStep(0.82, 0.99, FastHash01((int)Math.Floor(x * 4.0), (int)Math.Floor(ang * 64), ox));
-                double lift = 1.0 + grain + weather + 0.10 * silica;
+                double lift = 1.0 + grain + weather + 0.03 * silica;
                 cr = Lerp(cr, F.Skin[0] * lift, skin);
-                cg = Lerp(cg, F.Skin[1] * (1.0 + grain * 0.92 + weather * 0.88 + 0.07 * silica), skin);
-                cb = Lerp(cb, F.Skin[2] * (1.0 + grain * 0.85 + weather * 0.80 + 0.05 * silica), skin);
+                cg = Lerp(cg, F.Skin[1] * (1.0 + grain * 0.92 + weather * 0.88 + 0.03 * silica), skin);
+                cb = Lerp(cb, F.Skin[2] * (1.0 + grain * 0.85 + weather * 0.80 + 0.02 * silica), skin);
             }
             if (nodeHalo > 0)
             {

@@ -29,8 +29,11 @@ public sealed class PreviewComponent : GH_Component
     // Viewport-only display: Textured | Gradient | ForceFlow (mutually exclusive).
     enum FieldMode : byte { Textured = 0, Gradient = 1, ForceFlow = 2 }
     FieldMode fieldMode;
+    PreviewLod previewLod = PreviewLod.Full;
     // Natural Log/Bamboo have no knot-influence field; keep Textured only.
     bool fieldModesEnabled = true;
+    internal PreviewLod PreviewLod => previewLod;
+    internal void SetPreviewLodForChecks(PreviewLod lod) => previewLod = lod;
     /// <summary>Example/authoring: Gradient mode (legacy Show knot influence).</summary>
     internal bool ShowKnotInfluence
     {
@@ -50,7 +53,7 @@ public sealed class PreviewComponent : GH_Component
     DisplayMaterial influenceFill;
 
     public PreviewComponent() : base("Timber Preview", "TimberPreview",
-        "Preview timber on geometry or a Stock Model. Right-click for Textured, Gradient or Force flow on engineered timber. " + ResearchCredit.Timber, "Display", "Woodie")
+        "Preview timber on geometry or a Stock Model. Click Draft/Full under the component for preview density. Right-click for Textured, Gradient or Force flow on engineered timber. " + ResearchCredit.Timber, "Display", "Woodie")
     {
         ObjectChanged += (_, e) =>
         {
@@ -62,6 +65,22 @@ public sealed class PreviewComponent : GH_Component
     public override Guid ComponentGuid => new("b3bcf727-0468-4fb8-8ee5-55fb8084ffb6");
     protected override Bitmap Icon => Icons.Eye;
     public override BoundingBox ClippingBox => bounds;
+    public override void CreateAttributes() => m_attributes = new PreviewAttributes(this);
+
+    internal void TogglePreviewLod()
+    {
+        RecordUndoEvent("Preview density");
+        previewLod = previewLod == PreviewLod.Draft ? PreviewLod.Full : PreviewLod.Draft;
+        ExpireSolution(true);
+    }
+
+    void SetPreviewLod(PreviewLod lod)
+    {
+        if (previewLod == lod) return;
+        RecordUndoEvent("Preview density");
+        previewLod = lod;
+        ExpireSolution(true);
+    }
 
     protected override void RegisterInputParams(GH_InputParamManager p)
     {
@@ -169,19 +188,29 @@ public sealed class PreviewComponent : GH_Component
         try
         {
             using var input = new GeometryUnits(geometry, guide, hasPlane ? p : null, sourceUnits, documentUnits, stock);
-            using var part = PreparedPart.Create(input.Geometry, settings, input.ToMillimetres, tolerance, input.BasePlane, hasFibre ? f : null, input.Guide, input.Stock);
+            using var part = PreparedPart.Create(input.Geometry, settings, input.ToMillimetres, tolerance, input.BasePlane, hasFibre ? f : null, input.Guide, input.Stock, previewLod);
             if (Math.Abs(input.Conversion - 1) > 1e-12)
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"Converted input coordinates from {input.Source} to {input.Document}; source geometry is unchanged.");
             da.SetData(2, part.Alignment.Box); da.SetData(3, part.Alignment.Frame);
             foreach (string remark in part.Remarks) AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, remark);
-            finals = TextureAtlas.Prepare(part, settings);
             List<AtlasPage> displayed;
-            if (finals.All(m => File.Exists(m.TexturePath))) { displayed = finals; shown.AddRange(finals); }
-            else
+            if (previewLod == PreviewLod.Draft)
             {
+                // Draft: 0.15 only — never Prepare(1) or queue refine.
                 quick = TextureAtlas.Prepare(part, settings, 0.15);
                 TextureAtlas.BakeMissing(quick, CancellationToken.None);
-                displayed = quick; shown.AddRange(quick); pending.AddRange(finals);
+                displayed = quick; shown.AddRange(quick);
+            }
+            else
+            {
+                finals = TextureAtlas.Prepare(part, settings);
+                if (finals.All(m => File.Exists(m.TexturePath))) { displayed = finals; shown.AddRange(finals); }
+                else
+                {
+                    quick = TextureAtlas.Prepare(part, settings, 0.15);
+                    TextureAtlas.BakeMissing(quick, CancellationToken.None);
+                    displayed = quick; shown.AddRange(quick); pending.AddRange(finals);
+                }
             }
             foreach (var page in displayed)
             {
@@ -199,7 +228,10 @@ public sealed class PreviewComponent : GH_Component
             }
             da.SetDataList(0, displayed.Select(m => m.Mesh));
             da.SetDataList(1, displayed.Select(m => settings.Layers == null ? m.Product.ToString() : "Custom buildup (" + m.Product + " palette)"));
-            Message = part.Mapping + (pending.Count > 0 && fieldMode == FieldMode.Textured ? " · refining" : "") + FieldModeSuffix();
+            Message = part.Mapping
+                + (previewLod == PreviewLod.Draft ? " · draft" : "")
+                + (pending.Count > 0 && fieldMode == FieldMode.Textured ? " · refining" : "")
+                + FieldModeSuffix();
             bakeItems.Add(new BakeSnapshot(input.Geometry,settings,documentUnits,input.BasePlane,hasFibre?f:null,input.Guide,input.Stock));
         }
         catch (Exception ex)
@@ -214,7 +246,7 @@ public sealed class PreviewComponent : GH_Component
         UpdateMaterials();
         ApplyFieldDisplay();
         // Bake full atlases even in Gradient/Force flow so returning to Textured is not stuck on 0.15 quality.
-        if (pending.Count > 0 && !Hidden)
+        if (pending.Count > 0 && !Hidden && previewLod == PreviewLod.Full)
         {
             var pages = pending.ToArray();
             refinement.Start(token => TextureAtlas.BakeMissing(pages, token),
@@ -228,6 +260,9 @@ public sealed class PreviewComponent : GH_Component
     public override void AppendAdditionalMenuItems(ToolStripDropDown menu)
     {
         base.AppendAdditionalMenuItems(menu);
+        Menu_AppendSeparator(menu);
+        Menu_AppendItem(menu, "Full preview", (_, _) => SetPreviewLod(PreviewLod.Full), true, previewLod == PreviewLod.Full);
+        Menu_AppendItem(menu, "Draft preview", (_, _) => SetPreviewLod(PreviewLod.Draft), true, previewLod == PreviewLod.Draft);
         Menu_AppendSeparator(menu);
         Menu_AppendItem(menu, "Textured", (_, _) => SetFieldMode(FieldMode.Textured), true, fieldMode == FieldMode.Textured);
         if (!fieldModesEnabled) return;
@@ -244,7 +279,7 @@ public sealed class PreviewComponent : GH_Component
 
     void StripFieldModeSuffix()
     {
-        foreach (var tag in new[] { " · force flow", " · gradient", " · knot influence", " · fibre strands", " · refining" })
+        foreach (var tag in new[] { " · force flow", " · gradient", " · knot influence", " · fibre strands", " · refining", " · draft" })
             if (Message != null && Message.EndsWith(tag, StringComparison.Ordinal))
                 Message = Message[..^tag.Length];
     }
@@ -443,6 +478,7 @@ public sealed class PreviewComponent : GH_Component
     {
         writer.SetBoolean("ShowKnotInfluence", fieldMode == FieldMode.Gradient);
         writer.SetByte("PreviewDisplayMode", (byte)fieldMode);
+        writer.SetByte("PreviewLod", (byte)previewLod);
         return base.Write(writer);
     }
 
@@ -456,6 +492,8 @@ public sealed class PreviewComponent : GH_Component
         else
             fieldMode = reader.ItemExists("ShowKnotInfluence") && reader.GetBoolean("ShowKnotInfluence")
                 ? FieldMode.Gradient : FieldMode.Textured;
+        previewLod = reader.ItemExists("PreviewLod") && reader.GetByte("PreviewLod") == (byte)PreviewLod.Draft
+            ? PreviewLod.Draft : PreviewLod.Full;
         return base.Read(reader);
     }
 
@@ -524,6 +562,8 @@ public sealed class PreviewComponent : GH_Component
             if(revision!=solutionVersion||RhinoDoc.FromRuntimeSerialNumber(serial)==null||doc.ModelUnitSystem!=units)throw new OperationCanceledException("The solution or bake document changed.");
             var ids=TimberBaker.Commit(doc,plans,attributes,linked.Token);foreach(var id in ids)objIds.Add(id);
             AddRuntimeMessage(GH_RuntimeMessageLevel.Remark,$"Baked {ids.Count} native timber object(s). Use Save textures when saving the 3dm for portability. Later shape edits require rebaking.");
+            foreach(var note in plans.Select(p=>p.NativeRemark).Where(n=>!string.IsNullOrEmpty(n)).Distinct())
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark,note);
         }
         catch(OperationCanceledException){AddRuntimeMessage(GH_RuntimeMessageLevel.Remark,"Timber bake cancelled; no new objects were added.");}
         catch(Exception ex){AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,"Timber bake failed: "+ex.Message);}
