@@ -268,15 +268,23 @@ internal static class NaturalChecks
         }
         double skinMean = skinSum / skinN, skinVar = skinSum2 / skinN - skinMean * skinMean;
         Assert(skinVar > 1.5, $"Bamboo epidermis should keep soft mottling (luma variance {skinVar:0.0}, want > 1.5)");
-        // Side streaks must share identity with SampleBundle (no Fract hatch).
-        double sumS = 0, sumD = 0, sumS2 = 0, sumD2 = 0, sumSD = 0; int nCorr = 0;
+        // Side streaks must share identity with SampleBundle (no Fract hatch). Match Shade's ovality-corrected θ.
+        double syO = 1 + bf.Ovality, szO = 1 - bf.Ovality;
+        double sumS = 0, sumD = 0, sumS2 = 0, sumD2 = 0, sumSD = 0, sumL = 0; int nCorr = 0;
+        var Ls = new double[96]; var Ss = new double[96];
         for (int i = 0; i < 96; i++) {
             double ang = i * (2 * Math.PI / 96), ca = Math.Cos(ang), sa = Math.Sin(ang);
-            double rWall = ro - 0.22;
-            var (sheath, _) = bf.SampleBundle(ri, ro, rWall, ang, 0);
-            double L = Luma(cs.Sample(gap, 40 + (ro - .05) * ca, 40 + (ro - .05) * sa, 0, ca, sa));
-            double dark = skinMean - L;
-            sumS += sheath; sumD += dark; sumS2 += sheath * sheath; sumD2 += dark * dark; sumSD += sheath * dark; nCorr++;
+            double y = 40 + (ro - .05) * ca, z = 40 + (ro - .05) * sa;
+            double dy = (y - 40) / syO, dz = (z - 40) / szO;
+            double angShade = Math.Atan2(dz, dy);
+            Ss[i] = bf.SampleBundle(ri, ro, ro - 0.22, angShade, 0).Sheath;
+            Ls[i] = Luma(cs.Sample(gap, y, z, 0, ca, sa));
+            sumL += Ls[i];
+        }
+        double meanL = sumL / 96;
+        for (int i = 0; i < 96; i++) {
+            double dark = meanL - Ls[i];
+            sumS += Ss[i]; sumD += dark; sumS2 += Ss[i] * Ss[i]; sumD2 += dark * dark; sumSD += Ss[i] * dark; nCorr++;
         }
         double mS = sumS / nCorr, mD = sumD / nCorr;
         double vS = sumS2 / nCorr - mS * mS, vD = sumD2 / nCorr - mD * mD;

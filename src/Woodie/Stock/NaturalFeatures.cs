@@ -120,8 +120,8 @@ public sealed class NaturalFeatures
             x += lengthMm * weights[j] / sum;
             double rise = Variation <= 0 ? 0 : g.NextDouble() * 2 - 1;
             if (x < margin || x > lengthMm - margin) continue;
-            // Ridge ~6–8% of radius so silhouette bulges read on contact sheets (geometry, not paint-only).
-            nodes.Add(x); heights.Add(0.07 * (1 + 0.35 * Variation * rise));
+            // Ridge ~8–10% of radius so silhouette bulges + fringe band read on contact sheets.
+            nodes.Add(x); heights.Add(0.09 * (1 + 0.35 * Variation * rise));
         }
         if (nodes.Count == 0) throw new ArgumentException("Bamboo node spacing left no room for nodes. Increase Length or reduce Node Spacing.");
     }
@@ -155,7 +155,7 @@ public sealed class NaturalFeatures
         double tc = (r - ri) / wall; if (tc < 0.05 || tc > 0.99) return (0, 0);
         double areaMm2 = Lerp(0.194, 0.061, Math.Pow(tc, 0.9));
         // Shang-scale floor — dense outer packing without single-pixel charcoal.
-        double spacing = Math.Max(0.50, Math.Sqrt(areaMm2) * Lerp(2.6, 0.85, Math.Pow(tc, 1.25)));
+        double spacing = Math.Max(0.45, Math.Sqrt(areaMm2) * Lerp(2.6, 0.85, Math.Pow(tc, 1.25)));
         double survive = BundleSurvive(tc);
         double aspect = Lerp(1.55, 0.48, tc);
         double clover = Math.Pow(1 - tc, 1.25);
@@ -182,12 +182,12 @@ public sealed class NaturalFeatures
             if (d < best) { best = d; blu = lu; blv = lv; }
         }
         if (best > 8) return (0, 0);
-        double fibre = SoftCap(blu, blv, 0.0, 0.0, su, sv) * 0.70;
+        double fibre = SoftCap(blu, blv, 0.0, 0.0, su, sv) * 0.78;
         fibre = Math.Max(fibre, Math.Max(SoftCap(blu, blv, 0.0, 0.18, su, sv), SoftCap(blu, blv, 0.0, -0.18, su, sv)));
         if (clover > 0.05)
             fibre = Math.Max(fibre, clover * Math.Max(SoftCap(blu, blv, 0.18, 0.0, su, sv), SoftCap(blu, blv, -0.18, 0.0, su, sv)));
-        if (freeFibre >= 1) fibre = Math.Max(fibre, SoftCap(blu, blv, 0.0, 0.40, su, sv) * 0.85);
-        if (freeFibre >= 2) fibre = Math.Max(fibre, SoftCap(blu, blv, 0.0, -0.38, su, sv) * 0.8);
+        if (freeFibre >= 1) fibre = Math.Max(fibre, SoftCap(blu, blv, 0.0, 0.40, su, sv) * 0.90);
+        if (freeFibre >= 2) fibre = Math.Max(fibre, SoftCap(blu, blv, 0.0, -0.38, su, sv) * 0.85);
         double vs = Lerp(0.07, 0.13, clover);
         double lumen = Math.Max(SoftCap(blu, blv, vs, 0.0, su, sv), SoftCap(blu, blv, -vs, 0.0, su, sv));
         return (Math.Min(1, fibre), lumen * SmoothStep(0.42, 0.08, best));
@@ -197,7 +197,7 @@ public sealed class NaturalFeatures
     {
         double d = Math.Sqrt((lu - cu) * (lu - cu) * su * su + (lv - cv) * (lv - cv) * sv * sv);
         // Discrete flower lobes (preview-scale); Late amber keeps contrast non-charcoal.
-        return SmoothStep(0.20, 0.045, d);
+        return SmoothStep(0.16, 0.028, d);
     }
 
     // Integer hash — faster than Perlin for cellular jitter (TimberPanel still owns grain noise).
@@ -237,6 +237,28 @@ public sealed class NaturalFeatures
     {
         int i = NearNode(x, out double d);
         return i >= 0 && d < RidgeHalfWidth ? ridge[i] * Outer(Nodes[i]) * 0.5 * (1 + Math.Cos(Math.PI * d / RidgeHalfWidth)) : 0;
+    }
+
+    /// <summary>
+    /// Sheath-scar whiskers (mm extra radius) near nodes — dense basal brush for side silhouettes / preview.
+    /// Does not alter the revolved Brep; bake stays Outer+Ridge only.
+    /// </summary>
+    public double FringeBump(double x, double ang)
+    {
+        if (!Bamboo) return 0;
+        int i = NearNode(x, out double d);
+        if (i < 0 || d > 22) return 0;
+        double ndSigned = x - Nodes[i];
+        double salt = OffsetY * Variation;
+        // Face: θ comb. Silhouette: fine axial teeth hanging below the ridge (photo downward fringe).
+        double pickTheta = SmoothStep(0.18, 0.42, Hash01((int)Math.Floor(ang * 96 + OffsetX * Variation), (int)Math.Floor(ang * 13 + 3), 9, salt));
+        double pickAxial = SmoothStep(0.20, 0.48, Hash01((int)Math.Floor(x * 4.5), (int)Math.Floor(ang * 3 + 5), 11, salt));
+        double pick = Math.Max(pickTheta, pickAxial);
+        // Length taper: longest just basal of the ridge, fade over ~18 mm.
+        double whisk = SmoothStep(18.0, 0.3, d);
+        double basal = SmoothStep(2.0, -16.0, ndSigned);
+        double len = 0.55 + 0.45 * Hash01((int)Math.Floor(x * 4.5 + 7), (int)Math.Floor(ang * 17), 13, salt);
+        return pick * whisk * (0.15 + 0.85 * basal) * len * 4.0;
     }
 
     /// <summary>Index of the nearest node and the distance to it; -1 for logs.</summary>

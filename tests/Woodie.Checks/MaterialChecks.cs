@@ -104,16 +104,17 @@ internal static class MaterialChecks
             double maxR = 0;
             for (int i = 0; i < 64; i++) {
                 double xu = 1 + i * (length - 2) / 63;
-                maxR = Math.Max(maxR, features.Outer(xu) + features.Ridge(xu));
+                maxR = Math.Max(maxR, features.Outer(xu) + features.Ridge(xu) + 4.5);
             }
             double padR = maxR * 1.08;
             var side = new int[sideW * sideH];
             for (int y = 0; y < sideH; y++) for (int x = 0; x < sideW; x++) {
                 double u = y * (length - 2) / (sideH - 1) + 1;
                 double worldY = (x / (sideW - 1d) - .5) * 2 * padR;
-                double ro = features.Outer(u) + features.Ridge(u);
+                double roBody = features.Outer(u) + features.Ridge(u);
+                double ang = Math.Asin(Math.Clamp(worldY / Math.Max(roBody, 1e-6), -1, 1));
+                double ro = roBody + features.FringeBump(u, ang);
                 if (Math.Abs(worldY) > ro) { side[y * sideW + x] = sideBg; continue; }
-                double ang = Math.Asin(Math.Clamp(worldY / Math.Max(ro, 1e-6), -1, 1));
                 double sy = cy + ro * Math.Cos(ang), sz = cz + ro * Math.Sin(ang);
                 int rgb = stock.Sample(u, sy, sz, 0, Math.Cos(ang), Math.Sin(ang));
                 double limb = 1 - 0.28 * Math.Pow(worldY / Math.Max(ro, 1e-6), 2);
@@ -190,7 +191,7 @@ internal static class MaterialChecks
         double maxR = 0;
         for (int i = 0; i < 64; i++) {
             double xu = 1 + i * (length - 2) / 63;
-            maxR = Math.Max(maxR, features.Outer(xu) + features.Ridge(xu));
+            maxR = Math.Max(maxR, features.Outer(xu) + features.Ridge(xu) + 4.5);
         }
         double padR = maxR * 1.08;
 
@@ -199,9 +200,10 @@ internal static class MaterialChecks
         for (int y = 0; y < sideH; y++) for (int x = 0; x < sideW; x++) {
             double u = y * (length - 2) / (sideH - 1) + 1;
             double worldY = (x / (sideW - 1d) - .5) * 2 * padR;
-            double roSil = features.Outer(u) + features.Ridge(u);
+            double roBody = features.Outer(u) + features.Ridge(u);
+            double ang = Math.Asin(Math.Clamp(worldY / Math.Max(roBody, 1e-6), -1, 1));
+            double roSil = roBody + features.FringeBump(u, ang);
             if (Math.Abs(worldY) > roSil) { current[y * sideW + x] = bg; vol[y * sideW + x] = bg; continue; }
-            double ang = Math.Asin(Math.Clamp(worldY / Math.Max(roSil, 1e-6), -1, 1));
             double ca = Math.Cos(ang), sa = Math.Sin(ang);
             double sy = cy + roSil * ca, sz = cz + roSil * sa;
             int rgb = stock.Sample(u, sy, sz, 0, ca, sa);

@@ -37,7 +37,7 @@ internal static class NaturalPreviewMesh
         for (int i = 0; i < xs.Count; i++)
         {
             double x = xs[i], ro = features.Outer(x) + features.Ridge(x), ri = features.Inner(x);
-            outer[i] = Ring(mesh, frame, x, ro, oy, oz, toDoc, sides);
+            outer[i] = Ring(mesh, frame, x, ro, oy, oz, toDoc, sides, features);
             inner[i] = Ring(mesh, frame, x, Math.Max(ri, 0), oy, oz, toDoc, sides);
         }
         for (int i = 0; i < xs.Count - 1; i++)
@@ -74,13 +74,14 @@ internal static class NaturalPreviewMesh
         return xs.ToList();
     }
 
-    static int[] Ring(Mesh mesh, Plane frame, double xMm, double rMm, double oy, double oz, double toDoc, int sides)
+    static int[] Ring(Mesh mesh, Plane frame, double xMm, double rMm, double oy, double oz, double toDoc, int sides, NaturalFeatures fringe = null)
     {
         var ids = new int[sides];
         for (int i = 0; i < sides; i++)
         {
             double a = 2 * Math.PI * i / sides;
-            var local = new Point3d(xMm * toDoc, rMm * Math.Cos(a) * oy * toDoc, rMm * Math.Sin(a) * oz * toDoc);
+            double r = rMm + (fringe != null ? fringe.FringeBump(xMm, a) : 0);
+            var local = new Point3d(xMm * toDoc, r * Math.Cos(a) * oy * toDoc, r * Math.Sin(a) * oz * toDoc);
             ids[i] = mesh.Vertices.Add(frame.PointAt(local.X, local.Y, local.Z));
         }
         return ids;
