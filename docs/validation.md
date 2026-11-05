@@ -5,9 +5,9 @@
 - Release builds of `Woodie.Checks` then `Woodie.gha`: PASS, zero warnings/errors.
 - Managed suite: PASS, **15** checks (Appearance, Sample throughput ~0.75× softwood, bamboo vol-compare Pearson r≈0.56).
 - Native `--rhino --integration`: PASS, **49** checks, 0 failed.
-- Texture cache `woodie-21`. GHA SHA-256 `E7BC66393EFB9C7725760CDA57F43F515F3ED0ED84ED4AFB0906E7D6D7CD29C9` (pre-package Release build).
+- Texture cache `woodie-21`. GHA SHA-256 `E7BC66393EFB9C7725760CDA57F43F515F3ED0ED84ED4AFB0906E7D6D7CD29C9`.
 - Mac native checks: not run. Fresh installed Bake-menu session for this build: not run.
-- Publication: pending.
+- Publication (2026-11-05): verified GHA SHA-256 `E7BC66393EFB9C7725760CDA57F43F515F3ED0ED84ED4AFB0906E7D6D7CD29C9`; Yak `woodie-0.1.7-rh8_20-any.yak` SHA-256 `5686c85d694a2d85851b093dc263378e9ec246ec24befe52535041c0761a8fb8`. Test-server package `woodie-releasecheck-20261105182523` upload/download matched. Production push of `woodie` / `0.1.7` succeeded. GitHub release: https://github.com/lasaths/Woodie/releases/tag/v0.1.7.
 
 ## 0.1.6 — volumetric bamboo + README — 2026-11-02
 
